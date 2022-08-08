@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">立體彈珠台 太空軍校生</string>
+    <string name="left">左側</string>
+    <string name="right">右側</string>
+    <string name="plunger">柱塞</string>
+    <string name="tilt">Tilt</string>
+    <string name="reset">新遊戲</string>
+    <string name="highscore">高分</string>
+    <string name="newhighscore">新高分： %d ！恭喜您！</string>
+    <string name="balls">第 %d 顆球</string>
+    <string name="remainingballs">剩下 %d 顆球</string>
+    <string name="remainingballssettings">改為剩餘球數指示</string>
+    <string name="tiltbuttons">Tilt(搖晃檯面)按鈕</string>
+    <string name="username">玩家名稱</string>
+    <string name="credits">立體彈珠台桌是 Maxis 為 Microsoft 建立的。\nCopyright (C) 1995 Maxis。\n\n逆向工程作者：k4zmu2a\n原始Android移植作者：Iscle\n目前版本移植作者：fexed, th3vanger</string>
+    <string name="restartprompt">長按以重新開始</string>
+    <string name="volume">音量</string>
+    <string name="customfonts">自定義(英文)字體</string>
+    <string name="plungerpopup">柱塞彈出</string>
+    <string name="plungerhint">按住螢幕來發球</string>
+    <string name="goto_googleplay"><u><a hred="https://play.google.com/store/apps/dev?id=6687966458279653723">看看我其他的APP</a></u></string>
+    <string name="goto_github"><u><a hred="https://github.com/fexed/Pinball-on-Android/releases">檢查有沒有最新版本</a></u></string>
+    <string name="cheat_title">作弊</string>
+    <string name="cheat_disclaimer">在發射第一顆球前可以使用 (注意：有一些作弊選項還沒有功能)</string>
+    <string name="cheat_gmax">gmax - 啟用重力井</string>
+    <string name="cheat_1max">1max - 多一顆彈珠</string>
+    <string name="cheat_bmax">bmax - 無限的彈珠</string>
+    <string name="cheat_rmax">rmax - 晉升一級</string>
+    <string name="cheat_omax">omax - 使用紅利開始</string>
+    <string name="cheat_lmax">lmax - 增加區域加乘</string>
+    <string name="cheat_notused">無作弊。</string>
+    <string name="cheat_used">已使用作弊！</string>
+    <string name="cheat_hiddentest">hidden test - 除錯模式</string>
+    <string name="loading">讀取中…</string>
+    <string name="leaderboard">線上排名</string>
+    <string name="cheatleaderboard">排名(作弊)</string>
+    <string name="leaderboard_current">排名 (現在排名: %s)</string>
+    <string name="cheatleaderboard_current">排名(作弊) (現在排名: %s)</string>
+    <string name="Settings">設定</string>
+    <string name="infos">資訊</string>
+    <string name="howtoplay">點選螢幕任一處發球以及控制兩側檔板(螢幕左側與右側)，並贏得最高分數！</string>
+    <string name="scoreupload_ok">%s 的分數已上傳</string>
+    <string name="scoreupload_err">分數上傳失敗，錯誤代碼 %s</string>
+    <string name="current_ver">目前版本</string>
+    <string name="nextpage">下一頁</string>
+    <string name="prevpage">上一頁</string>
+    <string name="rankerrortitle">錯誤</string>
+    <string name="rankerrormsg">下載排名時發生錯誤\n\n%s</string>
+    <string name="rankerrorretry">伺服器逾時，請稍後再試</string>
+    <string name="newvers">新版本 %s 已可從GitHub下載！</string>
+    <string name="newversdl">可用的新版本 %s ：點擊這裡下載</string>
+    <string name="nonewvers">已經是最新版本</string>
+</resources>
