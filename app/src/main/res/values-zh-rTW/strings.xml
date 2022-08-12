@@ -16,7 +16,7 @@
     <string name="restartprompt">長按以重新開始</string>
     <string name="volume">音量</string>
     <string name="customfonts">自定義(英文)字體</string>
-    <string name="plungerpopup">柱塞彈出</string>
+    <string name="plungerpopup">發球方式提示</string>
     <string name="plungerhint">按住螢幕來發球</string>
     <string name="goto_googleplay"><u><a hred="https://play.google.com/store/apps/dev?id=6687966458279653723">看看我其他的APP</a></u></string>
     <string name="goto_github"><u><a hred="https://github.com/fexed/Pinball-on-Android/releases">檢查有沒有最新版本</a></u></string>
