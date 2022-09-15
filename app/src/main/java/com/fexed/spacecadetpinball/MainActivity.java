@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
@@ -311,26 +312,25 @@ public class MainActivity extends SDLActivity {
             mBinding.right.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
             mBinding.right.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
         } else {
-            int defaultColor = mBinding.plunger.getCurrentTextColor();
             mBinding.ballstxt.setTypeface(Typeface.DEFAULT);
-            mBinding.ballstxt.setTextColor(defaultColor);
+            mBinding.ballstxt.setTextColor(Color.WHITE);
             mBinding.txtscore.setTypeface(Typeface.DEFAULT);
-            mBinding.txtscore.setTextColor(defaultColor);
+            mBinding.txtscore.setTextColor(Color.WHITE);
             mBinding.infotxt.setTypeface(Typeface.DEFAULT);
-            mBinding.infotxt.setTextColor(defaultColor);
+            mBinding.infotxt.setTextColor(Color.WHITE);
             mBinding.missiontxt.setTypeface(Typeface.DEFAULT);
-            mBinding.missiontxt.setTextColor(defaultColor);
+            mBinding.missiontxt.setTextColor(Color.WHITE);
             mBinding.plunger.setTypeface(Typeface.DEFAULT);
             mBinding.tiltLeft.setTypeface(Typeface.DEFAULT);
-            mBinding.tiltLeft.setTextColor(defaultColor);
+            mBinding.tiltLeft.setTextColor(Color.WHITE);
             mBinding.tiltBottom.setTypeface(Typeface.DEFAULT);
-            mBinding.tiltBottom.setTextColor(defaultColor);
+            mBinding.tiltBottom.setTextColor(Color.WHITE);
             mBinding.tiltRight.setTypeface(Typeface.DEFAULT);
-            mBinding.tiltRight.setTextColor(defaultColor);
+            mBinding.tiltRight.setTextColor(Color.WHITE);
             mBinding.left.setTypeface(Typeface.DEFAULT);
-            mBinding.left.setTextColor(defaultColor);
+            mBinding.left.setTextColor(Color.WHITE);
             mBinding.right.setTypeface(Typeface.DEFAULT);
-            mBinding.right.setTextColor(defaultColor);
+            mBinding.right.setTextColor(Color.WHITE);
         }
 
         if (isGameReady) setVolume(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getInt("volume", 100));
