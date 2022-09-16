@@ -12,7 +12,7 @@
     <string name="remainingballssettings">改為剩餘球數指示</string>
     <string name="tiltbuttons">Tilt(搖晃檯面)按鈕</string>
     <string name="username">玩家名稱</string>
-    <string name="credits">立體彈珠台桌是 Maxis 為 Microsoft 建立的。\nCopyright (C) 1995 Maxis。\n\n逆向工程作者：k4zmu2a\n原始Android移植作者：Iscle\n目前版本移植作者：fexed, th3vanger</string>
+    <string name="credits">立體彈珠台桌是 Maxis 為 Microsoft 建立的。\nCopyright © 1995 Maxis。\n\n逆向工程作者：k4zmu2a\n原始Android移植作者：Iscle\n目前版本移植作者：fexed, th3vanger</string>
     <string name="restartprompt">長按以重新開始</string>
     <string name="volume">音量</string>
     <string name="customfonts">自定義(英文)字體</string>
