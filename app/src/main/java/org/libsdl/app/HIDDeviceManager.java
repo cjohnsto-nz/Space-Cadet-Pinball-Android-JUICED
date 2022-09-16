@@ -52,7 +52,7 @@ public class HIDDeviceManager {
 
     private Context mContext;
     private HashMap<Integer, HIDDevice> mDevicesById = new HashMap<Integer, HIDDevice>();
-    private HashMap<BluetoothDevice, HIDDeviceBLESteamController> mBluetoothDevices = new HashMap<BluetoothDevice, HIDDeviceBLESteamController>();
+    //private HashMap<BluetoothDevice, HIDDeviceBLESteamController> mBluetoothDevices = new HashMap<BluetoothDevice, HIDDeviceBLESteamController>();
     private int mNextDeviceId = 0;
     private SharedPreferences mSharedPreferences = null;
     private boolean mIsChromebook = false;
@@ -347,6 +347,7 @@ public class HIDDeviceManager {
     }
 
     private void initializeBluetooth() {
+        /*
         Log.d(TAG, "Initializing Bluetooth");
 
         if (Build.VERSION.SDK_INT <= 30 &&
@@ -401,6 +402,7 @@ public class HIDDeviceManager {
             //     }
             // }, 5000);
         }
+         */
     }
 
     private void shutdownBluetooth() {
@@ -422,6 +424,7 @@ public class HIDDeviceManager {
         ArrayList<BluetoothDevice> disconnected = new ArrayList<BluetoothDevice>();
         ArrayList<BluetoothDevice> connected = new ArrayList<BluetoothDevice>();
 
+        /*
         List<BluetoothDevice> currentConnected = mBluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
 
         for (BluetoothDevice bluetoothDevice : currentConnected) {
@@ -436,6 +439,7 @@ public class HIDDeviceManager {
         }
 
         mLastBluetoothDevices = currentConnected;
+         */
 
         for (BluetoothDevice bluetoothDevice : disconnected) {
             disconnectBluetoothDevice(bluetoothDevice);
@@ -454,6 +458,7 @@ public class HIDDeviceManager {
     }
 
     public boolean connectBluetoothDevice(BluetoothDevice bluetoothDevice) {
+        /*
         Log.v(TAG, "connectBluetoothDevice device=" + bluetoothDevice);
         synchronized (this) {
             if (mBluetoothDevices.containsKey(bluetoothDevice)) {
@@ -471,10 +476,12 @@ public class HIDDeviceManager {
 
             // The Steam Controller will mark itself connected once initialization is complete
         }
+         */
         return true;
     }
 
     public void disconnectBluetoothDevice(BluetoothDevice bluetoothDevice) {
+        /*
         synchronized (this) {
             HIDDeviceBLESteamController device = mBluetoothDevices.get(bluetoothDevice);
             if (device == null)
@@ -486,9 +493,11 @@ public class HIDDeviceManager {
             device.shutdown();
             HIDDeviceDisconnected(id);
         }
+         */
     }
 
     public boolean isSteamController(BluetoothDevice bluetoothDevice) {
+        /*
         // Sanity check.  If you pass in a null device, by definition it is never a Steam Controller.
         if (bluetoothDevice == null) {
             return false;
@@ -500,6 +509,8 @@ public class HIDDeviceManager {
         }
 
         return bluetoothDevice.getName().equals("SteamController") && ((bluetoothDevice.getType() & BluetoothDevice.DEVICE_TYPE_LE) != 0);
+         */
+        return false;
     }
 
     private void close() {
@@ -510,7 +521,7 @@ public class HIDDeviceManager {
                 device.shutdown();
             }
             mDevicesById.clear();
-            mBluetoothDevices.clear();
+            //mBluetoothDevices.clear();
             HIDDeviceReleaseCallback();
         }
     }
