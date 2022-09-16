@@ -8,7 +8,8 @@ import android.media.MediaRecorder;
 import android.os.Build;
 import android.util.Log;
 
-public class SDLAudioManager {
+public class SDLAudioManager
+{
     protected static final String TAG = "SDLAudio";
 
     protected static AudioTrack mAudioTrack;
@@ -20,6 +21,7 @@ public class SDLAudioManager {
     }
 
     // Audio
+
     protected static String getAudioFormatString(int audioFormat) {
         switch (audioFormat) {
             case AudioFormat.ENCODING_PCM_8BIT:
@@ -40,13 +42,30 @@ public class SDLAudioManager {
 
         Log.v(TAG, "Opening " + (isCapture ? "capture" : "playback") + ", requested " + desiredFrames + " frames of " + desiredChannels + " channel " + getAudioFormatString(audioFormat) + " audio at " + sampleRate + " Hz");
 
+        /* On older devices let's use known good settings */
+        if (Build.VERSION.SDK_INT < 21) {
+            if (desiredChannels > 2) {
+                desiredChannels = 2;
+            }
+        }
+
+        /* AudioTrack has sample rate limitation of 48000 (fixed in 5.0.2) */
+        if (Build.VERSION.SDK_INT < 22) {
+            if (sampleRate < 8000) {
+                sampleRate = 8000;
+            } else if (sampleRate > 48000) {
+                sampleRate = 48000;
+            }
+        }
+
         if (audioFormat == AudioFormat.ENCODING_PCM_FLOAT) {
             int minSDKVersion = (isCapture ? 23 : 21);
             if (Build.VERSION.SDK_INT < minSDKVersion) {
                 audioFormat = AudioFormat.ENCODING_PCM_16BIT;
             }
         }
-        switch (audioFormat) {
+        switch (audioFormat)
+        {
             case AudioFormat.ENCODING_PCM_8BIT:
                 sampleSize = 1;
                 break;
@@ -235,14 +254,14 @@ public class SDLAudioManager {
             return;
         }
 
-        for (int i = 0; i < buffer.length; ) {
+        for (int i = 0; i < buffer.length;) {
             int result = mAudioTrack.write(buffer, i, buffer.length - i, AudioTrack.WRITE_BLOCKING);
             if (result > 0) {
                 i += result;
             } else if (result == 0) {
                 try {
                     Thread.sleep(1);
-                } catch (InterruptedException e) {
+                } catch(InterruptedException e) {
                     // Nom nom
                 }
             } else {
@@ -261,14 +280,14 @@ public class SDLAudioManager {
             return;
         }
 
-        for (int i = 0; i < buffer.length; ) {
+        for (int i = 0; i < buffer.length;) {
             int result = mAudioTrack.write(buffer, i, buffer.length - i);
             if (result > 0) {
                 i += result;
             } else if (result == 0) {
                 try {
                     Thread.sleep(1);
-                } catch (InterruptedException e) {
+                } catch(InterruptedException e) {
                     // Nom nom
                 }
             } else {
@@ -294,7 +313,7 @@ public class SDLAudioManager {
             } else if (result == 0) {
                 try {
                     Thread.sleep(1);
-                } catch (InterruptedException e) {
+                } catch(InterruptedException e) {
                     // Nom nom
                 }
             } else {
@@ -311,16 +330,12 @@ public class SDLAudioManager {
         return open(true, sampleRate, audioFormat, desiredChannels, desiredFrames);
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
+    /** This method is called by SDL using JNI. */
     public static int captureReadFloatBuffer(float[] buffer, boolean blocking) {
         return mAudioRecord.read(buffer, 0, buffer.length, blocking ? AudioRecord.READ_BLOCKING : AudioRecord.READ_NON_BLOCKING);
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
+    /** This method is called by SDL using JNI. */
     public static int captureReadShortBuffer(short[] buffer, boolean blocking) {
         if (Build.VERSION.SDK_INT < 23) {
             return mAudioRecord.read(buffer, 0, buffer.length);
@@ -329,9 +344,7 @@ public class SDLAudioManager {
         }
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
+    /** This method is called by SDL using JNI. */
     public static int captureReadByteBuffer(byte[] buffer, boolean blocking) {
         if (Build.VERSION.SDK_INT < 23) {
             return mAudioRecord.read(buffer, 0, buffer.length);
@@ -340,9 +353,7 @@ public class SDLAudioManager {
         }
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
+    /** This method is called by SDL using JNI. */
     public static void audioClose() {
         if (mAudioTrack != null) {
             mAudioTrack.stop();
@@ -351,9 +362,7 @@ public class SDLAudioManager {
         }
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
+    /** This method is called by SDL using JNI. */
     public static void captureClose() {
         if (mAudioRecord != null) {
             mAudioRecord.stop();
@@ -362,9 +371,7 @@ public class SDLAudioManager {
         }
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
+    /** This method is called by SDL using JNI. */
     public static void audioSetThreadPriority(boolean iscapture, int device_id) {
         try {
 

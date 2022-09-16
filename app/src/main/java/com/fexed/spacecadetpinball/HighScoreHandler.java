@@ -5,18 +5,14 @@ import android.content.SharedPreferences;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.HttpHeaderParser;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
@@ -24,13 +20,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.Policy;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
@@ -38,10 +31,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.TimeZone;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -49,8 +41,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 public class HighScoreHandler {
-    static String PUBLIC_KEY;
-    static String URL;
+    static String PUBLIC_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApfiCxaNxZR3rDk19rHUt1kZLBUn00pPhwMe6Fq3zDAhiyzerqA3uYmmPYKHqUUIryBT06OPLpClFKmh2j/8d26OAG2BSKr097ohGVkcZK/lZSBq7T2yWzNB9O09bYscctR5MICww7AKptUfoV+6Uflxvt0RT9WliIGpFwZBGgmfzoU/MjJh56NcMcJ0oyxN8ID078Pi7t9Y70dY7EW/Ux1JzBx3kRfcLRXBpxG+lpV+Mg+e3F3wKtqtLP6rZzYZfPmAkqkVHwCde9cv3VIVq2iq23CpD9/eczkrM2vdvWCU+AcEK14yJiaY8VMQq5AL51+xleojyyJgg7RTQYeHocwIDAQAB";
+    static String URL = "https://yga9qquubj.execute-api.us-east-1.amazonaws.com/";
     static LeaderboardActivity leaderboardActivity;
 
     static boolean postHighScore(Context context, int score) {
@@ -82,20 +74,43 @@ public class HighScoreHandler {
     }
 
     static RSAPublicKey getPublicKey(Context context) {
+        RSAPublicKey publicKey = null;
+        try {
+
+
+            byte[] b = Base64.decode(PUBLIC_KEY, Base64.DEFAULT);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(b);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            publicKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
+        } catch (Exception e) {
+            Log.e("KEY", e.getLocalizedMessage());
+            e.printStackTrace();
+        }
+
+        Log.d("KEY", publicKey.toString());
         return publicKey;
     }
 
     static String encode(byte[] toEncode, RSAPublicKey publicKey) {
-        return encoded;
+        try {
+            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] encrypted = cipher.doFinal(toEncode);
+            return Base64.encodeToString(encrypted, Base64.DEFAULT);
+        } catch (NoSuchAlgorithmException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException | NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
+        return Base64.encodeToString(toEncode, Base64.DEFAULT);
     }
 
-    static List<LeaderboardElement> getRanking(Context context) {
+    static void getRanking(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE);
         List<LeaderboardElement> corpus = new ArrayList<>();
         Response.Listener<String> listener = response -> {
             try {
                 JSONArray rankingJSON = new JSONArray(response);
-                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.UK);
+                fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
                 for (int i = 0; i < rankingJSON.length(); i++) {
                     JSONObject elem = rankingJSON.getJSONObject(i);
                     Date lastupdate = fmt.parse(elem.getString("updatedAt"));
@@ -111,10 +126,33 @@ public class HighScoreHandler {
             Log.e("RANKS", "error: " + error + " " + Arrays.toString(error.getStackTrace()));
             if (leaderboardActivity != null) leaderboardActivity.onLeaderboardError(error.getMessage());
         };
-        StringRequest GETRankingRequest = new StringRequest(Request.Method.GET, URL, listener, errorListener);
+        StringRequest GETRankingRequest = new StringRequest(Request.Method.GET, URL + "dev/ranks/", listener, errorListener);
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(GETRankingRequest);
-        return corpus;
+    }
+
+
+    static void getCurrentRank(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE);
+        Response.Listener<String> listener = response -> {
+            try {
+                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.UK);
+                fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+                JSONObject elem = new JSONObject(response);
+                Date lastupdate = fmt.parse(elem.getString("updatedAt"));
+                LeaderboardElement player = new LeaderboardElement(elem.getString("username"), elem.getString("_id"), lastupdate, elem.getJSONObject("rank").getInt("score"), elem.getJSONObject("cheatRank").getInt("score"));
+                if (leaderboardActivity != null) leaderboardActivity.onCurrentRankReady(player);
+            } catch (JSONException | ParseException e) {
+                e.printStackTrace();
+            }
+        };
+        Response.ErrorListener errorListener = error -> {
+            Log.e("RANKS", "error: " + error + " " + Arrays.toString(error.getStackTrace()));
+            if (leaderboardActivity != null) leaderboardActivity.onLeaderboardError(error.getMessage());
+        };
+        StringRequest GETRankingRequest = new StringRequest(Request.Method.GET, URL + "dev/ranks/" + prefs.getString("userid", "0"), listener, errorListener);
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(GETRankingRequest);
     }
 
     static void postScore(Context context, boolean verbose, boolean cheatUsed) {
@@ -122,22 +160,37 @@ public class HighScoreHandler {
         if (!prefs.getString("username", "").equals("")) {
             try {
                 JSONObject objectToEncode = new JSONObject();
+                objectToEncode.put("id", prefs.getString("userid", "0"));
+                objectToEncode.put("username", prefs.getString("username", ""));
+                if (!cheatUsed) {
+                    objectToEncode.put("score", prefs.getInt("highscore", 0));
+                    objectToEncode.put("ranking", 0);
+                } else {
+                    objectToEncode.put("score", prefs.getInt("cheathighscore", 0));
+                    objectToEncode.put("ranking", 1);
+                }
+                Log.d("RANKS", "toEncode: " + objectToEncode.toString().trim());
 
                 RSAPublicKey key = getPublicKey(context);
-                String encryptedBody = encode(objectToEncode.toString(), key);
+                String encryptedBody = encode(objectToEncode.toString().trim().replace("\n", "").getBytes(StandardCharsets.UTF_8), key);
 
                 JSONObject objectToSend = new JSONObject();
+                objectToSend.put("value", encryptedBody.trim());
                 Log.d("RANKS", "toSend: " + objectToSend);
 
                 Response.Listener<String> listener = response -> {};
                 Response.ErrorListener errorListener = error -> Log.e("RANKS", "error: " + error + " " + Arrays.toString(error.getStackTrace()));
-                StringRequest POSTRankingRequest = new StringRequest(Request.Method.POST, URL, listener, errorListener) {
+                StringRequest POSTRankingRequest = new StringRequest(Request.Method.POST, URL + "dev/ranks/", listener, errorListener) {
                     @Override
                     protected Response<String> parseNetworkResponse(NetworkResponse response) {
                         String responseJSON = "";
                         if (response != null) {
                             try {
                                 JSONObject received = new JSONObject(new String(response.data));
+                                String uid = received.getString("_id");
+                                String nickname = received.getString("username");
+                                int scoreNormal = received.getJSONObject("rank").getInt("score");
+                                int scoreCheat = received.getJSONObject("cheatRank").getInt("score");
                                 if (prefs.getString("userid", "0").equals("0")) prefs.edit().putString("userid", uid).apply();
                                 Log.d("RANKS", "response: " + received.toString());
 
