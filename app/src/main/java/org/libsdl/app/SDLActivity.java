@@ -266,7 +266,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return new String[] {
                 "SDL2",
                 // "SDL2_image",
-                // "SDL2_mixer",
+                "SDL2_mixer",
                 // "SDL2_net",
                 // "SDL2_ttf",
                 "main"
@@ -276,7 +276,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     // Load the .so
     public void loadLibraries() {
         for (String lib : getLibraries()) {
-            SDL.loadLibrary(lib);
+            try {
+                SDL.loadLibrary(lib);
+            } catch (UnsatisfiedLinkError ignored) {}
         }
     }
 
