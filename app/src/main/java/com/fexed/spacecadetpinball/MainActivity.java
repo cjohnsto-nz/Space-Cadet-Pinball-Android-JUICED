@@ -35,6 +35,7 @@ public class MainActivity extends SDLActivity {
     private ActivityMainBinding mBinding;
     private Handler plungerTimer;
     private boolean isGameReady = false;
+    private boolean isPlaying = true;
 
     private int ballCount = 0;
     private int remainingBalls = 0;
@@ -95,6 +96,19 @@ public class MainActivity extends SDLActivity {
             getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("cheatsused", false).apply();
             mBinding.cheatAlert.setVisibility(View.INVISIBLE);
             return true;
+        });
+
+        mBinding.playpause.setOnClickListener(view -> {
+            if (isPlaying) {
+                isPlaying = false;
+                pauseNativeThread();
+                mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.play));
+            } else {
+                isPlaying = true;
+                resumeNativeThread();
+                mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
+
+            }
         });
 
         mBinding.replay.setOnClickListener(view -> {

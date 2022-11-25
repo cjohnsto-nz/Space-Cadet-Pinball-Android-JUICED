@@ -88,6 +88,20 @@
         app:layout_constraintTop_toTopOf="@+id/linearLayout"
         app:rippleColor="@android:color/transparent" />
 
+    <ImageButton
+        android:id="@+id/playpause"
+        style="@android:style/Widget.DeviceDefault.ImageButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@android:color/transparent"
+        android:minWidth="48dp"
+        android:minHeight="48dp"
+        android:src="@drawable/pause"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/txtscore"
+        app:layout_constraintEnd_toEndOf="@+id/txtscore"
+        app:layout_constraintStart_toStartOf="@+id/txtscore" />
+
     <TextView
         android:id="@+id/missiontxt"
         android:layout_width="0dp"
