@@ -279,6 +279,7 @@ public class MainActivity extends SDLActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (!isPlaying) pauseNativeThread();
         setFullscreen();
         StateHelper.INSTANCE.addListener(mStateListener);
 
