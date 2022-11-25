@@ -10,10 +10,13 @@ Thanks to [k4zmu2a](https://github.com/k4zmu2a) for the original source code and
 
 ## How to play
 
-Download the latest avaliable [APK](https://github.com/fexed/Pinball-on-Android/releases)
+Download the latest available [APK](https://github.com/fexed/Pinball-on-Android/releases)
+
+## Articles
+
+Some articles were written about this project! Thank you to everyone. Some articles I found are on: [Frandroid](https://www.frandroid.com/android/applications/1384165_un-developpeur-ressuscite-le-pinball-3d-de-windows-sur-android-voici-comment-y-jouer), [TudoCelular](https://www.tudocelular.com/android/noticias/n192126/windows-xp-jogo-classico-pinball-3d-android.html), [Libero Tecnologia](https://tecnologia.libero.it/uno-studente-italiano-ha-portato-il-flipper-di-windows-su-android-58522), [Oxii](https://www.oxii.vn/tech/tua-game-huyen-thoai-tren-windows-pinball-3d-da-co-phien-ban-tren-android-39480.html), [Tugatech](https://tugatech.com.pt/t46867-space-cadet-do-windows-agora-chega-tambem-ao-android), [Robotina](https://www.robotina.us/entretenimiento/El-Pinball-tiene-una-version-disponible-para-celulares-Android-20220701-0004.html), [Androiditaly](https://www.androiditaly.com/2022/07/02/3d-pinball-space-cadet-arriva-su-android-grazie-ad-un-progetto-amatoriale-tutto-italiano/), [Pasion Movil](https://www.pasionmovil.com/videojuegos-2/3d-pinball-el-clasico-juego-de-windows-xp-llega-a-dispositivos-android/), [Clubic](https://www.clubic.com/pro/entreprises/microsoft/actualite-429654-vous-en-reviez-et-ils-l-ont-fait-3d-pinball-de-windows-obtient-un-portage-sur-android.html), [Meteoweek](https://tech.meteoweek.com/2022/07/10/3d-pinball-non-e-piu-unesclusiva-windows-space-cadet-sara-anche-per-android-grazie-ad-uno-studente/), 
 
 ## Known source ports
-
 
 | Platform           | Author          | URL                                                                                                        |
 | ------------------ | --------------- | ---------------------------------------------------------------------------------------------------------- |
