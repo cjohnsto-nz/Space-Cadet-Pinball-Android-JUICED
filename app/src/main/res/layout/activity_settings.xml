@@ -12,16 +12,129 @@
     android:layout_height="wrap_content"
     tools:context=".Settings">
 
+        <View
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/textView18"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/rankingbtnlyt" />
+
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/textView16"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/githubtxtv" />
+
+        <View
+            android:id="@+id/divider4"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginLeft="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginRight="32dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/cstmfnts"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tiltbtns" />
+
+        <View
+            android:id="@+id/divider5"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginLeft="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginRight="32dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/plungerpopup"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cstmfnts" />
+
+        <View
+            android:id="@+id/divider6"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginLeft="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginRight="32dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/remainingballs"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/plungerpopup" />
+
+        <View
+            android:id="@+id/divider7"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginLeft="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginRight="32dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/fullscreenplunger"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/remainingballs" />
+
+        <View
+            android:id="@+id/divider8"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginLeft="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginRight="32dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/textView4"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/fullscreenplunger" />
+
+        <View
+            android:id="@+id/divider3"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/textView6"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/volumebar" />
+
+        <TextView
+            android:id="@+id/textView21"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/leaderboard"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <TextView
             android:id="@+id/textView18"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="32dp"
             android:text="@string/infos"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="20sp"
             android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/rankingbtnlyt" />
 
@@ -44,15 +157,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
             android:gravity="center_horizontal"
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="@+id/textView2"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/inpttxtusername"
-            app:layout_constraintTop_toTopOf="@+id/textView2"
+            app:layout_constraintTop_toBottomOf="@+id/inpttxtusername"
             tools:text="118000" />
 
         <TextView
@@ -87,13 +200,13 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/githubtxtv" />
+            app:layout_constraintTop_toBottomOf="@+id/textView18" />
 
         <TextView
             android:id="@+id/gplaytxtv"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
             android:autoLink="web"
             android:gravity="center_horizontal"
@@ -123,66 +236,65 @@
         <EditText
             android:id="@+id/inpttxtusername"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginStart="32dp"
+            android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:ems="10"
             android:hint="@string/username"
             android:inputType="text"
-            app:layout_constraintBottom_toBottomOf="@+id/textView3"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/textView3"
-            app:layout_constraintTop_toTopOf="@+id/textView3" />
+            app:layout_constraintTop_toBottomOf="@+id/textView21" />
 
         <TextView
             android:id="@+id/textView3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
             android:text="@string/username"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="@+id/inpttxtusername"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="@+id/inpttxtusername" />
 
         <TextView
             android:id="@+id/textView2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
             android:text="@string/highscore"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="@+id/highscoretxtv"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView3" />
+            app:layout_constraintTop_toTopOf="@+id/highscoretxtv" />
 
         <TextView
             android:id="@+id/textView16"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="32dp"
             android:text="@string/Settings"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="20sp"
             android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/gplaytxtv" />
+            app:layout_constraintTop_toBottomOf="@+id/githubtxtv" />
 
         <TextView
             android:id="@+id/textView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
             android:text="@string/tiltbuttons"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
-            app:layout_constraintEnd_toStartOf="@+id/volumebar"
+            app:layout_constraintBottom_toBottomOf="@+id/tiltbtns"
+            app:layout_constraintEnd_toEndOf="@+id/textView16"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView16" />
+            app:layout_constraintTop_toTopOf="@+id/tiltbtns" />
 
         <TextView
             android:id="@+id/textView17"
@@ -193,29 +305,30 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView18" />
+            app:layout_constraintTop_toBottomOf="@+id/gplaytxtv" />
 
         <TextView
             android:id="@+id/textView4"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
             android:text="@string/volume"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
-            app:layout_constraintEnd_toStartOf="@+id/volumebar"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView20" />
+            app:layout_constraintTop_toBottomOf="@+id/fullscreenplunger" />
 
         <Switch
             android:id="@+id/tiltbtns"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="@+id/textView"
-            app:layout_constraintEnd_toEndOf="@+id/volumebar"
-            app:layout_constraintStart_toStartOf="@+id/volumebar"
-            app:layout_constraintTop_toTopOf="@+id/textView" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="@+id/cstmfnts"
+            app:layout_constraintStart_toStartOf="@+id/cstmfnts"
+            app:layout_constraintTop_toBottomOf="@+id/textView16" />
 
         <TextView
             android:id="@+id/textView6"
@@ -226,7 +339,8 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="20sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="@+id/textView16"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/volumebar" />
 
         <TextView
@@ -303,102 +417,96 @@
 
         <Switch
             android:id="@+id/cstmfnts"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="@+id/textView5"
-            app:layout_constraintEnd_toEndOf="@+id/volumebar"
-            app:layout_constraintStart_toStartOf="@+id/volumebar"
-            app:layout_constraintTop_toTopOf="@+id/textView5" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="@+id/plungerpopup"
+            app:layout_constraintStart_toStartOf="@+id/plungerpopup"
+            app:layout_constraintTop_toBottomOf="@+id/tiltbtns" />
 
         <Switch
             android:id="@+id/plungerpopup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="@+id/textView15"
-            app:layout_constraintEnd_toEndOf="@+id/volumebar"
-            app:layout_constraintStart_toStartOf="@+id/volumebar"
-            app:layout_constraintTop_toTopOf="@+id/textView15" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="@+id/remainingballs"
+            app:layout_constraintStart_toStartOf="@+id/remainingballs"
+            app:layout_constraintTop_toBottomOf="@+id/cstmfnts" />
 
         <Switch
             android:id="@+id/remainingballs"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="@+id/textView19"
-            app:layout_constraintEnd_toEndOf="@+id/volumebar"
-            app:layout_constraintStart_toStartOf="@+id/volumebar"
-            app:layout_constraintTop_toTopOf="@+id/textView19" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="@+id/fullscreenplunger"
+            app:layout_constraintStart_toStartOf="@+id/fullscreenplunger"
+            app:layout_constraintTop_toBottomOf="@+id/plungerpopup" />
 
         <Switch
             android:id="@+id/fullscreenplunger"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="@+id/textView20"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
             app:layout_constraintEnd_toEndOf="@+id/volumebar"
-            app:layout_constraintStart_toStartOf="@+id/volumebar"
-            app:layout_constraintTop_toTopOf="@+id/textView20" />
+            app:layout_constraintStart_toEndOf="@+id/textView16"
+            app:layout_constraintTop_toBottomOf="@+id/remainingballs" />
 
         <TextView
             android:id="@+id/textView5"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
             android:text="@string/customfonts"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
-            app:layout_constraintEnd_toStartOf="@+id/volumebar"
+            app:layout_constraintBottom_toBottomOf="@+id/cstmfnts"
+            app:layout_constraintEnd_toEndOf="@+id/textView"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView" />
+            app:layout_constraintTop_toTopOf="@+id/cstmfnts" />
 
         <TextView
             android:id="@+id/textView15"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
             android:text="@string/plungerpopup"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
-            app:layout_constraintEnd_toStartOf="@+id/volumebar"
+            app:layout_constraintBottom_toBottomOf="@+id/plungerpopup"
+            app:layout_constraintEnd_toEndOf="@+id/textView5"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView5" />
+            app:layout_constraintTop_toBottomOf="@+id/cstmfnts" />
 
         <TextView
             android:id="@+id/textView19"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
             android:text="@string/remainingballssettings"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
-            app:layout_constraintEnd_toStartOf="@+id/volumebar"
+            app:layout_constraintBottom_toBottomOf="@+id/remainingballs"
+            app:layout_constraintEnd_toEndOf="@+id/textView15"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView15" />
+            app:layout_constraintTop_toBottomOf="@+id/plungerpopup" />
 
         <TextView
             android:id="@+id/textView20"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
             android:text="@string/fullscreenplunger"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
-            app:layout_constraintEnd_toStartOf="@+id/volumebar"
+            app:layout_constraintBottom_toBottomOf="@+id/fullscreenplunger"
+            app:layout_constraintEnd_toEndOf="@+id/textView19"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView19" />
+            app:layout_constraintTop_toBottomOf="@+id/remainingballs" />
 
         <SeekBar
             android:id="@+id/volumebar"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintBottom_toBottomOf="@+id/textView4"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/cheatAlertSttngs"
-            app:layout_constraintTop_toTopOf="@+id/textView4" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView4" />
 
         <LinearLayout
             android:id="@+id/cheats"
