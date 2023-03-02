@@ -50,4 +50,5 @@
     <string name="newvers">Version %s is available on GitHub!</string>
     <string name="newversdl">Version %s is available: tap here to download</string>
     <string name="nonewvers">You are playing the latest version</string>
+    <string name="fullscreenplunger">Full screen plunger</string>
 </resources>

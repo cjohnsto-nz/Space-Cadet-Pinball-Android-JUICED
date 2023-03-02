@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
 
 import org.libsdl.app.SDLActivity;
@@ -28,6 +29,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import com.fexed.spacecadetpinball.databinding.ActivityMainBinding;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 
 public class MainActivity extends SDLActivity {
     private static final String TAG = "MainActivity";
@@ -39,6 +41,7 @@ public class MainActivity extends SDLActivity {
 
     private int ballCount = 0;
     private int remainingBalls = 0;
+    private BottomSheetBehavior<ConstraintLayout> bottomSheetBehavior;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +57,9 @@ public class MainActivity extends SDLActivity {
         mLayout.addView(mBinding.getRoot(), layoutParams);
 
         mBinding.getRoot().bringToFront();
+
+        bottomSheetBehavior = BottomSheetBehavior.from(mBinding.bottomsheet);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
 
         mBinding.left.setOnTouchListener((v1, event) -> {
             v1.performClick();
@@ -80,6 +86,18 @@ public class MainActivity extends SDLActivity {
 
 
         mBinding.plunger.setOnTouchListener((v1, event) -> {
+            v1.performClick();
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_SPACE);
+            }
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_SPACE);
+            }
+            return false;
+        });
+
+
+        mBinding.bottomPlunger.setOnTouchListener((v1, event) -> {
             v1.performClick();
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_SPACE);
@@ -200,10 +218,12 @@ public class MainActivity extends SDLActivity {
 
         @Override
         public void onBallInPlungerChanged(boolean isBallInPlunger) {
-            runOnUiThread(() -> mBinding.plunger.setVisibility(isBallInPlunger ? View.VISIBLE : View.INVISIBLE));
+            boolean fullScreenPlunger = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("fullscreenplunger", true);
+            if (fullScreenPlunger) {
+                runOnUiThread(() -> mBinding.plunger.setVisibility(isBallInPlunger ? View.VISIBLE : View.INVISIBLE));
                 if (isBallInPlunger) {
                     plungerTimer = new Handler(Looper.getMainLooper());
-                    plungerTimer.postDelayed(() -> runOnUiThread(() ->  {
+                    plungerTimer.postDelayed(() -> runOnUiThread(() -> {
                         if (getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("plungerPopup", true)) {
                             Toast.makeText(getContext(), R.string.plungerhint, Toast.LENGTH_LONG).show();
                         }
@@ -215,6 +235,9 @@ public class MainActivity extends SDLActivity {
                         plungerTimer = null;
                     }
                 }
+            } else {
+                runOnUiThread(() -> bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED));
+            }
         }
 
         @Override
@@ -305,6 +328,11 @@ public class MainActivity extends SDLActivity {
             mBinding.ballstxt.setText(str);
         }
 
+        if (getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("shouldshowbottomplunger", false)) {
+            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("shouldshowbottomplunger", false).apply();
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        }
+
         boolean customfonts = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("customfonts", true);
 
         if (customfonts) {
@@ -318,6 +346,8 @@ public class MainActivity extends SDLActivity {
             mBinding.missiontxt.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
             mBinding.plunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
             // not editing the plunger because it's a button (and using its color as default color)
+            mBinding.bottomPlunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
+            mBinding.bottomPlunger.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
             mBinding.tiltLeft.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
             mBinding.tiltLeft.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
             mBinding.tiltBottom.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
@@ -348,6 +378,8 @@ public class MainActivity extends SDLActivity {
             mBinding.left.setTextColor(Color.WHITE);
             mBinding.right.setTypeface(Typeface.DEFAULT);
             mBinding.right.setTextColor(Color.WHITE);
+            mBinding.bottomPlunger.setTypeface(Typeface.DEFAULT);
+            mBinding.bottomPlunger.setTextColor(Color.WHITE);
         }
 
         if (isGameReady) setVolume(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getInt("volume", 100));

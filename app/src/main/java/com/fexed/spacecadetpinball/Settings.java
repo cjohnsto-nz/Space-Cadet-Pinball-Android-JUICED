@@ -83,6 +83,16 @@ public class Settings extends AppCompatActivity {
             getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("remainingballs", b).apply();
         });
 
+        boolean fullScreenPlunger = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("fullscreenplunger", true);
+        mBinding.fullscreenplunger.setChecked(fullScreenPlunger);
+        mBinding.fullscreenplunger.setOnCheckedChangeListener((compoundButton, b) -> {
+            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("fullscreenplunger", b).apply();
+
+            if (!b) {
+                getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("shouldshowbottomplunger", true).apply();
+            }
+        });
+
         mBinding.inpttxtusername.setText(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getString("username", "Player 1"));
         mBinding.inpttxtusername.addTextChangedListener(new TextWatcher() {
             @Override
