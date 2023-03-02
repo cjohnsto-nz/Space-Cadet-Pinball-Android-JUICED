@@ -49,7 +49,7 @@ public class Settings extends AppCompatActivity {
         View view = mBinding.getRoot();
         setContentView(view);
         if (getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getString("username", null) != null) {
-            HighScoreHandler.postScore(getApplicationContext(), false, false);
+            HighScoreHandler.postScore(getApplicationContext(), false);
         }
 
         int score = HighScoreHandler.getHighScore(getApplicationContext());

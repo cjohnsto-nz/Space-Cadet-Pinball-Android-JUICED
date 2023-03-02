@@ -45,24 +45,26 @@ public class HighScoreHandler {
     static String URL = "https://yga9qquubj.execute-api.us-east-1.amazonaws.com/";
     static LeaderboardActivity leaderboardActivity;
 
+    static String KEY_USERID = "userid";
+    static String KEY_USERNAME = "username";
+    static String KEY_HIGHSCORE = "highscore";
+    static String KEY_CHEATHIGHSCORE = "cheathighscore";
+    static String KEY_CHEATSUSED = "cheatsused";
+
     static boolean postHighScore(Context context, int score) {
         boolean updated = false;
         SharedPreferences prefs = context.getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE);
-        Log.d("RANKS", prefs.getBoolean("cheatsused", false) + " " + score);
+        Log.d("RANKS", prefs.getBoolean(KEY_CHEATSUSED, false) + " " + score);
 
-        if (prefs.getBoolean("cheatsused", false)) {
-            int oldscore = prefs.getInt("highscore", 0);
+        if (!prefs.getBoolean(KEY_CHEATSUSED, false)) {
+            int oldscore = prefs.getInt(KEY_HIGHSCORE, 0);
             if (score > oldscore) {
-                prefs.edit().putInt("highscore", score).apply();
+                prefs.edit().putInt(KEY_HIGHSCORE, score).apply();
                 updated = true;
             }
-        } else {
-            int oldscore = prefs.getInt("cheathighscore", 0);
-            if (score > oldscore) {
-                prefs.edit().putInt("cheathighscore", score).apply();
-            }
         }
-        if (prefs.getInt("highscore", 0) > 0) postScore(context, true, false);
+        
+        if (prefs.getInt(KEY_HIGHSCORE, 0) > 0) postScore(context, true);
 
         return updated;
     }
@@ -70,14 +72,12 @@ public class HighScoreHandler {
     static int getHighScore(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE);
 
-        return prefs.getInt("highscore", 0);
+        return prefs.getInt(KEY_HIGHSCORE, 0);
     }
 
     static RSAPublicKey getPublicKey(Context context) {
         RSAPublicKey publicKey = null;
         try {
-
-
             byte[] b = Base64.decode(PUBLIC_KEY, Base64.DEFAULT);
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(b);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -150,25 +150,20 @@ public class HighScoreHandler {
             Log.e("RANKS", "error: " + error + " " + Arrays.toString(error.getStackTrace()));
             if (leaderboardActivity != null) leaderboardActivity.onLeaderboardError(error.getMessage());
         };
-        StringRequest GETRankingRequest = new StringRequest(Request.Method.GET, URL + "dev/ranks/" + prefs.getString("userid", "0"), listener, errorListener);
+        StringRequest GETRankingRequest = new StringRequest(Request.Method.GET, URL + "dev/ranks/" + prefs.getString(KEY_USERID, "0"), listener, errorListener);
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(GETRankingRequest);
     }
 
-    static void postScore(Context context, boolean verbose, boolean cheatUsed) {
+    static void postScore(Context context, boolean verbose) {
         SharedPreferences prefs = context.getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE);
-        if (!prefs.getString("username", "").equals("")) {
+        if (!prefs.getString(KEY_USERNAME, "").equals("")) {
             try {
                 JSONObject objectToEncode = new JSONObject();
-                objectToEncode.put("id", prefs.getString("userid", "0"));
-                objectToEncode.put("username", prefs.getString("username", ""));
-                if (!cheatUsed) {
-                    objectToEncode.put("score", prefs.getInt("highscore", 0));
-                    objectToEncode.put("ranking", 0);
-                } else {
-                    objectToEncode.put("score", prefs.getInt("cheathighscore", 0));
-                    objectToEncode.put("ranking", 1);
-                }
+                objectToEncode.put("id", prefs.getString(KEY_USERID, "0"));
+                objectToEncode.put("username", prefs.getString(KEY_USERNAME, ""));
+                objectToEncode.put("score", prefs.getInt(KEY_HIGHSCORE, 0));
+                objectToEncode.put("ranking", 0);
                 Log.d("RANKS", "toEncode: " + objectToEncode.toString().trim());
 
                 RSAPublicKey key = getPublicKey(context);
@@ -191,7 +186,7 @@ public class HighScoreHandler {
                                 String nickname = received.getString("username");
                                 int scoreNormal = received.getJSONObject("rank").getInt("score");
                                 int scoreCheat = received.getJSONObject("cheatRank").getInt("score");
-                                if (prefs.getString("userid", "0").equals("0")) prefs.edit().putString("userid", uid).apply();
+                                if (prefs.getString(KEY_USERID, "0").equals("0")) prefs.edit().putString(KEY_USERID, uid).apply();
                                 Log.d("RANKS", "response: " + received.toString());
 
                                 Looper.prepare();
