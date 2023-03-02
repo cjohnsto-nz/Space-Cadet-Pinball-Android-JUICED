@@ -210,8 +210,10 @@ public class MainActivity extends SDLActivity {
                         mBinding.plunger.setVisibility(View.VISIBLE);
                     }), 3000);
                 } else {
-                    plungerTimer.removeCallbacksAndMessages(null);
-                    plungerTimer = null;
+                    if (plungerTimer != null) {
+                        plungerTimer.removeCallbacksAndMessages(null);
+                        plungerTimer = null;
+                    }
                 }
         }
 
