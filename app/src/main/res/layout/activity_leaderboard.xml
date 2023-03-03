@@ -6,14 +6,18 @@
     android:layout_height="match_parent"
     tools:context=".LeaderboardActivity">
 
-    <Button
+    <ImageButton
         android:id="@+id/prevpagebtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:layout_marginBottom="8dp"
+        android:src="@drawable/chevron_left"
         android:text="@string/prevpage"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/currpagetxt"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -24,19 +28,23 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/nextpagebtn"
-        app:layout_constraintStart_toEndOf="@+id/prevpagebtn"
-        app:layout_constraintTop_toTopOf="@+id/prevpagebtn" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/list" />
 
-    <Button
+    <ImageButton
         android:id="@+id/nextpagebtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:layout_marginBottom="8dp"
+        android:src="@drawable/chevron_right"
         android:text="@string/nextpage"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/currpagetxt" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
