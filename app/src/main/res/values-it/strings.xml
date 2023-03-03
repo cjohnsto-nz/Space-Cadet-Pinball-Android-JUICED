@@ -37,6 +37,8 @@
     <string name="cheatleaderboard">Classifica cheat</string>
     <string name="leaderboard_current">Classifica (Attuale: %s)</string>
     <string name="cheatleaderboard_current">Classifica cheat (Attuale: %s)</string>
+    <string name="current_position">Posizione attuale: %s</string>
+    <string name="gotopage">Vai alla pagina</string>
     <string name="Settings">Impostazioni</string>
     <string name="infos">Informazioni</string>
     <string name="howtoplay">Tocca ovunque sullo schermo per usare il lanciatore o le due leve, e punta all\'high score!</string>

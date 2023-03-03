@@ -36,6 +36,8 @@
     <string name="cheatleaderboard">Cheat Leaderboard</string>
     <string name="leaderboard_current">Leaderboard (Current: %s)</string>
     <string name="cheatleaderboard_current">Cheat leaderboard (Current: %s)</string>
+    <string name="current_position">Current position: %s</string>
+    <string name="gotopage">Go to page</string>
     <string name="Settings">Settings</string>
     <string name="infos">Informations</string>
     <string name="howtoplay">Tap anywhere on the screen to use the plunger or the two levers, and aim for the high score!</string>

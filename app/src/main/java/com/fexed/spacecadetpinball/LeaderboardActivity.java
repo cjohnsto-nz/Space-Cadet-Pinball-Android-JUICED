@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 
 import com.fexed.spacecadetpinball.databinding.ActivityLeaderboardBinding;
 import com.fexed.spacecadetpinball.databinding.ActivitySettingsBinding;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 public class LeaderboardActivity extends AppCompatActivity {
     public static boolean isCheatRanking = false;
@@ -28,16 +30,17 @@ public class LeaderboardActivity extends AppCompatActivity {
     private int currentpage = 0;
     private int maxpages = 0;
     private int playerpage = -1;
+    private int playerposition = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (isCheatRanking) setTitle(R.string.cheatleaderboard);
-        else setTitle(R.string.leaderboard);
+        Objects.requireNonNull(getSupportActionBar()).hide();
         mBinding = ActivityLeaderboardBinding.inflate(getLayoutInflater());
         View view = mBinding.getRoot();
         setContentView(view);
-        mBinding.list.setLayoutManager(new LinearLayoutManager(this));
+        LinearLayoutManager recyclerLayoutManager = new LinearLayoutManager(this);
+        mBinding.list.setLayoutManager(recyclerLayoutManager);
         HighScoreHandler.leaderboardActivity = this;
 
         mBinding.rankingdisclaimer.setText(getString(R.string.onlyhigherthan, 0, 0));
@@ -64,6 +67,23 @@ public class LeaderboardActivity extends AppCompatActivity {
 
             mBinding.currpagetxt.setText(currentpage + "/" + maxpages);
         });
+
+        mBinding.gotopagebtn.setOnClickListener(v -> {
+            currentpage = this.playerpage;
+            mBinding.list.setAdapter(new LeaderboardAdapter(cachedLeaderboard.subList((LeaderboardAdapter.pagesize*currentpage), Math.min((LeaderboardAdapter.pagesize*(currentpage+1)), cachedLeaderboard.size())), false, isCheatRanking, currentpage));
+
+            if (currentpage == maxpages) mBinding.nextpagebtn.setEnabled(false);
+            mBinding.prevpagebtn.setEnabled(true);
+
+            mBinding.currpagetxt.setText(currentpage + "/" + maxpages);
+
+            recyclerLayoutManager.scrollToPosition(this.playerposition - (LeaderboardAdapter.pagesize * this.playerpage) - 1);
+        });
+
+        if (playerpage == -1) {
+            mBinding.gotopagebtn.setEnabled(false);
+            mBinding.currpositiontxt.setText(getString(R.string.current_position, getString(R.string.loading)));
+        }
     }
 
     @Override
@@ -90,7 +110,6 @@ public class LeaderboardActivity extends AppCompatActivity {
     public void onLeaderboardReady(List<LeaderboardElement> leaderboard) {
         Log.d("RANKS", "size: " + leaderboard.size() + ", pages: " + maxpages);
         int totalUsers = leaderboard.size();
-        mBinding.rankingdisclaimer.setText(getString(R.string.onlyhigherthan, leaderboard.size(), leaderboard.size()));
         if (isCheatRanking) {
             Collections.sort(leaderboard, (t1, t2) -> -Integer.compare(t1.cheatScore, t2.cheatScore));
         } else {
@@ -109,8 +128,7 @@ public class LeaderboardActivity extends AppCompatActivity {
             }
 
             if (position != -1) {
-                if (isCheatRanking) setTitle(getString(R.string.cheatleaderboard_current, position + ""));
-                else setTitle(getString(R.string.leaderboard_current, position + ""));
+                this.playerposition = position;
             }
 
             Iterator<LeaderboardElement> iterator = this.cachedLeaderboard.listIterator();
@@ -125,6 +143,16 @@ public class LeaderboardActivity extends AppCompatActivity {
             }
 
             this.maxpages = (int) Math.floor(leaderboard.size()/((float) LeaderboardAdapter.pagesize));
+            this.playerpage = (int) Math.ceil(this.playerposition / LeaderboardAdapter.pagesize);
+
+            if (this.playerposition != -1) {
+                mBinding.gotopagebtn.setEnabled(true);
+                mBinding.currpositiontxt.setText(getString(R.string.current_position, "" + this.playerposition));
+            } else {
+                mBinding.gotopagebtn.setVisibility(View.GONE);
+                mBinding.currpositiontxt.setVisibility(View.GONE);
+            }
+            Log.d("RANKS", "Player is on page " + this.playerpage);
             mBinding.rankingdisclaimer.setText(getString(R.string.onlyhigherthan, cachedLeaderboard.size(), totalUsers));
             mBinding.currpagetxt.setText(currentpage + "/" + maxpages);
             if (maxpages > 0) mBinding.nextpagebtn.setEnabled(true);
