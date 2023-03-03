@@ -101,7 +101,7 @@ public class HighScoreHandler {
                     JSONObject elem = rankingJSON.getJSONObject(i);
                     Date lastupdate = fmt.parse(elem.getString("updatedAt"));
                     LeaderboardElement player = new LeaderboardElement(elem.getString("username"), elem.getString("_id"), lastupdate, elem.getJSONObject("rank").getInt("score"), elem.getJSONObject("cheatRank").getInt("score"));
-                    corpus.add(player);
+                    if (player.normalScore > 0) corpus.add(player);
                 }
             } catch (JSONException | ParseException e) {
                 e.printStackTrace();
