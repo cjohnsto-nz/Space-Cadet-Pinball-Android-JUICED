@@ -53,6 +53,7 @@ public class MainActivity extends SDLActivity {
         File filesDir = getFilesDir();
         copyAssets(filesDir);
         initNative(filesDir.getAbsolutePath() + "/");
+        PrefsHelper.setPrefs(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE));
 
         mBinding = ActivityMainBinding.inflate(getLayoutInflater(), mLayout, false);
 
@@ -115,7 +116,7 @@ public class MainActivity extends SDLActivity {
         mBinding.replay.setOnLongClickListener(view -> {
             SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_F2);
             SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_F2);
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("cheatsused", false).apply();
+            PrefsHelper.setCheatsUsed(false);
             mBinding.cheatAlert.setVisibility(View.INVISIBLE);
             return true;
         });
@@ -214,13 +215,12 @@ public class MainActivity extends SDLActivity {
         getWindow().getDecorView().setSystemUiVisibility(ui_Options);
     }
 
-    private StateHelper.IStateListener mStateListener = new StateHelper.IStateListener() {
+    private final StateHelper.IStateListener mStateListener = new StateHelper.IStateListener() {
         @Override
         public void onStateChanged(int state) {
-            //runOnUiThread(() -> mBinding.replay.setVisibility(state == GameState.RUNNING ? View.GONE : View.VISIBLE));
-            setVolume(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getInt("volume", 100));
+            setVolume(PrefsHelper.getVolume());
             putTranslations();
-            putString(26, getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getString("username", "Player 1"));
+            putString(26, PrefsHelper.getUsername("Player 1"));  //TODO abstract ids
 
             if (state == GameState.RUNNING) {
                 gamesInSession++;
@@ -234,13 +234,12 @@ public class MainActivity extends SDLActivity {
 
         @Override
         public void onBallInPlungerChanged(boolean isBallInPlunger) {
-            boolean fullScreenPlunger = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("fullscreenplunger", true);
-            if (fullScreenPlunger) {
+            if (PrefsHelper.getFullScreenPlunger()) {
                 runOnUiThread(() -> mBinding.plunger.setVisibility(isBallInPlunger ? View.VISIBLE : View.INVISIBLE));
                 if (isBallInPlunger) {
                     plungerTimer = new Handler(Looper.getMainLooper());
                     plungerTimer.postDelayed(() -> runOnUiThread(() -> {
-                        if (getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("plungerPopup", true)) {
+                        if (PrefsHelper.getPlungerPopup()) {
                             Toast.makeText(getContext(), R.string.plungerhint, Toast.LENGTH_LONG).show();
                         }
                         mBinding.plunger.setVisibility(View.VISIBLE);
@@ -268,7 +267,7 @@ public class MainActivity extends SDLActivity {
 
         @Override
         public int onHighScoreRequested() {
-            return HighScoreHandler.getHighScore(getContext());
+            return PrefsHelper.getHighScore();
         }
 
         @Override
@@ -293,7 +292,7 @@ public class MainActivity extends SDLActivity {
         @Override
         public void onBallCountUpdated(int count) {
             ballCount = count;
-            if (!getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("remainingballs", false)) {
+            if (!PrefsHelper.getRemainingBalls()) {
                 String str = getString(R.string.balls, count);
                 runOnUiThread(() -> mBinding.ballstxt.setText(str));
             }
@@ -301,7 +300,7 @@ public class MainActivity extends SDLActivity {
 
         @Override
         public void onCheatsUsed() {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("cheatsused", true).apply();
+            PrefsHelper.setCheatsUsed(true);
             runOnUiThread(() -> mBinding.cheatAlert.setVisibility(View.VISIBLE));
             runOnUiThread(() -> firebaseAnalytics.logEvent("cheat_used", null));
         }
@@ -314,7 +313,7 @@ public class MainActivity extends SDLActivity {
         @Override
         public void onRemainingBallsRequested(int balls) {
             remainingBalls = balls;
-            if (getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("remainingballs", false)) {
+            if (PrefsHelper.getRemainingBalls()) {
                 String str = getString(R.string.remainingballs, balls);
                 runOnUiThread(() -> mBinding.ballstxt.setText(str));
             }
@@ -324,13 +323,38 @@ public class MainActivity extends SDLActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (!isPlaying) pauseNativeThread();
-        setFullscreen();
         StateHelper.INSTANCE.addListener(mStateListener);
 
-        boolean tiltenabled = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("tiltbuttons", true);
+        if (!isPlaying) pauseNativeThread();
+        if (isGameReady) setVolume(PrefsHelper.getVolume());
+        PrefsHelper.setCheatsUsed(checkCheatsUsed());
+        setFullscreen();
+        setTiltButtons();
+        setCustomFonts();
+        setBallsText();
+        configurePlunger();
+    }
 
-        if (tiltenabled) {
+    private void setBallsText() {
+        if (!PrefsHelper.getRemainingBalls()) {
+            String str = getString(R.string.balls, ballCount);
+            mBinding.ballstxt.setText(str);
+        } else {
+            String str = getString(R.string.remainingballs, remainingBalls);
+            mBinding.ballstxt.setText(str);
+        }
+    }
+
+    private void configurePlunger() {
+        if (PrefsHelper.getShouldShowBottomPlunger()) {
+            PrefsHelper.setShouldShowBottomPlunger(false);
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            mBinding.plunger.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void setTiltButtons() {
+        if (PrefsHelper.getTiltButtons()) {
             mBinding.tiltLeft.setVisibility(View.VISIBLE);
             mBinding.tiltRight.setVisibility(View.VISIBLE);
             mBinding.tiltBottom.setVisibility(View.VISIBLE);
@@ -339,23 +363,10 @@ public class MainActivity extends SDLActivity {
             mBinding.tiltRight.setVisibility(View.GONE);
             mBinding.tiltBottom.setVisibility(View.GONE);
         }
+    }
 
-        if (!getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("remainingballs", false)) {
-            String str = getString(R.string.balls, ballCount);
-            mBinding.ballstxt.setText(str);
-        } else {
-            String str = getString(R.string.remainingballs, remainingBalls);
-            mBinding.ballstxt.setText(str);
-        }
-
-        if (getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("shouldshowbottomplunger", false)) {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("shouldshowbottomplunger", false).apply();
-            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        }
-
-        boolean customfonts = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("customfonts", true);
-
-        if (customfonts) {
+    private void setCustomFonts() {
+        if (PrefsHelper.getCustomFonts()) {
             mBinding.ballstxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
             mBinding.ballstxt.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
             mBinding.txtscore.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
@@ -401,9 +412,6 @@ public class MainActivity extends SDLActivity {
             mBinding.bottomPlunger.setTypeface(Typeface.DEFAULT);
             mBinding.bottomPlunger.setTextColor(Color.WHITE);
         }
-
-        if (isGameReady) setVolume(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getInt("volume", 100));
-        getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("cheatsused", checkCheatsUsed()).apply();
     }
 
     @Override

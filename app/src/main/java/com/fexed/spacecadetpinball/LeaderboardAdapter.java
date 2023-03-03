@@ -1,6 +1,5 @@
 package com.fexed.spacecadetpinball;
 
-import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,9 +12,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -24,7 +21,6 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
     private List<LeaderboardElement> localLeaderboard;
     private boolean isPlaceholder;
     private boolean isCheatRanking;
-    private SharedPreferences prefs;
     public static int pagesize = 250;
     public int page;
 
@@ -49,12 +45,11 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
         }
     }
 
-    public LeaderboardAdapter(List<LeaderboardElement> leaderboard, boolean isPlaceholder, boolean isCheatRanking, SharedPreferences prefs, int page) {
+    public LeaderboardAdapter(List<LeaderboardElement> leaderboard, boolean isPlaceholder, boolean isCheatRanking, int page) {
         this.localLeaderboard = leaderboard;
         this.page = page;
         this.isPlaceholder = isPlaceholder;
         this.isCheatRanking = isCheatRanking;
-        this.prefs = prefs;
 
         if (isCheatRanking) {
             Collections.sort(this.localLeaderboard, (t1, t2) -> -Integer.compare(t1.cheatScore, t2.cheatScore));
@@ -93,7 +88,7 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
             fmt.setTimeZone(TimeZone.getDefault());
             viewHolder.dateTxtV.setText(fmt.format(localLeaderboard.get(position).lastUploaded));
 
-            if (localLeaderboard.get(position).uid.equals(prefs.getString("userid", "0"))) {
+            if (localLeaderboard.get(position).uid.equals(PrefsHelper.getUserId())) {
                 viewHolder.border.setVisibility(View.VISIBLE);
             } else {
                 viewHolder.border.setVisibility(View.GONE);

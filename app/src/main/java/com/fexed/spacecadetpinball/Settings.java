@@ -48,52 +48,52 @@ public class Settings extends AppCompatActivity {
         mBinding = ActivitySettingsBinding.inflate(getLayoutInflater());
         View view = mBinding.getRoot();
         setContentView(view);
-        if (getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getString("username", null) != null) {
+        if (PrefsHelper.getUsername(null) != null) {
             HighScoreHandler.postScore(getApplicationContext(), false);
         }
 
-        int score = HighScoreHandler.getHighScore(getApplicationContext());
+        int score = PrefsHelper.getHighScore();
         String txt = score + "";
         mBinding.highscoretxtv.setText(txt);
 
         txt = BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")";
         mBinding.verstxtv.setText(txt);
 
-        boolean tiltenabled = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("tiltbuttons", true);
+        boolean tiltenabled = PrefsHelper.getTiltButtons();
         mBinding.tiltbtns.setChecked(tiltenabled);
         mBinding.tiltbtns.setOnCheckedChangeListener((compoundButton, b) -> {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("tiltbuttons", b).apply();
+            PrefsHelper.setTiltButtons(b);
         });
 
-        boolean customfonts = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("customfonts", true);
+        boolean customfonts = PrefsHelper.getCustomFonts();
         mBinding.cstmfnts.setChecked(customfonts);
         mBinding.cstmfnts.setOnCheckedChangeListener((compoundButton, b) -> {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("customfonts", b).apply();
+            PrefsHelper.setCustomFonts(b);
         });
 
-        boolean plungerpopup = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("plungerPopup", true);
+        boolean plungerpopup = PrefsHelper.getPlungerPopup();
         mBinding.plungerpopup.setChecked(plungerpopup);
         mBinding.plungerpopup.setOnCheckedChangeListener((compoundButton, b) -> {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("plungerPopup", b).apply();
+            PrefsHelper.setPlungerPopup(b);
         });
 
-        boolean remainingballs = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("remainingballs", false);
+        boolean remainingballs = PrefsHelper.getRemainingBalls();
         mBinding.remainingballs.setChecked(remainingballs);
         mBinding.remainingballs.setOnCheckedChangeListener((compoundButton, b) -> {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("remainingballs", b).apply();
+            PrefsHelper.setRemainingBalls(b);
         });
 
-        boolean fullScreenPlunger = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("fullscreenplunger", true);
+        boolean fullScreenPlunger = PrefsHelper.getFullScreenPlunger();
         mBinding.fullscreenplunger.setChecked(fullScreenPlunger);
         mBinding.fullscreenplunger.setOnCheckedChangeListener((compoundButton, b) -> {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("fullscreenplunger", b).apply();
+            PrefsHelper.setFullScreenPlunger(b);
 
             if (!b) {
-                getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putBoolean("shouldshowbottomplunger", true).apply();
+                PrefsHelper.setShouldShowBottomPlunger(true);
             }
         });
 
-        mBinding.inpttxtusername.setText(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getString("username", "Player 1"));
+        mBinding.inpttxtusername.setText(PrefsHelper.getUsername("Player 1"));
         mBinding.inpttxtusername.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -102,7 +102,7 @@ public class Settings extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putString("username", charSequence.toString()).apply();
+                PrefsHelper.setUsername(charSequence.toString());
             }
 
             @Override
@@ -120,11 +120,11 @@ public class Settings extends AppCompatActivity {
             startActivity(browserIntent);
         });
 
-        mBinding.volumebar.setProgress(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getInt("volume", 100));
+        mBinding.volumebar.setProgress(PrefsHelper.getVolume());
         mBinding.volumebar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int percentage, boolean b) {
-                getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putInt("volume", percentage).apply();
+                PrefsHelper.setVolume(percentage);
             }
 
             @Override
@@ -136,8 +136,7 @@ public class Settings extends AppCompatActivity {
             }
         });
 
-        boolean cheatsUsed = getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).getBoolean("cheatsused", false);
-        if (cheatsUsed) {
+        if (PrefsHelper.getCheatsUsed()) {
             mBinding.cheatindicatorlbl.setText(R.string.cheat_used);
             mBinding.cheatAlertSttngs.setVisibility(View.VISIBLE);
         }
@@ -247,12 +246,6 @@ public class Settings extends AppCompatActivity {
             LeaderboardActivity.isCheatRanking = true;
             Intent i = new Intent(this, LeaderboardActivity.class);
             startActivity(i);
-        });
-
-        mBinding.resetuid.setOnClickListener(v -> {
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().remove("username").apply();
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().remove("userid").apply();
-            getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE).edit().putInt("highscore", new Random().nextInt(10000)).apply();
         });
 
         checkLatestRelease();
