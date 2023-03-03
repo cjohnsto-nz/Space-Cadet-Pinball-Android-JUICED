@@ -52,4 +52,5 @@
     <string name="newversdl">La versione %s è disponibile: tocca qui per scaricarla</string>
     <string name="nonewvers">Stai giocando con l\'ultima versione</string>
     <string name="fullscreenplunger">Lanciatore a tutto schermo</string>
+    <string name="onlyhigherthan">Vengono mostrati solo i giocatori con un punteggio maggiore di 0, cioè %d su un totale di %d giocatori</string>
 </resources>

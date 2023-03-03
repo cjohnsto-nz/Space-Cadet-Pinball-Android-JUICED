@@ -17,6 +17,7 @@ import com.fexed.spacecadetpinball.databinding.ActivitySettingsBinding;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 public class LeaderboardActivity extends AppCompatActivity {
@@ -38,6 +39,8 @@ public class LeaderboardActivity extends AppCompatActivity {
         setContentView(view);
         mBinding.list.setLayoutManager(new LinearLayoutManager(this));
         HighScoreHandler.leaderboardActivity = this;
+
+        mBinding.rankingdisclaimer.setText(getString(R.string.onlyhigherthan, 0, 0));
 
         mBinding.prevpagebtn.setEnabled(false);
         mBinding.currpagetxt.setText(currentpage + "/" + maxpages);
@@ -85,6 +88,9 @@ public class LeaderboardActivity extends AppCompatActivity {
     }
 
     public void onLeaderboardReady(List<LeaderboardElement> leaderboard) {
+        Log.d("RANKS", "size: " + leaderboard.size() + ", pages: " + maxpages);
+        int totalUsers = leaderboard.size();
+        mBinding.rankingdisclaimer.setText(getString(R.string.onlyhigherthan, leaderboard.size(), leaderboard.size()));
         if (isCheatRanking) {
             Collections.sort(leaderboard, (t1, t2) -> -Integer.compare(t1.cheatScore, t2.cheatScore));
         } else {
@@ -92,8 +98,6 @@ public class LeaderboardActivity extends AppCompatActivity {
         }
         this.cachedLeaderboard = leaderboard;
         this.currentpage = 0;
-        this.maxpages = (int) Math.floor(leaderboard.size()/((float) LeaderboardAdapter.pagesize));
-        Log.d("RANKS", "size: " + leaderboard.size() + ", pages: " + maxpages);
         runOnUiThread(() -> {
             int position = -1;
 
@@ -108,6 +112,20 @@ public class LeaderboardActivity extends AppCompatActivity {
                 if (isCheatRanking) setTitle(getString(R.string.cheatleaderboard_current, position + ""));
                 else setTitle(getString(R.string.leaderboard_current, position + ""));
             }
+
+            Iterator<LeaderboardElement> iterator = this.cachedLeaderboard.listIterator();
+            if (isCheatRanking) {
+                while (iterator.hasNext()) {
+                    if (iterator.next().cheatScore <= 0) iterator.remove();
+                }
+            } else {
+                while (iterator.hasNext()) {
+                    if (iterator.next().normalScore <= 0) iterator.remove();
+                }
+            }
+
+            this.maxpages = (int) Math.floor(leaderboard.size()/((float) LeaderboardAdapter.pagesize));
+            mBinding.rankingdisclaimer.setText(getString(R.string.onlyhigherthan, cachedLeaderboard.size(), totalUsers));
             mBinding.currpagetxt.setText(currentpage + "/" + maxpages);
             if (maxpages > 0) mBinding.nextpagebtn.setEnabled(true);
             mBinding.prevpagebtn.setEnabled(false);
