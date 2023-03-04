@@ -1,0 +1,4 @@
+Version 2.3!
+I-hope-I-have-fixed some high score problems, launch issues and crashes. Also added Firebase analytics to better track some events!
+Some improvements behind the scene that I hope will fix some issues that some of you have been experiencing! (Thanks @SpaceXCheeseWheel)
+And removed in-game non-latin localizations, which supposedly breaks the game, while waiting to figure out how to handle these cases.
