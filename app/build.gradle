@@ -41,6 +41,18 @@ android {
     lintOptions {
         abortOnError false
     }
+
+    testOptions {
+        execution 'ANDROIDX_TEST_ORCHESTRATOR'
+
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
+
+    packagingOptions {
+        resources.excludes.add("META-INF/*")
+    }
 }
 
 dependencies {
@@ -51,4 +63,10 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:31.2.2')
     implementation 'com.google.firebase:firebase-analytics:21.2.0'
     implementation "androidx.multidex:multidex:2.0.1"
+    implementation 'androidx.test:core:1.5.0'
+    androidTestUtil 'androidx.test:orchestrator:1.4.2'
+    androidTestImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
