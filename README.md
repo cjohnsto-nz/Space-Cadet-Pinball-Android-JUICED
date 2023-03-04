@@ -1,7 +1,7 @@
 <!-- markdownlint-disable-file MD033 -->
 
 # Pinball-on-Android
-
+[![Android Build](https://github.com/fexed/Pinball-on-Android/actions/workflows/android.yml/badge.svg)](https://github.com/fexed/Pinball-on-Android/actions/workflows/android.yml)
 ## Summary
 
 Android port of `3D Pinball for Windows – Space Cadet`, a game bundled with Windows.
