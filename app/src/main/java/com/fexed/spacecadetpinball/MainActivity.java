@@ -2,10 +2,12 @@ package com.fexed.spacecadetpinball;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -47,6 +49,8 @@ public class MainActivity extends SDLActivity {
     private FirebaseAnalytics firebaseAnalytics;
     private int gamesInSession = 0;
 
+    static private MediaPlayer player = new MediaPlayer();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +58,16 @@ public class MainActivity extends SDLActivity {
         copyAssets(filesDir);
         initNative(filesDir.getAbsolutePath() + "/");
         PrefsHelper.setPrefs(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE));
+
+
+        try {
+            AssetFileDescriptor afd = getAssets().openFd("PINBALL.mp3");
+            player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            player.prepare();
+            player.start();
+        } catch (IOException ignored) {
+            player = null;
+        }
 
         mBinding = ActivityMainBinding.inflate(getLayoutInflater(), mLayout, false);
 
@@ -125,10 +139,12 @@ public class MainActivity extends SDLActivity {
             if (isPlaying) {
                 isPlaying = false;
                 pauseNativeThread();
+                if (player != null) player.pause();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.play));
             } else {
                 isPlaying = true;
                 resumeNativeThread();
+                if (player != null) player.start();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
 
             }
@@ -324,6 +340,7 @@ public class MainActivity extends SDLActivity {
     protected void onResume() {
         super.onResume();
         StateHelper.INSTANCE.addListener(mStateListener);
+        if (player != null) player.start();
 
         if (!isPlaying) pauseNativeThread();
         if (isGameReady) setVolume(PrefsHelper.getVolume());
@@ -435,6 +452,7 @@ public class MainActivity extends SDLActivity {
     protected void onPause() {
         super.onPause();
         StateHelper.INSTANCE.removeListener(mStateListener);
+        if (player != null) player.pause();
     }
 
     @Override
