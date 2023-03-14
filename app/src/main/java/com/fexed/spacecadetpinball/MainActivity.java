@@ -64,6 +64,7 @@ public class MainActivity extends SDLActivity {
             AssetFileDescriptor afd = getAssets().openFd("PINBALL.mp3");
             player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             player.prepare();
+            player.setLooping(true);
             player.start();
         } catch (IOException ignored) {
             player = null;
