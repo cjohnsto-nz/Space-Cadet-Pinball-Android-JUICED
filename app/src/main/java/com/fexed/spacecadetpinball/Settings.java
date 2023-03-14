@@ -93,6 +93,12 @@ public class Settings extends AppCompatActivity {
             }
         });
 
+        boolean music = PrefsHelper.getMusic();
+        mBinding.music.setChecked(music);
+        mBinding.music.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setMusic(b);
+        });
+
         mBinding.inpttxtusername.setText(PrefsHelper.getUsername("Player 1"));
         mBinding.inpttxtusername.addTextChangedListener(new TextWatcher() {
             @Override

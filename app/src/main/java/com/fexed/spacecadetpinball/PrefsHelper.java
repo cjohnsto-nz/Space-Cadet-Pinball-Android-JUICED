@@ -11,6 +11,7 @@ public class PrefsHelper {
     private static final String KEY_CHEATHIGHSCORE = "cheathighscore";
     private static final String KEY_CHEATSUSED = "cheatsused";
     private static final String KEY_VOLUME = "volume";
+    private static final String KEY_MUSIC = "music";
     private static final String KEY_FULLSCREENPLUNGER = "fullscreenplunger";
     private static final String KEY_PLUNGERPOPUP = "plungerPopup";
     private static final String KEY_REMAININGBALLS = "remainingballs";
@@ -112,5 +113,13 @@ public class PrefsHelper {
 
     public static void setUserId(String value) {
         prefs.edit().putString(KEY_USERID, value).apply();
+    }
+
+    public static void setMusic(boolean value) {
+        prefs.edit().putBoolean(KEY_MUSIC, value).apply();
+    }
+
+    public static boolean getMusic() {
+        return prefs.getBoolean(KEY_MUSIC, true);
     }
 }

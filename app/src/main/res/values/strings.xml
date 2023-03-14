@@ -54,4 +54,5 @@
     <string name="nonewvers">You are playing the latest version</string>
     <string name="fullscreenplunger">Full screen plunger</string>
     <string name="onlyhigherthan">Showing only the players with a score greater than 0, meaning %d out of the %d total players</string>
+    <string name="music">Music</string>
 </resources>

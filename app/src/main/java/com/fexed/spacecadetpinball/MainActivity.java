@@ -65,7 +65,7 @@ public class MainActivity extends SDLActivity {
             player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             player.prepare();
             player.setLooping(true);
-            player.start();
+            if (PrefsHelper.getMusic()) player.start();
         } catch (IOException ignored) {
             player = null;
         }
@@ -341,7 +341,7 @@ public class MainActivity extends SDLActivity {
     protected void onResume() {
         super.onResume();
         StateHelper.INSTANCE.addListener(mStateListener);
-        if (player != null) player.start();
+        if (player != null && PrefsHelper.getMusic()) player.start();
 
         if (!isPlaying) pauseNativeThread();
         if (isGameReady) setVolume(PrefsHelper.getVolume());
