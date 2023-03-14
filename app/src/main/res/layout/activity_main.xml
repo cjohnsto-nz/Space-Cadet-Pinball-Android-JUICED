@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    tools:visibility="visible">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".MainActivity"
-        tools:visibility="gone">
+        tools:background="@color/black">
 
         <LinearLayout
             android:id="@+id/linearLayout"
@@ -99,14 +99,14 @@
             style="@android:style/Widget.DeviceDefault.ImageButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:layout_marginTop="8dp"
             android:background="@android:color/transparent"
             android:minWidth="48dp"
             android:minHeight="48dp"
             android:src="@drawable/pause"
             android:visibility="visible"
-            app:layout_constraintBottom_toTopOf="@+id/txtscore"
-            app:layout_constraintEnd_toEndOf="@+id/txtscore"
-            app:layout_constraintStart_toStartOf="@+id/txtscore" />
+            app:layout_constraintStart_toStartOf="@+id/replay"
+            app:layout_constraintTop_toBottomOf="@+id/replay" />
 
         <TextView
             android:id="@+id/missiontxt"
@@ -205,9 +205,10 @@
             android:layout_marginTop="8dp"
             android:src="@drawable/warn"
             android:visibility="invisible"
-            app:layout_constraintEnd_toStartOf="@+id/settingsbtn"
-            app:layout_constraintStart_toEndOf="@+id/replay"
-            app:layout_constraintTop_toTopOf="@+id/linearLayout" />
+            app:layout_constraintBottom_toBottomOf="@+id/playpause"
+            app:layout_constraintEnd_toEndOf="@+id/settingsbtn"
+            app:layout_constraintStart_toStartOf="@+id/settingsbtn"
+            app:layout_constraintTop_toBottomOf="@+id/settingsbtn" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -223,7 +224,8 @@
         android:background="@android:color/background_dark"
         app:behavior_hideable="true"
         app:behavior_peekHeight="25dp"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        tools:visibility="gone">
 
         <ImageView
             android:id="@+id/imageView"
