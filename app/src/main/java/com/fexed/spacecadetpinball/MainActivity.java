@@ -1,5 +1,6 @@
 package com.fexed.spacecadetpinball;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
@@ -51,6 +52,7 @@ public class MainActivity extends SDLActivity {
 
     static private MediaPlayer player = new MediaPlayer();
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,12 +61,12 @@ public class MainActivity extends SDLActivity {
         initNative(filesDir.getAbsolutePath() + "/");
         PrefsHelper.setPrefs(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE));
 
-
         try {
             AssetFileDescriptor afd = getAssets().openFd("PINBALL.mp3");
             player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             player.prepare();
             player.setLooping(true);
+            player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
             if (PrefsHelper.getMusic()) player.start();
         } catch (IOException ignored) {
             player = null;
@@ -236,6 +238,7 @@ public class MainActivity extends SDLActivity {
         @Override
         public void onStateChanged(int state) {
             setVolume(PrefsHelper.getVolume());
+            if (player != null) player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
             putTranslations();
             putString(26, PrefsHelper.getUsername("Player 1"));  //TODO abstract ids
 
@@ -344,7 +347,10 @@ public class MainActivity extends SDLActivity {
         if (player != null && PrefsHelper.getMusic()) player.start();
 
         if (!isPlaying) pauseNativeThread();
-        if (isGameReady) setVolume(PrefsHelper.getVolume());
+        if (isGameReady) {
+            setVolume(PrefsHelper.getVolume());
+            if (player != null) player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
+        }
         PrefsHelper.setCheatsUsed(checkCheatsUsed());
         setFullscreen();
         setTiltButtons();
