@@ -142,12 +142,12 @@ public class MainActivity extends SDLActivity {
             if (isPlaying) {
                 isPlaying = false;
                 pauseNativeThread();
-                if (player != null) player.pause();
+                if (PrefsHelper.getMusic()) player.pause();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.play));
             } else {
                 isPlaying = true;
                 resumeNativeThread();
-                if (player != null) player.start();
+                if (PrefsHelper.getMusic()) player.start();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
 
             }
