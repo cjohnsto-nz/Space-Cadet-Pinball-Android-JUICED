@@ -50,7 +50,7 @@ public class MainActivity extends SDLActivity {
     private FirebaseAnalytics firebaseAnalytics;
     private int gamesInSession = 0;
 
-    static private MediaPlayer player = new MediaPlayer();
+    static private MediaPlayer player;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -62,12 +62,15 @@ public class MainActivity extends SDLActivity {
         PrefsHelper.setPrefs(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE));
 
         try {
-            AssetFileDescriptor afd = getAssets().openFd("PINBALL.mp3");
-            player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-            player.prepare();
-            player.setLooping(true);
-            player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
-            if (PrefsHelper.getMusic()) player.start();
+            if (PrefsHelper.getMusic()) {
+                player = new MediaPlayer();
+                AssetFileDescriptor afd = getAssets().openFd("PINBALL.mp3");
+                player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                player.prepare();
+                player.setLooping(true);
+                player.setVolume(PrefsHelper.getVolume() / (float) 100, PrefsHelper.getVolume() / (float) 100);
+                player.start();
+            }
         } catch (IOException ignored) {
             player = null;
         }
@@ -344,7 +347,22 @@ public class MainActivity extends SDLActivity {
     protected void onResume() {
         super.onResume();
         StateHelper.INSTANCE.addListener(mStateListener);
-        if (player != null && PrefsHelper.getMusic()) player.start();
+        if (PrefsHelper.getMusic()) {
+            if (player == null) {
+                player = new MediaPlayer();
+                try {
+                    AssetFileDescriptor afd = getAssets().openFd("PINBALL.mp3");
+                    player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                    player.prepare();
+                    player.setLooping(true);
+                    player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            player.start();
+        }
 
         if (!isPlaying) pauseNativeThread();
         if (isGameReady) {
