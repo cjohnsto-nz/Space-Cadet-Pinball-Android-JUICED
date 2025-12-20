@@ -117,6 +117,12 @@ void fullscrn::window_size_changed()
 	ScaleY = static_cast<float>(height) / res->TableHeight;
 	OffsetX = OffsetY = 0;
 
+	if (options::Options.IntegerScaling)
+	{
+		ScaleX = ScaleX < 1 ? ScaleX : std::floor(ScaleX);
+		ScaleY = ScaleY < 1 ? ScaleY : std::floor(ScaleY);
+	}
+
 	if (options::Options.UniformScaling)
 	{
 		ScaleY = ScaleX = std::min(ScaleX, ScaleY);

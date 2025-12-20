@@ -91,7 +91,8 @@ void options::init()
 	Options.Players = get_int("Players", 1);
 	Options.UniformScaling = get_int("Uniform scaling", true);
 	Options.Resolution = get_int("Screen Resolution", -1);
-	Options.LinearFiltering = get_int("Linear Filtering", true);
+	Options.IntegerScaling = get_int("Integer Scaling", false);
+	Options.LinearFiltering = get_int("Linear Filtering", false);
 	Options.FramesPerSecond = Clamp(get_int("Frames Per Second", DefFps), MinFps, MaxFps);
 	Options.UpdatesPerSecond = Clamp(get_int("Updates Per Second", DefUps), MinUps, MaxUps);
 	Options.UpdatesPerSecond = std::max(Options.UpdatesPerSecond, Options.FramesPerSecond);

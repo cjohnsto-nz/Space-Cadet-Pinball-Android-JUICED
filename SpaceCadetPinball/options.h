@@ -67,6 +67,7 @@ struct optionsStruct
 	int Players;
 	int Resolution;
 	bool UniformScaling;
+	bool IntegerScaling;
 	bool LinearFiltering;
 	int FramesPerSecond;
 	int UpdatesPerSecond;
@@ -88,8 +89,8 @@ class options
 {
 public:
 	// Original does ~120 updates per second.
-	static constexpr int MaxUps = 360, MaxFps = MaxUps, MinUps = 60, MinFps = MinUps,
-	                     DefUps = 120, DefFps = 60;
+	static constexpr int MaxUps = 360, MaxFps = MaxUps, MinUps = 120, MinFps = MinUps,
+	                     DefUps = 240, DefFps = 120;
 	// Original uses 8 sound channels
 	static constexpr int MaxSoundChannels = 32, MinSoundChannels = 1, DefSoundChannels = 8;
 	static constexpr int MaxVolume = MIX_MAX_VOLUME, MinVolume = 0, DefVolume = MaxVolume;

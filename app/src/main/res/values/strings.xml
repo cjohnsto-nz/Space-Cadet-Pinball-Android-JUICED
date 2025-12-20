@@ -7,7 +7,7 @@
     <string name="reset">New game</string>
     <string name="highscore">High Score</string>
     <string name="newhighscore">New High Score: %d! Congratulations!</string>
-    <string name="balls">Ball %d</string>
+    <string name="balls">BALL: %d</string>
     <string name="remainingballs">Remaining balls %d</string>
     <string name="remainingballssettings">Remaining balls indicator</string>
     <string name="tiltbuttons">Tilt buttons</string>

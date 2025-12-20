@@ -38,9 +38,6 @@ android {
         viewBinding true
     }
 
-    lintOptions {
-        abortOnError false
-    }
 
     testOptions {
         execution 'ANDROIDX_TEST_ORCHESTRATOR'
@@ -52,6 +49,10 @@ android {
 
     packagingOptions {
         resources.excludes.add("META-INF/*")
+    }
+    namespace 'com.fexed.spacecadetpinball'
+    lint {
+        abortOnError false
     }
 }
 

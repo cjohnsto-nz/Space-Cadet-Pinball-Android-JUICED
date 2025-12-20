@@ -70,7 +70,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 		DatFileName = "CADET.DAT";
 		pb::FullTiltMode = true;
 	}
-
+		pb::FullTiltMode = true;
 	// SDL window
 	SDL_Window* window = SDL_CreateWindow
 	(
@@ -99,7 +99,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 		return 1;
 	}
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
 	// PB init from message handler
 	{

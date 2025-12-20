@@ -148,12 +148,12 @@ int loader::get_sound_id(int groupIndex)
 				// File name is in lower case, while game data is in upper case.				
 				std::transform(fileName.begin(), fileName.end(), fileName.begin(),
 				               [](unsigned char c) { return std::toupper(c); });
-				if (pb::FullTiltMode)
-				{
-					// FT sounds are in SOUND subfolder
-					fileName.insert(0, 1, PathSeparator);
-					fileName.insert(0, "SOUND");
-				}
+				// if (pb::FullTiltMode)
+				// {
+				// 	// FT sounds are in SOUND subfolder
+				// 	fileName.insert(0, 1, PathSeparator);
+				// 	fileName.insert(0, "SOUND");
+				// }
 
 				float duration = -1;
 				auto filePath = pinball::make_path_name(fileName);

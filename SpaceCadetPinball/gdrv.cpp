@@ -87,7 +87,7 @@ int gdrv::display_palette(ColorRgba* plt)
 		0xff000080,
 		0xff008000,
 		0xff008080,
-		0xff800000,
+		0xffffffff,
 		0xff800080,
 		0xff808000,
 		0xffC0C0C0,

@@ -9,6 +9,7 @@
 #include "TPinballTable.h"
 #include "winmain.h"
 
+
 std::vector<render_sprite_type_struct*> render::dirty_list, render::sprite_list, render::ball_list;
 zmap_header_type* render::background_zmap;
 int render::zmap_offset, render::zmap_offsetY, render::offset_x, render::offset_y;
@@ -21,6 +22,11 @@ SDL_Rect render::DestinationRect{};
 
 void render::init(gdrv_bitmap8* bmp, float zMin, float zScaler, int width, int height)
 {
+	
+	// int width2 = width;
+	// int height2 = height;
+	// width = width * 1.1;
+	// height = height * 1.1;
 	zscaler = zScaler;
 	zmin = zMin;
 	zmax = 4294967300.0f / zScaler + zMin;
