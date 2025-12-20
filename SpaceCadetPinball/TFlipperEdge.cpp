@@ -315,7 +315,7 @@ void TFlipperEdge::EdgeCollision(TBall* ball, float coef)
 	if (intensity > 0.1f)  // Only trigger for noticeable collisions, not resting ball
 	{
 		// Debounce only for high intensity hits to prevent buzzing on hard smacks
-		if (intensity > 0.5f)
+		if (intensity > 0.7f)
 		{
 			auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
 				std::chrono::steady_clock::now().time_since_epoch()).count();

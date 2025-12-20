@@ -67,7 +67,7 @@ int TCollisionComponent::DefaultCollision(TBall* ball, vector2* nextPosition, ve
 	// Trigger haptic feedback based on collision speed
 	float intensity = projSpeed / 20.0f;
 	if (intensity > 1.0f) intensity = 1.0f;
-	if (intensity > 0.05f)
+	if (intensity > 0.02f)
 		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
 #endif
 
@@ -121,7 +121,7 @@ void TCollisionComponent::Collision(TBall* ball, vector2* nextPosition, vector2*
 	// Normalize projSpeed to 0-1 range (assuming max speed around 20)
 	float intensity = projSpeed / 20.0f;
 	if (intensity > 1.0f) intensity = 1.0f;
-	if (intensity > 0.05f) // Only trigger for noticeable collisions
+	if (intensity > 0.02f) // Lower threshold to catch softer collisions
 		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
 #endif
 }
