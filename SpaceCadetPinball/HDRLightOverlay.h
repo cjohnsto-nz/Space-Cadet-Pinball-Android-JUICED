@@ -21,6 +21,17 @@ struct HDRLightConfig {
 
 class TLightGroup;
 class TLight;
+class TBumper;
+
+// Bumper HDR light configuration - supports dynamic color based on upgrade level
+struct HDRBumperConfig {
+    const char* BumperName;     // Name of the bumper (e.g., "bump1")
+    float X, Y;                 // Position relative to game texture (0-1 normalized)
+    float Width, Height;        // Size of the light overlay (0-1 normalized)
+    float Colors[4][3];         // RGB colors for each upgrade level (0-3)
+    float Intensity;            // Intensity in nits
+    float GlowRadius;           // Radius of glow effect (0-1)
+};
 
 class HDRLightOverlay {
 public:
@@ -33,8 +44,14 @@ public:
     // Register an individual light for HDR overlay tracking
     static void RegisterIndividualLight(const char* lightName, TLight* light);
     
+    // Register a bumper for HDR overlay tracking
+    static void RegisterBumper(const char* bumperName, TBumper* bumper);
+    
     // Add a light configuration
     static void AddLightConfig(const HDRLightConfig& config);
+    
+    // Add a bumper configuration
+    static void AddBumperConfig(const HDRBumperConfig& config);
     
     // Update light states from game - call each frame before rendering
     static void UpdateLightStates();
@@ -68,6 +85,8 @@ public:
     static void UpdateLightPosition(int configIndex, float x, float y);
     static void UpdateLightSize(int configIndex, float w, float h);
     static int GetSelectedLightIndex();
+    static int GetSelectedBumperIndex();
+    static bool HasSelection();  // Returns true if any light or bumper is selected
     static const std::vector<HDRLightConfig>& GetLightConfigs();
     static int ResetOutOfBoundsLights();  // Returns count of lights reset
 
@@ -82,12 +101,25 @@ private:
         TLight* light;
     };
     
+    struct RegisteredBumper {
+        const char* name;
+        TBumper* bumper;
+    };
+    
     struct LightState {
         const HDRLightConfig* config;
         TLight* light;
         bool isOn;
         bool isFlashing;
         float currentIntensity;
+    };
+    
+    struct BumperState {
+        const HDRBumperConfig* config;
+        TBumper* bumper;
+        int upgradeLevel;       // 0-3 based on BmpIndex
+        float currentIntensity;
+        float r, g, b;          // Current color based on upgrade level
     };
     
     struct TestLight {
@@ -98,8 +130,11 @@ private:
     
     static std::vector<RegisteredGroup> s_registeredGroups;
     static std::vector<RegisteredLight> s_registeredLights;
+    static std::vector<RegisteredBumper> s_registeredBumpers;
     static std::vector<HDRLightConfig> s_lightConfigs;
+    static std::vector<HDRBumperConfig> s_bumperConfigs;
     static std::vector<LightState> s_lightStates;
+    static std::vector<BumperState> s_bumperStates;
     static std::vector<TestLight> s_testLights;
     
     static bool s_initialized;

@@ -2,6 +2,7 @@
 #include "HDRLightOverlay.h"
 #include "TLightGroup.h"
 #include "TLight.h"
+#include "TBumper.h"
 #include "HDRConfig.h"
 #include <cmath>
 #include <cstdio>
@@ -17,8 +18,11 @@
 // Static member initialization
 std::vector<HDRLightOverlay::RegisteredGroup> HDRLightOverlay::s_registeredGroups;
 std::vector<HDRLightOverlay::RegisteredLight> HDRLightOverlay::s_registeredLights;
+std::vector<HDRLightOverlay::RegisteredBumper> HDRLightOverlay::s_registeredBumpers;
 std::vector<HDRLightConfig> HDRLightOverlay::s_lightConfigs;
+std::vector<HDRBumperConfig> HDRLightOverlay::s_bumperConfigs;
 std::vector<HDRLightOverlay::LightState> HDRLightOverlay::s_lightStates;
+std::vector<HDRLightOverlay::BumperState> HDRLightOverlay::s_bumperStates;
 std::vector<HDRLightOverlay::TestLight> HDRLightOverlay::s_testLights;
 bool HDRLightOverlay::s_initialized = false;
 GLuint HDRLightOverlay::s_overlayProgram = 0;
@@ -27,7 +31,8 @@ GLuint HDRLightOverlay::s_overlayVAO = 0;
 GLuint HDRLightOverlay::s_overlayVBO = 0;
 static bool s_debugAllLightsOn = false;  // Debug mode - shows all lights regardless of state
 static bool s_editMode = false;  // Edit mode - allows dragging lights to reposition
-static int s_selectedLightIndex = -1;
+static int s_selectedLightIndex = -1;  // >= 0 for lights, < -1 for test lights
+static int s_selectedBumperIndex = -1; // >= 0 for bumpers
 static float s_dragOffsetX = 0.0f;
 static float s_dragOffsetY = 0.0f;
 
@@ -181,8 +186,11 @@ void HDRLightOverlay::Uninit() {
     
     s_registeredGroups.clear();
     s_registeredLights.clear();
+    s_registeredBumpers.clear();
     s_lightConfigs.clear();
+    s_bumperConfigs.clear();
     s_lightStates.clear();
+    s_bumperStates.clear();
     s_initialized = false;
 }
 
@@ -216,6 +224,24 @@ void HDRLightOverlay::AddLightConfig(const HDRLightConfig& config) {
                  config.GroupName, config.LightIndex, config.X, config.Y);
 }
 
+void HDRLightOverlay::RegisterBumper(const char* bumperName, TBumper* bumper) {
+    if (!bumper) return;
+    
+    // Check if already registered
+    for (const auto& reg : s_registeredBumpers) {
+        if (strcmp(reg.name, bumperName) == 0) return;
+    }
+    
+    s_registeredBumpers.push_back({bumperName, bumper});
+    HDRLIGHT_LOG("Registered bumper: %s", bumperName);
+}
+
+void HDRLightOverlay::AddBumperConfig(const HDRBumperConfig& config) {
+    s_bumperConfigs.push_back(config);
+    HDRLIGHT_LOG("Added bumper config: %s at (%.2f, %.2f)", 
+                 config.BumperName, config.X, config.Y);
+}
+
 void HDRLightOverlay::AddTestLight(float x, float y, float w, float h, float r, float g, float b, float intensity) {
     s_testLights.push_back({x, y, w, h, r, g, b, intensity});
     HDRLIGHT_LOG("Added test light at (%.2f, %.2f) size (%.2f, %.2f) color (%.1f, %.1f, %.1f) intensity %.0f",
@@ -239,8 +265,9 @@ void HDRLightOverlay::UpdateLightStates() {
     bool shouldLog = (frameCount % 60 == 0);  // Log once per second at 60fps
     
     if (shouldLog) {
-        HDRLIGHT_LOG("UpdateLightStates: %zu configs, %zu groups registered", 
-                     s_lightConfigs.size(), s_registeredGroups.size());
+        HDRLIGHT_LOG("UpdateLightStates: %zu configs, %zu groups, %zu bumper configs, %zu bumpers registered", 
+                     s_lightConfigs.size(), s_registeredGroups.size(),
+                     s_bumperConfigs.size(), s_registeredBumpers.size());
     }
     
     for (const auto& config : s_lightConfigs) {
@@ -323,10 +350,67 @@ void HDRLightOverlay::UpdateLightStates() {
     if (shouldLog && !s_lightStates.empty()) {
         HDRLIGHT_LOG("  Active lights: %zu", s_lightStates.size());
     }
+    
+    // Process bumper configs
+    s_bumperStates.clear();
+    for (const auto& config : s_bumperConfigs) {
+        TBumper* bumper = nullptr;
+        
+        for (const auto& reg : s_registeredBumpers) {
+            if (strcmp(reg.name, config.BumperName) == 0) {
+                bumper = reg.bumper;
+                break;
+            }
+        }
+        
+        if (!bumper) {
+            if (shouldLog) HDRLIGHT_LOG("  Bumper config %s: bumper not found", config.BumperName);
+            continue;
+        }
+        
+        BumperState state;
+        state.config = &config;
+        state.bumper = bumper;
+        state.upgradeLevel = bumper->BmpIndex;
+        
+        // Clamp upgrade level to valid range
+        if (state.upgradeLevel < 0) state.upgradeLevel = 0;
+        if (state.upgradeLevel > 3) state.upgradeLevel = 3;
+        
+        // Get color based on upgrade level
+        state.r = config.Colors[state.upgradeLevel][0];
+        state.g = config.Colors[state.upgradeLevel][1];
+        state.b = config.Colors[state.upgradeLevel][2];
+        
+        // Bumpers light up when hit (Timer != 0) or in edit/debug mode
+        bool isLit = (bumper->Timer != 0);
+        if (s_debugAllLightsOn || s_editMode) {
+            state.currentIntensity = config.Intensity;
+        } else if (isLit) {
+            state.currentIntensity = config.Intensity;
+        } else {
+            state.currentIntensity = 0.0f;
+        }
+        
+        if (shouldLog) {
+            HDRLIGHT_LOG("  Bumper %s: level=%d, lit=%d, color=(%.2f,%.2f,%.2f), intensity=%.0f", 
+                         config.BumperName, state.upgradeLevel, isLit,
+                         state.r, state.g, state.b, state.currentIntensity);
+        }
+        
+        // Only add if bumper is lit (or debug/edit mode)
+        if (state.currentIntensity > 0.0f) {
+            s_bumperStates.push_back(state);
+        }
+    }
+    
+    if (shouldLog && !s_bumperStates.empty()) {
+        HDRLIGHT_LOG("  Active bumpers: %zu", s_bumperStates.size());
+    }
 }
 
 bool HDRLightOverlay::HasActiveLights() {
-    return !s_lightStates.empty() || !s_testLights.empty();
+    return !s_lightStates.empty() || !s_testLights.empty() || !s_bumperStates.empty();
 }
 
 void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
@@ -338,12 +422,12 @@ void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
         s_initialized = true;
     }
     
-    if (s_lightStates.empty() && s_testLights.empty()) {
+    if (s_lightStates.empty() && s_testLights.empty() && s_bumperStates.empty()) {
         return;
     }
     
-    HDRLIGHT_LOG("RenderOverlays: rendering %zu game lights + %zu test lights", 
-                 s_lightStates.size(), s_testLights.size());
+    HDRLIGHT_LOG("RenderOverlays: rendering %zu game lights + %zu bumpers + %zu test lights", 
+                 s_lightStates.size(), s_bumperStates.size(), s_testLights.size());
     
     // Enable blending for additive light overlay
     glEnable(GL_BLEND);
@@ -355,6 +439,30 @@ void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
     // Render game lights
     for (const auto& state : s_lightStates) {
         RenderSingleLight(state, textureWidth, textureHeight);
+    }
+    
+    // Render bumpers
+    for (const auto& state : s_bumperStates) {
+        const HDRBumperConfig* config = state.config;
+        
+        float aspectRatio = (float)textureWidth / (float)textureHeight;
+        GLint aspectLoc = glGetUniformLocation(s_overlayProgram, "uAspectRatio");
+        glUniform1f(aspectLoc, aspectRatio);
+        
+        GLint rectLoc = glGetUniformLocation(s_overlayProgram, "uLightRect");
+        glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
+        
+        GLint colorLoc = glGetUniformLocation(s_overlayProgram, "uLightColor");
+        glUniform3f(colorLoc, state.r, state.g, state.b);
+        
+        GLint intensityLoc = glGetUniformLocation(s_overlayProgram, "uIntensity");
+        float linearIntensity = state.currentIntensity / 203.0f;  // SDR_WHITE_NITS
+        glUniform1f(intensityLoc, linearIntensity);
+        
+        GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
+        glUniform1f(glowLoc, config->GlowRadius);
+        
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     
     // Render test lights (always on)
@@ -417,16 +525,16 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
         s_initialized = true;
     }
     
-    if (s_lightStates.empty() && s_testLights.empty()) {
+    if (s_lightStates.empty() && s_testLights.empty() && s_bumperStates.empty()) {
         return;
     }
     
     static int pqFrameCount = 0;
     pqFrameCount++;
     if (pqFrameCount % 60 == 0) {
-        HDRLIGHT_LOG("RenderOverlaysPQ: rendering %zu game lights + %zu test lights, viewport %d,%d %dx%d, configs=%zu, groups=%zu",
-                     s_lightStates.size(), s_testLights.size(), viewportX, viewportY, viewportW, viewportH,
-                     s_lightConfigs.size(), s_registeredGroups.size());
+        HDRLIGHT_LOG("RenderOverlaysPQ: rendering %zu game lights + %zu bumpers + %zu test lights, viewport %d,%d %dx%d",
+                     s_lightStates.size(), s_bumperStates.size(), s_testLights.size(), 
+                     viewportX, viewportY, viewportW, viewportH);
     }
     
     // Set viewport to match the game area
@@ -442,6 +550,28 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
     // Render game lights with PQ encoding
     for (const auto& state : s_lightStates) {
         RenderSingleLightPQ(state, maxNits);
+    }
+    
+    // Render bumpers with PQ encoding
+    for (const auto& state : s_bumperStates) {
+        const HDRBumperConfig* config = state.config;
+        
+        GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
+        glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
+        
+        GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
+        glUniform3f(colorLoc, state.r, state.g, state.b);
+        
+        GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
+        glUniform1f(intensityLoc, state.currentIntensity);
+        
+        GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
+        glUniform1f(maxNitsLoc, maxNits);
+        
+        GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
+        glUniform1f(glowLoc, config->GlowRadius);
+        
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     
     // Render test lights with PQ encoding
@@ -598,6 +728,7 @@ void HDRLightOverlay::SetEditMode(bool enabled) {
     s_editMode = enabled;
     if (!enabled) {
         s_selectedLightIndex = -1;
+        s_selectedBumperIndex = -1;
     }
     HDRLIGHT_LOG("Edit mode: %s", enabled ? "enabled" : "disabled");
 }
@@ -608,6 +739,14 @@ bool HDRLightOverlay::GetEditMode() {
 
 int HDRLightOverlay::GetSelectedLightIndex() {
     return s_selectedLightIndex;
+}
+
+int HDRLightOverlay::GetSelectedBumperIndex() {
+    return s_selectedBumperIndex;
+}
+
+bool HDRLightOverlay::HasSelection() {
+    return (s_selectedLightIndex >= 0) || (s_selectedLightIndex < -1) || (s_selectedBumperIndex >= 0);
 }
 
 const std::vector<HDRLightConfig>& HDRLightOverlay::GetLightConfigs() {
@@ -637,12 +776,15 @@ void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, i
     
     HDRLIGHT_LOG("Touch down at screen (%.1f, %.1f) viewport(%d,%d,%d,%d) -> norm (%.3f, %.3f)", 
                  screenX, screenY, viewportX, viewportY, viewportW, viewportH, normX, normY);
-    HDRLIGHT_LOG("Have %zu light configs and %zu test lights", s_lightConfigs.size(), s_testLights.size());
+    HDRLIGHT_LOG("Have %zu light configs, %zu bumper configs, %zu test lights", 
+                 s_lightConfigs.size(), s_bumperConfigs.size(), s_testLights.size());
     
-    // Find nearest light - use larger selection radius
+    // Find nearest light or bumper - use larger selection radius
     float minDist = 0.15f;  // Max distance to select (increased)
     s_selectedLightIndex = -1;
+    s_selectedBumperIndex = -1;
     
+    // Check lights first
     for (int i = 0; i < (int)s_lightConfigs.size(); i++) {
         const auto& config = s_lightConfigs[i];
         float dx = normX - config.X;
@@ -652,8 +794,30 @@ void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, i
         if (dist < minDist) {
             minDist = dist;
             s_selectedLightIndex = i;
+            s_selectedBumperIndex = -1;
             s_dragOffsetX = dx;
             s_dragOffsetY = dy;
+        }
+    }
+    
+    // Check bumpers with separate, larger selection radius
+    float bumperMinDist = 0.20f;  // Larger radius for bumpers
+    HDRLIGHT_LOG("Checking %zu bumpers for selection (bumperMinDist=%.2f)", s_bumperConfigs.size(), bumperMinDist);
+    for (int i = 0; i < (int)s_bumperConfigs.size(); i++) {
+        const auto& config = s_bumperConfigs[i];
+        float dx = normX - config.X;
+        float dy = normY - config.Y;
+        float dist = sqrtf(dx * dx + dy * dy);
+        
+        HDRLIGHT_LOG("  Bumper %d at (%.3f,%.3f) dist=%.3f", i, config.X, config.Y, dist);
+        
+        if (dist < bumperMinDist) {
+            bumperMinDist = dist;
+            s_selectedBumperIndex = i;
+            s_selectedLightIndex = -1;  // Bumper takes priority
+            s_dragOffsetX = dx;
+            s_dragOffsetY = dy;
+            HDRLIGHT_LOG("    -> Selected bumper %d!", i);
         }
     }
     
@@ -667,20 +831,30 @@ void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, i
         if (dist < minDist) {
             minDist = dist;
             s_selectedLightIndex = -(i + 1);  // Negative index for test lights
+            s_selectedBumperIndex = -1;
             s_dragOffsetX = dx;
             s_dragOffsetY = dy;
         }
     }
     
-    if (s_selectedLightIndex >= 0) {
+    if (s_selectedBumperIndex >= 0) {
+        HDRLIGHT_LOG("Selected bumper config %d at (%.3f, %.3f)", 
+                     s_selectedBumperIndex, 
+                     s_bumperConfigs[s_selectedBumperIndex].X,
+                     s_bumperConfigs[s_selectedBumperIndex].Y);
+    } else if (s_selectedLightIndex >= 0) {
         HDRLIGHT_LOG("Selected light config %d", s_selectedLightIndex);
     } else if (s_selectedLightIndex < -1) {
         HDRLIGHT_LOG("Selected test light %d", -(s_selectedLightIndex + 1));
+    } else {
+        HDRLIGHT_LOG("Nothing selected (minDist was %.3f)", minDist);
     }
 }
 
 void HDRLightOverlay::OnTouchMove(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH) {
-    if (!s_editMode || s_selectedLightIndex == -1) return;
+    // Check if anything is selected (light >= 0, test light < -1, or bumper >= 0)
+    bool hasSelection = (s_selectedLightIndex >= 0) || (s_selectedLightIndex < -1) || (s_selectedBumperIndex >= 0);
+    if (!s_editMode || !hasSelection) return;
     
     // Convert screen coords to normalized canvas coords
     float normX = (screenX - viewportX) / viewportW;
@@ -690,11 +864,15 @@ void HDRLightOverlay::OnTouchMove(float screenX, float screenY, int viewportX, i
     float newX = normX - s_dragOffsetX;
     float newY = normY - s_dragOffsetY;
     
-    if (s_selectedLightIndex >= 0) {
+    if (s_selectedBumperIndex >= 0) {
+        // Update bumper config position
+        s_bumperConfigs[s_selectedBumperIndex].X = newX;
+        s_bumperConfigs[s_selectedBumperIndex].Y = newY;
+    } else if (s_selectedLightIndex >= 0) {
         // Update light config position
         s_lightConfigs[s_selectedLightIndex].X = newX;
         s_lightConfigs[s_selectedLightIndex].Y = newY;
-    } else {
+    } else if (s_selectedLightIndex < -1) {
         // Update test light position
         int testIdx = -(s_selectedLightIndex + 1);
         if (testIdx < (int)s_testLights.size()) {
@@ -707,19 +885,22 @@ void HDRLightOverlay::OnTouchMove(float screenX, float screenY, int viewportX, i
 void HDRLightOverlay::OnTouchUp() {
     if (!s_editMode) return;
     
-    if (s_selectedLightIndex >= 0 && s_selectedLightIndex < (int)s_lightConfigs.size()) {
+    if (s_selectedBumperIndex >= 0 && s_selectedBumperIndex < (int)s_bumperConfigs.size()) {
+        const auto& config = s_bumperConfigs[s_selectedBumperIndex];
+        HDRLIGHT_LOG("Bumper %d new position: (%.4f, %.4f)", s_selectedBumperIndex, config.X, config.Y);
+    } else if (s_selectedLightIndex >= 0 && s_selectedLightIndex < (int)s_lightConfigs.size()) {
         const auto& config = s_lightConfigs[s_selectedLightIndex];
         HDRLIGHT_LOG("Light %d new position: (%.4f, %.4f)", s_selectedLightIndex, config.X, config.Y);
     }
-    // Keep selection for reference, don't clear s_selectedLightIndex
+    // Keep selection for reference, don't clear indices
 }
 
 bool HDRLightOverlay::SaveLightPositions(const char* filepath) {
-    HDRLIGHT_LOG("SaveLightPositions called: %zu configs, %zu test lights", 
-                 s_lightConfigs.size(), s_testLights.size());
+    HDRLIGHT_LOG("SaveLightPositions called: %zu configs, %zu bumpers, %zu test lights", 
+                 s_lightConfigs.size(), s_bumperConfigs.size(), s_testLights.size());
     
-    if (s_lightConfigs.empty() && s_testLights.empty()) {
-        HDRLIGHT_LOG("No light configs to save!");
+    if (s_lightConfigs.empty() && s_bumperConfigs.empty() && s_testLights.empty()) {
+        HDRLIGHT_LOG("No configs to save!");
         return false;
     }
     
@@ -739,6 +920,13 @@ bool HDRLightOverlay::SaveLightPositions(const char* filepath) {
                 config.R, config.G, config.B);
     }
     
+    fprintf(f, "\n# Bumpers\n");
+    for (const auto& config : s_bumperConfigs) {
+        fprintf(f, "bumper_%s,0,%.6f,%.6f,%.6f,%.6f,0,0,0\n",
+                config.BumperName,
+                config.X, config.Y, config.Width, config.Height);
+    }
+    
     fprintf(f, "\n# Test lights\n");
     for (size_t i = 0; i < s_testLights.size(); i++) {
         const auto& test = s_testLights[i];
@@ -747,7 +935,7 @@ bool HDRLightOverlay::SaveLightPositions(const char* filepath) {
     }
     
     fclose(f);
-    HDRLIGHT_LOG("Saved %zu light configs to %s", s_lightConfigs.size(), filepath);
+    HDRLIGHT_LOG("Saved %zu light configs, %zu bumpers to %s", s_lightConfigs.size(), s_bumperConfigs.size(), filepath);
     return true;
 }
 
@@ -777,8 +965,21 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
                     s_testLights[index].w = w;
                     s_testLights[index].h = h;
                 }
+            } else if (strncmp(group, "bumper_", 7) == 0) {
+                // Update bumper config - extract bumper name after "bumper_"
+                const char* bumperName = group + 7;
+                for (auto& config : s_bumperConfigs) {
+                    if (strcmp(config.BumperName, bumperName) == 0) {
+                        config.X = x;
+                        config.Y = y;
+                        config.Width = w;
+                        config.Height = h;
+                        HDRLIGHT_LOG("Loaded bumper %s position: (%.4f, %.4f)", bumperName, x, y);
+                        break;
+                    }
+                }
             } else {
-                // Find matching config and update
+                // Find matching light config and update
                 for (auto& config : s_lightConfigs) {
                     if (strcmp(config.GroupName, group) == 0 && config.LightIndex == index) {
                         config.X = x;

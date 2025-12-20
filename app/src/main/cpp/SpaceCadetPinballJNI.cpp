@@ -266,6 +266,12 @@ Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchUp(JNIEnv *env, jobjec
 
 extern "C"
 JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_hasLightSelection(JNIEnv *env, jobject thiz) {
+    return HDRLightOverlay::HasSelection();
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_saveLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
     const char* path = env->GetStringUTFChars(filepath, nullptr);
     bool result = HDRLightOverlay::SaveLightPositions(path);

@@ -858,12 +858,12 @@ public class MainActivity extends SDLActivity {
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    // Check if touch is near a light - native code will set selection
+                    // Check if touch is near a light or bumper - native code will set selection
                     onLightTouchDown(x, y, 0, 0, viewportW, viewportH);
-                    // Check if a light was selected
-                    isDraggingLight = (getSelectedLightIndex() != -1);
+                    // Check if a light or bumper was selected
+                    isDraggingLight = hasLightSelection();
                     if (isDraggingLight) {
-                        return true; // Consume touch if we selected a light
+                        return true; // Consume touch if we selected something
                     }
                     break;
                 case MotionEvent.ACTION_MOVE:
@@ -900,5 +900,6 @@ public class MainActivity extends SDLActivity {
     private native boolean saveLightPositions(String filepath);
     private native boolean loadLightPositions(String filepath);
     private native int getSelectedLightIndex();
+    private native boolean hasLightSelection();
     private native void triggerDemoMode();
 }

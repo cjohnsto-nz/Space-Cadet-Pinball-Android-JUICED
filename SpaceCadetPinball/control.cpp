@@ -819,7 +819,7 @@ void control::make_links(TPinballTable* table)
 				});
 			}
 			
-			// literoll180 - Orange
+			// literoll180 - Amber
 			if (control_literoll180_tag.Component)
 			{
 				HDRLightOverlay::RegisterIndividualLight("literoll180", control_literoll180_tag.Component);
@@ -827,18 +827,87 @@ void control::make_links(TPinballTable* table)
 					"literoll180", 0,
 					0.08f, 0.65f,
 					lightW, lightH,
-					1.0f, 0.5f, 0.0f,  // Orange
+					1.0f, 0.3f, 0.0f,  // Amber
 					peakNits, peakNits, 1.0f
 				});
 			}
 			
-			// literoll179 (bottom) - Yellow
+			// literoll179 (bottom) - Bright white-yellow
 			if (control_literoll179_tag.Component)
 			{
 				HDRLightOverlay::RegisterIndividualLight("literoll179", control_literoll179_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"literoll179", 0,
 					0.08f, 0.72f,
+					lightW, lightH,
+					1.0f, 0.7f, 0.1f,  // Bright white-yellow
+					peakNits, peakNits, 1.0f
+				});
+			}
+		}
+		
+		// Register left trek lights (purple mission ramp on left side)
+		// l_trek_lights - three lights in the ramp, bottom one hidden
+		if (control_l_trek_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("l_trek_lights", control_l_trek_lights_tag.Component);
+			float peakNits = HDR::GetMaxDisplayNits();
+			float lightW = 0.03f;
+			float lightH = 0.03f / 0.61f;
+			
+			// Two lights arranged vertically in the left ramp (bottom one skipped)
+			for (int i = 0; i < 2; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"l_trek_lights", i,
+					0.12f, 0.32f + i * 0.06f,  // Positioned along the left ramp
+					lightW, lightH,
+					1.0f, 0.7f, 0.1f,  // Bright white-yellow
+					peakNits, peakNits, 1.0f
+				});
+			}
+		}
+		
+		// Register launch lane rollover lights (three lights above bumpers in left mission ramp)
+		// lite169, lite170, lite171 - very small yellow lights
+		{
+			float peakNits = HDR::GetMaxDisplayNits();
+			float lightW = 0.005f;  // Even smaller
+			float lightH = 0.005f / 0.61f;
+			
+			// lite169 (left rollover)
+			if (control_lite169_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("lite169", control_lite169_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"lite169", 0,
+					0.18f, 0.25f,      // Left position above bumpers
+					lightW, lightH,
+					0.5f, 0.4f, 0.0f,  // Yellow
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			// lite170 (middle rollover)
+			if (control_lite170_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("lite170", control_lite170_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"lite170", 0,
+					0.24f, 0.25f,      // Middle position above bumpers
+					lightW, lightH,
+					1.0f, 0.8f, 0.0f,  // Yellow
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			// lite171 (right rollover)
+			if (control_lite171_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("lite171", control_lite171_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"lite171", 0,
+					0.30f, 0.25f,      // Right position above bumpers
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
 					peakNits, peakNits, 1.0f
@@ -873,6 +942,132 @@ void control::make_links(TPinballTable* table)
 				1.0f, 0.0f, 0.0f,  // Pure red
 				peakNits, peakNits, 1.0f
 			});
+		}
+		
+		// Register bumpers with dynamic color based on upgrade level
+		// Bumpers change color as they upgrade: blue -> green -> yellow -> red
+		// Attack bumpers (bump1-4) are on the left side
+		// Launch bumpers (bump5-7) are on the right side
+		{
+			float peakNits = HDR::GetMaxDisplayNits();
+			float bumperW = 0.04f;   // Bigger
+			float bumperH = 0.04f / 0.61f;
+			
+			// Color progression for bumpers (upgrade levels 0-3)
+			// Level 0: Blue (same as outer circle), Level 1: Forest green, Level 2: Yellow, Level 3: Red
+			float colors[4][3] = {
+				{0.02f, 0.02f, 1.0f}, // Blue - same as outer circle (level 0)
+				{0.0f, 0.5f, 0.0f},   // Forest green (level 1)
+				{1.0f, 0.8f, 0.0f},   // Yellow (level 2)
+				{1.0f, 0.0f, 0.0f}    // Red (level 3)
+			};
+			
+			// Attack bumpers (bump1-4) - left side cluster
+			if (control_bump1_tag.Component)
+			{
+				HDRLightOverlay::RegisterBumper("bump1", control_bump1_tag.Component);
+				HDRLightOverlay::AddBumperConfig({
+					"bump1",
+					0.05f, 0.30f,
+					bumperW, bumperH,
+					{{colors[0][0], colors[0][1], colors[0][2]},
+					 {colors[1][0], colors[1][1], colors[1][2]},
+					 {colors[2][0], colors[2][1], colors[2][2]},
+					 {colors[3][0], colors[3][1], colors[3][2]}},
+					peakNits, 1.0f
+				});
+			}
+			
+			if (control_bump2_tag.Component)
+			{
+				HDRLightOverlay::RegisterBumper("bump2", control_bump2_tag.Component);
+				HDRLightOverlay::AddBumperConfig({
+					"bump2",
+					0.05f, 0.35f,
+					bumperW, bumperH,
+					{{colors[0][0], colors[0][1], colors[0][2]},
+					 {colors[1][0], colors[1][1], colors[1][2]},
+					 {colors[2][0], colors[2][1], colors[2][2]},
+					 {colors[3][0], colors[3][1], colors[3][2]}},
+					peakNits, 1.0f
+				});
+			}
+			
+			if (control_bump3_tag.Component)
+			{
+				HDRLightOverlay::RegisterBumper("bump3", control_bump3_tag.Component);
+				HDRLightOverlay::AddBumperConfig({
+					"bump3",
+					0.05f, 0.40f,
+					bumperW, bumperH,
+					{{colors[0][0], colors[0][1], colors[0][2]},
+					 {colors[1][0], colors[1][1], colors[1][2]},
+					 {colors[2][0], colors[2][1], colors[2][2]},
+					 {colors[3][0], colors[3][1], colors[3][2]}},
+					peakNits, 1.0f
+				});
+			}
+			
+			if (control_bump4_tag.Component)
+			{
+				HDRLightOverlay::RegisterBumper("bump4", control_bump4_tag.Component);
+				HDRLightOverlay::AddBumperConfig({
+					"bump4",
+					0.05f, 0.45f,
+					bumperW, bumperH,
+					{{colors[0][0], colors[0][1], colors[0][2]},
+					 {colors[1][0], colors[1][1], colors[1][2]},
+					 {colors[2][0], colors[2][1], colors[2][2]},
+					 {colors[3][0], colors[3][1], colors[3][2]}},
+					peakNits, 1.0f
+				});
+			}
+			
+			// Launch bumpers (bump5-7) - right side cluster (above launch lanes)
+			if (control_bump5_tag.Component)
+			{
+				HDRLightOverlay::RegisterBumper("bump5", control_bump5_tag.Component);
+				HDRLightOverlay::AddBumperConfig({
+					"bump5",
+					0.05f, 0.50f,
+					bumperW, bumperH,
+					{{colors[0][0], colors[0][1], colors[0][2]},
+					 {colors[1][0], colors[1][1], colors[1][2]},
+					 {colors[2][0], colors[2][1], colors[2][2]},
+					 {colors[3][0], colors[3][1], colors[3][2]}},
+					peakNits, 1.0f
+				});
+			}
+			
+			if (control_bump6_tag.Component)
+			{
+				HDRLightOverlay::RegisterBumper("bump6", control_bump6_tag.Component);
+				HDRLightOverlay::AddBumperConfig({
+					"bump6",
+					0.05f, 0.55f,
+					bumperW, bumperH,
+					{{colors[0][0], colors[0][1], colors[0][2]},
+					 {colors[1][0], colors[1][1], colors[1][2]},
+					 {colors[2][0], colors[2][1], colors[2][2]},
+					 {colors[3][0], colors[3][1], colors[3][2]}},
+					peakNits, 1.0f
+				});
+			}
+			
+			if (control_bump7_tag.Component)
+			{
+				HDRLightOverlay::RegisterBumper("bump7", control_bump7_tag.Component);
+				HDRLightOverlay::AddBumperConfig({
+					"bump7",
+					0.05f, 0.60f,
+					bumperW, bumperH,
+					{{colors[0][0], colors[0][1], colors[0][2]},
+					 {colors[1][0], colors[1][1], colors[1][2]},
+					 {colors[2][0], colors[2][1], colors[2][2]},
+					 {colors[3][0], colors[3][1], colors[3][2]}},
+					peakNits, 1.0f
+				});
+			}
 		}
 		
 		// Load saved light positions (if any)
