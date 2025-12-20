@@ -40,4 +40,8 @@ public class JNIEntryPoint {
     static void cheatsUsed() { StateHelper.INSTANCE.cheatsUsed(); }
 
     static void gameIsReady() {StateHelper.INSTANCE.gameIsReady();}
+
+    static void triggerHapticFeedback(float intensity) {
+        StateHelper.INSTANCE.triggerHapticFeedback(intensity);
+    }
 }

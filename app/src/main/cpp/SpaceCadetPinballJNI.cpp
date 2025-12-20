@@ -139,3 +139,18 @@ JNIEXPORT jboolean JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_checkCheatsUsed(JNIEnv *env, jobject thiz) {
     return control::check_cheats();
 }
+
+void SpaceCadetPinballJNI::triggerHapticFeedback(float intensity) {
+    JNIEnv* jniEnv = nullptr;
+    if (g_JavaVM == nullptr) return;
+    g_JavaVM->GetEnv((void **) &jniEnv, JNI_VERSION_1_6);
+    if (jniEnv == nullptr) return;
+
+    jclass jniClass = jniEnv->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (jniClass == nullptr) return;
+    
+    jmethodID mid = jniEnv->GetStaticMethodID(jniClass, "triggerHapticFeedback", "(F)V");
+    if (mid == nullptr) return;
+
+    jniEnv->CallStaticVoidMethod(jniClass, mid, intensity);
+}

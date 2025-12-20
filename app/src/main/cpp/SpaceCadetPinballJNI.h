@@ -33,6 +33,8 @@ public:
     static void gameReady();
 
     static void postRemainingBalls(int balls);
+
+    static void triggerHapticFeedback(float intensity);
 };
 
 #endif // SPACECADETPINBALLJNI_H

@@ -119,6 +119,14 @@ public enum StateHelper {
         }
     }
 
+    public void triggerHapticFeedback(float intensity) {
+        for (IStateListener listener : mStateListeners) {
+            if (listener != null) {
+                listener.onHapticFeedback(intensity);
+            }
+        }
+    }
+
     public interface IStateListener {
 
         void onStateChanged(int state);
@@ -142,5 +150,7 @@ public enum StateHelper {
         void onGameReady();
 
         void onRemainingBallsRequested(int balls);
+
+        void onHapticFeedback(float intensity);
     }
 }

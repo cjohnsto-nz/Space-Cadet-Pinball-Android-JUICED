@@ -4,6 +4,9 @@
 #include "maths.h"
 #include "TEdgeSegment.h"
 #include "TPinballTable.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#endif
 
 
 TCollisionComponent::TCollisionComponent(TPinballTable* table, int groupIndex, bool createWall) :
@@ -59,6 +62,15 @@ int TCollisionComponent::DefaultCollision(TBall* ball, vector2* nextPosition, ve
 		return 0;
 	}
 	auto projSpeed = maths::basic_collision(ball, nextPosition, direction, Elasticity, Smoothness, Threshold, Boost);
+	
+#ifdef __ANDROID__
+	// Trigger haptic feedback based on collision speed
+	float intensity = projSpeed / 20.0f;
+	if (intensity > 1.0f) intensity = 1.0f;
+	if (intensity > 0.05f)
+		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+#endif
+
 	if (projSpeed <= Threshold)
 	{
 		if (projSpeed > 0.2f)
@@ -103,6 +115,15 @@ void TCollisionComponent::Collision(TBall* ball, vector2* nextPosition, vector2*
 	}
 	if (soundIndex)
 		loader::play_sound(soundIndex);
+
+#ifdef __ANDROID__
+	// Trigger haptic feedback based on collision speed
+	// Normalize projSpeed to 0-1 range (assuming max speed around 20)
+	float intensity = projSpeed / 20.0f;
+	if (intensity > 1.0f) intensity = 1.0f;
+	if (intensity > 0.05f) // Only trigger for noticeable collisions
+		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+#endif
 }
 
 int TCollisionComponent::FieldEffect(TBall* ball, vector2* vecDst)
