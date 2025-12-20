@@ -10,6 +10,8 @@ public:
     static void notifyGameState(int state);
 
     static void setBallInPlunger(bool state);
+    
+    static bool isBallInPlunger();
 
     static void addHighScore(int score);
 

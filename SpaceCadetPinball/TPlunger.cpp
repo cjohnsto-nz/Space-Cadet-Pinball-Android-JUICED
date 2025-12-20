@@ -57,12 +57,13 @@ void TPlunger::Collision(TBall* ball, vector2* nextPosition, vector2* direction,
 		float intensity = Boost / static_cast<float>(MaxPullback);
 		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
 	}
-	else
+	else if (SpaceCadetPinballJNI::isBallInPlunger())
 	{
-		// Ball bouncing on plunger (spawn sequence) - use ball speed for intensity
-		float intensity = ball->Speed / 15.0f;
+		// Ball bouncing on plunger (spawn sequence only) - use ball speed for intensity
+		// Lower divisor and threshold to catch weaker bounces
+		float intensity = ball->Speed / 5.0f;
 		if (intensity > 1.0f) intensity = 1.0f;
-		if (intensity > 0.1f)
+		if (intensity > 0.02f)
 			SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
 	}
 #endif

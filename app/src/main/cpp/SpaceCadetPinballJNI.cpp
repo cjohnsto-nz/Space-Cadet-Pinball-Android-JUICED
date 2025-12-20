@@ -9,6 +9,7 @@
 static JavaVM* g_JavaVM = nullptr;
 static jclass clazz = nullptr;
 static JNIEnv *env = nullptr;
+static bool s_ballInPlunger = false;
 
 void SpaceCadetPinballJNI::show_error_dialog(std::string title, std::string message) {
     __android_log_print(ANDROID_LOG_ERROR, "SpaceCadetPinballJNI", "Error: %s, %s", title.c_str(), message.c_str());
@@ -24,12 +25,18 @@ void SpaceCadetPinballJNI::notifyGameState(int state) {
 }
 
 void SpaceCadetPinballJNI::setBallInPlunger(bool isInPlunger) {
+    s_ballInPlunger = isInPlunger;
+    
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
     if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "setBallInPlunger", "(Z)V");
 
     env->CallStaticVoidMethod(clazz, mid, isInPlunger);
+}
+
+bool SpaceCadetPinballJNI::isBallInPlunger() {
+    return s_ballInPlunger;
 }
 
 void SpaceCadetPinballJNI::addHighScore(int score) {

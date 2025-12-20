@@ -314,12 +314,20 @@ void TFlipperEdge::EdgeCollision(TBall* ball, float coef)
 	if (intensity > 1.0f) intensity = 1.0f;
 	if (intensity > 0.1f)  // Only trigger for noticeable collisions, not resting ball
 	{
-		// Debounce: only trigger if enough time has passed since last haptic (50ms)
-		auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::steady_clock::now().time_since_epoch()).count();
-		if (now - lastFlipperHapticTime > 50)
+		// Debounce only for high intensity hits to prevent buzzing on hard smacks
+		if (intensity > 0.5f)
 		{
-			lastFlipperHapticTime = now;
+			auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::steady_clock::now().time_since_epoch()).count();
+			if (now - lastFlipperHapticTime > 50)
+			{
+				lastFlipperHapticTime = now;
+				SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+			}
+		}
+		else
+		{
+			// Low intensity - no debounce needed
 			SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
 		}
 	}
