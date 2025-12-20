@@ -9,6 +9,9 @@
 #include "timer.h"
 #include "TLine.h"
 #include "TPinballTable.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#endif
 
 TFlagSpinner::TFlagSpinner(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, false)
 {
@@ -90,6 +93,11 @@ void TFlagSpinner::Collision(TBall* ball, vector2* nextPosition, vector2* direct
 	if (Speed > MaxSpeed)
 		Speed = MaxSpeed;
 	NextFrame();
+
+#ifdef __ANDROID__
+	// Trigger haptic feedback when ball passes through spinning gate
+	SpaceCadetPinballJNI::triggerHapticFeedback(0.4f);
+#endif
 }
 
 void TFlagSpinner::put_scoring(int index, int score)

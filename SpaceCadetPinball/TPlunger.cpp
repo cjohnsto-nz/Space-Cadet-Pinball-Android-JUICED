@@ -44,10 +44,27 @@ void TPlunger::Collision(TBall* ball, vector2* nextPosition, vector2* direction,
 	maths::basic_collision(ball, nextPosition, direction, Elasticity, Smoothness, Threshold, coef);
 
 #ifdef __ANDROID__
-	// Trigger strong haptic feedback for plunger launch based on boost power
-	float intensity = Boost / static_cast<float>(MaxPullback);
-	if (intensity > 0.1f)
+	// Threshold is low (0.0) only when plunger is released - trigger full intensity
+	// During pullback, Threshold is high (1000000000.0) - use intensity-based haptic
+	if (Threshold < 1.0f)
+	{
+		// Plunger released and hit ball - full intensity
+		SpaceCadetPinballJNI::triggerHapticFeedback(1.0f);
+	}
+	else if (Boost > 0.1f)
+	{
+		// Pullback - intensity based on how far pulled
+		float intensity = Boost / static_cast<float>(MaxPullback);
 		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+	}
+	else
+	{
+		// Ball bouncing on plunger (spawn sequence) - use ball speed for intensity
+		float intensity = ball->Speed / 15.0f;
+		if (intensity > 1.0f) intensity = 1.0f;
+		if (intensity > 0.1f)
+			SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+	}
 #endif
 }
 
