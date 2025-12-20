@@ -41,15 +41,16 @@ void main() {
 }
 )";
 
-// Fragment shader for SDR to HDR conversion with intensity support
+// Fragment shader - pass through SDR content unchanged
+// Just converts sRGB to linear for the HDR pipeline, no boosting
 const char* HDRRenderer::s_hdrUploadFragmentSrc = R"(#version 300 es
 precision highp float;
 in vec2 vTexCoord;
 out vec4 fragColor;
 
 uniform sampler2D uTexture;
-uniform float uIntensityMultiplier;  // HDR intensity in linear space (1.0 = SDR white)
-uniform float uExposure;
+uniform float uIntensityMultiplier;  // Unused for now, reserved for light overlays
+uniform float uExposure;             // Unused for now
 
 // sRGB to linear conversion
 vec3 sRGBToLinear(vec3 srgb) {
@@ -66,13 +67,11 @@ void main() {
     // Swap R and B channels (input is BGRA stored as RGBA)
     sdrColor.rgb = sdrColor.bgr;
     
-    // Convert from sRGB to linear
+    // Convert from sRGB to linear - this is required for correct PQ encoding
+    // The value 1.0 in linear = SDR white (203 nits)
     vec3 linearColor = sRGBToLinear(sdrColor.rgb);
     
-    // Apply HDR intensity and exposure
-    linearColor *= uIntensityMultiplier * uExposure;
-    
-    // Output in linear HDR space
+    // Pass through unchanged - SDR content at SDR levels
     fragColor = vec4(linearColor, sdrColor.a);
 }
 )";
@@ -119,20 +118,48 @@ vec3 bt709ToBt2020(vec3 color) {
     return M * color;
 }
 
+// Subtle vibrance boost - increases saturation of less saturated colors more
+vec3 applyVibrance(vec3 color, float amount) {
+    float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    float maxComponent = max(max(color.r, color.g), color.b);
+    float minComponent = min(min(color.r, color.g), color.b);
+    float saturation = (maxComponent > 0.0) ? (maxComponent - minComponent) / maxComponent : 0.0;
+    
+    // Vibrance affects less saturated colors more
+    float vibranceAmount = amount * (1.0 - saturation);
+    
+    return mix(vec3(luminance), color, 1.0 + vibranceAmount);
+}
+
+// Gentle gamut expansion - slightly push colors toward BT.2020 primaries
+vec3 expandGamut(vec3 bt709Color, float amount) {
+    // This matrix slightly expands colors beyond BT.709 toward BT.2020
+    // amount of 0.0 = no expansion, 1.0 = full expansion
+    mat3 expand = mat3(
+        1.0 + 0.1 * amount, -0.05 * amount, -0.05 * amount,
+        -0.05 * amount, 1.0 + 0.1 * amount, -0.05 * amount,
+        -0.05 * amount, -0.05 * amount, 1.0 + 0.1 * amount
+    );
+    return expand * bt709Color;
+}
+
 void main() {
     vec4 hdrColor = texture(uHDRTexture, vTexCoord);
     
-    // DEBUG: Just output the texture directly with sRGB encoding
-    // This helps verify the texture upload and rendering pipeline works
-    #if 1
-    // Simple passthrough with sRGB encoding for debugging
-    vec3 srgbOut = linearToSRGB(clamp(hdrColor.rgb, 0.0, 1.0));
-    fragColor = vec4(srgbOut, hdrColor.a);
-    #else
-    // Full HDR PQ path
+    // Apply vibrance boost (0.25 = 25% boost on desaturated colors)
+    vec3 vibranceColor = applyVibrance(hdrColor.rgb, 0.25);
+    
+    // Apply gamut expansion (0.35 = 35% toward wider gamut)
+    vec3 expandedColor = expandGamut(vibranceColor, 0.35);
+    
+    // Subtle midpoint adjustment (darken midtones slightly for more punch)
+    // Using a gentle power curve: values < 1.0 darken midtones
+    expandedColor = pow(expandedColor, vec3(1.1));
+    
+    // Full HDR PQ path for BT.2020 PQ surface
     // HDR color is in linear space, normalized to SDR white = 1.0
     // Convert to absolute nits, then normalize to 10000 nits for PQ
-    vec3 linearNits = hdrColor.rgb * uSDRWhiteNits;
+    vec3 linearNits = expandedColor * uSDRWhiteNits;
     vec3 linearNormalized = linearNits / 10000.0;
     
     // Clamp to display max
@@ -145,7 +172,6 @@ void main() {
     vec3 pqEncoded = linearToPQ(bt2020);
     
     fragColor = vec4(pqEncoded, hdrColor.a);
-    #endif
 }
 )";
 
@@ -277,13 +303,17 @@ void HDRRenderer::UploadTexture(const ColorRgba* pixels, int width, int height) 
         s_width = width;
         s_height = height;
         
-        // Resize SDR texture
+        // Resize SDR texture with nearest neighbor filtering
         glBindTexture(GL_TEXTURE_2D, s_sdrTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         
-        // Resize HDR texture and update FBO
+        // Resize HDR texture with nearest neighbor filtering
         glBindTexture(GL_TEXTURE_2D, s_hdrTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_HALF_FLOAT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     
     // Upload SDR pixels to texture using glTexImage2D (more compatible than glTexSubImage2D)
