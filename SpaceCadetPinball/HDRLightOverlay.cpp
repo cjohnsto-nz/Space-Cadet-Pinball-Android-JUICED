@@ -24,6 +24,13 @@ std::vector<HDRBumperConfig> HDRLightOverlay::s_bumperConfigs;
 std::vector<HDRLightOverlay::LightState> HDRLightOverlay::s_lightStates;
 std::vector<HDRLightOverlay::BumperState> HDRLightOverlay::s_bumperStates;
 std::vector<HDRLightOverlay::TestLight> HDRLightOverlay::s_testLights;
+float HDRLightOverlay::s_debugBallX = 0.0f;
+float HDRLightOverlay::s_debugBallY = 0.0f;
+bool HDRLightOverlay::s_debugBallEnabled = false;  // Disabled - only used for position tracking
+std::vector<HDRLightOverlay::TrailPoint> HDRLightOverlay::s_ballTrail;
+float HDRLightOverlay::s_lastBallX = 0.0f;
+float HDRLightOverlay::s_lastBallY = 0.0f;
+float HDRLightOverlay::s_trailTime = 0.0f;
 bool HDRLightOverlay::s_initialized = false;
 GLuint HDRLightOverlay::s_overlayProgram = 0;
 GLuint HDRLightOverlay::s_overlayProgramPQ = 0;
@@ -487,6 +494,29 @@ void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     
+    // Render debug ball if enabled
+    if (s_debugBallEnabled) {
+        float aspectRatio = (float)textureWidth / (float)textureHeight;
+        GLint aspectLoc = glGetUniformLocation(s_overlayProgram, "uAspectRatio");
+        glUniform1f(aspectLoc, aspectRatio);
+        
+        // Debug ball - larger bright magenta circle for visibility
+        float debugBallSize = 0.05f;  // Larger size for visibility
+        GLint rectLoc = glGetUniformLocation(s_overlayProgram, "uLightRect");
+        glUniform4f(rectLoc, s_debugBallX, s_debugBallY, debugBallSize, debugBallSize);
+        
+        GLint colorLoc = glGetUniformLocation(s_overlayProgram, "uLightColor");
+        glUniform3f(colorLoc, 1.0f, 0.0f, 1.0f);  // Magenta color for debug ball
+        
+        GLint intensityLoc = glGetUniformLocation(s_overlayProgram, "uIntensity");
+        glUniform1f(intensityLoc, 5.0f);  // Very bright intensity
+        
+        GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
+        glUniform1f(glowLoc, 1.0f);  // Full glow
+        
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+    
     glBindVertexArray(0);
     glDisable(GL_BLEND);
 }
@@ -594,12 +624,114 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     
+    // Render continuous ball trail with interpolation
+    if (s_ballTrail.size() >= 2) {
+        // Draw interpolated segments between trail points for smooth continuous trail
+        for (size_t i = 0; i < s_ballTrail.size() - 1; i++) {
+            TrailPoint& p1 = s_ballTrail[i];
+            TrailPoint& p2 = s_ballTrail[i + 1];
+            
+            // Time-based fade
+            float age1 = s_trailTime - p1.timestamp;
+            float age2 = s_trailTime - p2.timestamp;
+            float fade1 = 1.0f - (age1 / TRAIL_LIFETIME);
+            float fade2 = 1.0f - (age2 / TRAIL_LIFETIME);
+            if (fade1 <= 0.0f && fade2 <= 0.0f) continue;
+            
+            // Calculate velocity magnitude for intensity scaling
+            float vel = sqrtf(p1.vx * p1.vx + p1.vy * p1.vy);
+            float velFactor = fminf(vel / 2.0f, 1.0f);  // Normalize velocity
+            
+            // Calculate distance between points to determine interpolation
+            float segDx = p2.x - p1.x;
+            float segDy = p2.y - p1.y;
+            float segDist = sqrtf(segDx * segDx + segDy * segDy);
+            
+            // More segments for longer distances, minimum 1
+            int numSegments = (int)(segDist / 0.003f) + 1;
+            if (numSegments > 20) numSegments = 20;  // Cap to avoid too many draws
+            
+            for (int s = 0; s < numSegments; s++) {
+                float t = (float)s / (float)numSegments;
+                float x = p1.x + t * (p2.x - p1.x);
+                float y = p1.y + t * (p2.y - p1.y);
+                float fade = fade1 + t * (fade2 - fade1);
+                
+                if (fade <= 0.0f) continue;
+                
+                // Skip trail points that are obscured by the ball
+                float ballDx = x - s_debugBallX;
+                float ballDy = y - s_debugBallY;
+                float ballDist = sqrtf(ballDx * ballDx + ballDy * ballDy);
+                if (ballDist < 0.01f) continue;  // Ball occlusion radius
+                
+                // Trail size - larger glow that overlaps to create continuous look
+                // Size decreases with fade for tapered tail
+                float baseSize = 0.02f * (0.5f + 0.5f * velFactor);
+                float trailSize = baseSize * (0.3f + 0.7f * fade);
+                
+                GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
+                glUniform4f(rectLoc, x, y, trailSize, trailSize);
+                
+                // White-blue trail color
+                GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
+                glUniform3f(colorLoc, 0.85f, 0.92f, 1.0f);
+                
+                // Intensity based on fade - use higher glow to blend points together
+                GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
+                glUniform1f(intensityLoc, 200.0f * fade * (0.4f + 0.6f * velFactor));
+                
+                GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
+                glUniform1f(maxNitsLoc, maxNits);
+                
+                // High glow radius to blend points into continuous trail
+                GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
+                glUniform1f(glowLoc, 1.5f);
+                
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            }
+        }
+    }
+    
+    // Render debug ball if enabled (PQ encoding) - simple red circle, no glow
+    if (s_debugBallEnabled) {
+        float debugBallSize = 0.025f;  // Small circle
+        GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
+        glUniform4f(rectLoc, s_debugBallX, s_debugBallY, debugBallSize, debugBallSize);
+        
+        GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
+        glUniform3f(colorLoc, 1.0f, 0.0f, 0.0f);  // Red color
+        
+        GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
+        glUniform1f(intensityLoc, 500.0f);  // Moderate intensity
+        
+        GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
+        glUniform1f(maxNitsLoc, maxNits);
+        
+        GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
+        glUniform1f(glowLoc, 0.1f);  // Minimal glow - almost solid circle
+        
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+    
     glBindVertexArray(0);
     glDisable(GL_BLEND);
 }
 
 void HDRLightOverlay::RenderSingleLightPQ(const LightState& state, float maxNits) {
     const HDRLightConfig* config = state.config;
+    
+    // Check for ball occlusion - skip rendering if ball is over this light and light is below ball
+    // Note: s_debugBallX/Y are always updated, s_debugBallEnabled only controls debug rendering
+    if (!config->AboveBall) {
+        float dx = s_debugBallX - config->X;
+        float dy = s_debugBallY - config->Y;
+        float dist = sqrtf(dx * dx + dy * dy);
+        float occlusionRadius = 0.0075f;  // Ball radius for occlusion check (reduced)
+        if (dist < occlusionRadius) {
+            return;  // Skip rendering - ball is occluding this light
+        }
+    }
     
     // Set light rectangle uniform (normalized 0-1 coords)
     GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
@@ -765,6 +897,41 @@ void HDRLightOverlay::UpdateLightSize(int configIndex, float w, float h) {
         s_lightConfigs[configIndex].Width = w;
         s_lightConfigs[configIndex].Height = h;
     }
+}
+
+void HDRLightOverlay::SetDebugBallPosition(float x, float y) {
+    // Calculate velocity (assume ~60fps, so dt ~= 0.0167)
+    float dt = 0.0167f;
+    float vx = (x - s_lastBallX) / dt;
+    float vy = (y - s_lastBallY) / dt;
+    
+    // Increment trail time
+    s_trailTime += dt;
+    
+    // Always add a new trail point with current velocity
+    TrailPoint newPoint = {x, y, vx, vy, s_trailTime};
+    s_ballTrail.insert(s_ballTrail.begin(), newPoint);
+    
+    // Remove old points that have exceeded lifetime
+    while (!s_ballTrail.empty() && 
+           (s_trailTime - s_ballTrail.back().timestamp) > TRAIL_LIFETIME) {
+        s_ballTrail.pop_back();
+    }
+    
+    // Also limit by count as safety
+    while (s_ballTrail.size() > MAX_TRAIL_POINTS) {
+        s_ballTrail.pop_back();
+    }
+    
+    s_lastBallX = s_debugBallX;
+    s_lastBallY = s_debugBallY;
+    s_debugBallX = x;
+    s_debugBallY = y;
+}
+
+void HDRLightOverlay::EnableDebugBall(bool enabled) {
+    s_debugBallEnabled = enabled;
+    HDRLIGHT_LOG("Debug ball %s", enabled ? "enabled" : "disabled");
 }
 
 void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH) {

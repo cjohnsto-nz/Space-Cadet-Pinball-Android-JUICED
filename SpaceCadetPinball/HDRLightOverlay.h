@@ -17,6 +17,7 @@ struct HDRLightConfig {
     float IntensityOn;          // Intensity when light is on (in nits, e.g., 600)
     float IntensityFlash;       // Intensity when flashing (in nits, e.g., 1000)
     float GlowRadius;           // Radius of glow effect (0-1)
+    bool AboveBall;             // True if light is above ball (not occluded), false if below (can be occluded)
 };
 
 class TLightGroup;
@@ -89,6 +90,13 @@ public:
     static bool HasSelection();  // Returns true if any light or bumper is selected
     static const std::vector<HDRLightConfig>& GetLightConfigs();
     static int ResetOutOfBoundsLights();  // Returns count of lights reset
+    
+    // Debug ball position tracking
+    static void SetDebugBallPosition(float x, float y);  // Set current ball position (normalized 0-1)
+    static void EnableDebugBall(bool enabled);  // Toggle debug ball visibility
+    static float GetBallX() { return s_debugBallX; }
+    static float GetBallY() { return s_debugBallY; }
+    static bool IsBallActive() { return s_debugBallEnabled; }  // Returns true if ball position is being tracked
 
 private:
     struct RegisteredGroup {
@@ -136,6 +144,22 @@ private:
     static std::vector<LightState> s_lightStates;
     static std::vector<BumperState> s_bumperStates;
     static std::vector<TestLight> s_testLights;
+    
+    // Debug ball tracking
+    static float s_debugBallX, s_debugBallY;
+    static bool s_debugBallEnabled;
+    
+    // Ball trail effect - continuous adaptive trail
+    struct TrailPoint {
+        float x, y;
+        float vx, vy;     // velocity at this point
+        float timestamp;  // when this point was added
+    };
+    static std::vector<TrailPoint> s_ballTrail;
+    static constexpr int MAX_TRAIL_POINTS = 600;  // Allow many more points for long trails
+    static constexpr float TRAIL_LIFETIME = 1.0f;  // seconds before trail fades completely
+    static float s_lastBallX, s_lastBallY;
+    static float s_trailTime;  // accumulated time for trail aging
     
     static bool s_initialized;
     static GLuint s_overlayProgram;

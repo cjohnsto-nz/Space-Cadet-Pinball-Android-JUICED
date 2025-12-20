@@ -841,6 +841,11 @@ public class MainActivity extends SDLActivity {
             Toast.makeText(this, "Light positions loaded", Toast.LENGTH_SHORT).show();
         }
     }
+    
+    public void toggleDebugBall() {
+        enableDebugBall(true);  // Enable debug ball
+        Toast.makeText(this, "Debug ball enabled - red dot shows tracked position", Toast.LENGTH_LONG).show();
+    }
 
     // Track if we're currently dragging a light
     private boolean isDraggingLight = false;
@@ -901,5 +906,7 @@ public class MainActivity extends SDLActivity {
     private native boolean loadLightPositions(String filepath);
     private native int getSelectedLightIndex();
     private native boolean hasLightSelection();
+    private native void setDebugBallPosition(float x, float y);
+    private native void enableDebugBall(boolean enabled);
     private native void triggerDemoMode();
 }

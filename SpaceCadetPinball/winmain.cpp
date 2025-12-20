@@ -11,7 +11,15 @@
 #include "Sound.h"
 #include "HDRConfig.h"
 #include "HDRRenderer.h"
+#include "HDRLightOverlay.h"
+#include "TPinballTable.h"
+#include "TBall.h"
+#include "proj.h"
 #include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 SDL_Window* winmain::MainWindow = nullptr;
 SDL_Renderer* winmain::Renderer = nullptr;
@@ -231,6 +239,50 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				auto dt = static_cast<float>(frameDuration.count());
 				auto dtWhole = static_cast<int>(std::round(dt));
 				pb::frame(dt);
+				
+				// Update debug ball position from first active ball in table
+				if (pb::MainTable && !pb::MainTable->BallList.empty()) {
+					TBall* activeBall = nullptr;
+					for (auto* ball : pb::MainTable->BallList) {
+						if (ball && ball->ActiveFlag) {
+							activeBall = ball;
+							break;
+						}
+					}
+					
+					if (activeBall) {
+						// Convert 3D ball position to 2D screen coordinates using proj
+						int pos2D[2];
+						proj::xform_to_2d(&activeBall->Position, pos2D);
+						
+						// Get render screen dimensions
+						float screenWidth = static_cast<float>(render::vscreen->Width);
+						float screenHeight = static_cast<float>(render::vscreen->Height);
+						
+						// Normalize to 0-1 range
+						float normX = static_cast<float>(pos2D[0]) / screenWidth;
+						float normY = static_cast<float>(pos2D[1]) / screenHeight;
+						
+						// Log coordinates every second
+						static int logCounter = 0;
+						if (++logCounter >= 60) {
+							logCounter = 0;
+							__android_log_print(ANDROID_LOG_INFO, "DebugBall", 
+								"Ball 2D: (%d, %d) Screen: (%.0f x %.0f) Norm: (%.3f, %.3f)", 
+								pos2D[0], pos2D[1], screenWidth, screenHeight, normX, normY);
+						}
+						
+						// Set debug ball position
+						HDRLightOverlay::SetDebugBallPosition(normX, normY);
+					} else {
+						// No active ball - draw at center for testing
+						HDRLightOverlay::SetDebugBallPosition(0.3f, 0.5f);
+					}
+				} else {
+					// No table - draw at center for testing
+					HDRLightOverlay::SetDebugBallPosition(0.3f, 0.5f);
+				}
+				
 				if (gfr_display)
 				{
 					auto deltaTPal = dtWhole + 10;

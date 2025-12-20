@@ -271,6 +271,18 @@ Java_com_fexed_spacecadetpinball_MainActivity_hasLightSelection(JNIEnv *env, job
 }
 
 extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setDebugBallPosition(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
+    HDRLightOverlay::SetDebugBallPosition(x, y);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_enableDebugBall(JNIEnv *env, jobject thiz, jboolean enabled) {
+    HDRLightOverlay::EnableDebugBall(enabled);
+}
+
+extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_saveLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
     const char* path = env->GetStringUTFChars(filepath, nullptr);

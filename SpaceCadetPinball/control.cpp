@@ -614,7 +614,8 @@ void control::make_links(TPinballTable* table)
 				1.0f, 0.7f, 0.1f,  // R, G, B (yellow-orange)
 				600.0f,            // Intensity when on (nits)
 				1000.0f,           // Intensity when flashing (nits)
-				1.0f               // Glow radius
+				1.0f,              // Glow radius
+				true               // AboveBall (not occluded)
 			});
 			
 			// Skill shot light 2
@@ -623,7 +624,7 @@ void control::make_links(TPinballTable* table)
 				0.88f, 0.68f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f
+				600.0f, 1000.0f, 1.0f, true
 			});
 			
 			// Skill shot light 3
@@ -632,7 +633,7 @@ void control::make_links(TPinballTable* table)
 				0.88f, 0.61f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f
+				600.0f, 1000.0f, 1.0f, true
 			});
 			
 			// Skill shot light 4
@@ -641,7 +642,7 @@ void control::make_links(TPinballTable* table)
 				0.88f, 0.54f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f
+				600.0f, 1000.0f, 1.0f, true
 			});
 			
 			// Skill shot light 5
@@ -650,7 +651,7 @@ void control::make_links(TPinballTable* table)
 				0.88f, 0.47f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f
+				600.0f, 1000.0f, 1.0f, false
 			});
 			
 			// Skill shot light 6 (top)
@@ -659,7 +660,7 @@ void control::make_links(TPinballTable* table)
 				0.88f, 0.40f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				700.0f, 1200.0f, 1.0f
+				700.0f, 1200.0f, 1.0f, true
 			});
 		}
 		
@@ -690,7 +691,7 @@ void control::make_links(TPinballTable* table)
 					x, y,
 					lightW, lightH,
 					1.0f, 0.3f, 0.0f,  // Yellow
-					600.0f, 1000.0f, 1.0f
+					600.0f, 1000.0f, 1.0f, false
 				});
 			}
 		}
@@ -721,7 +722,7 @@ void control::make_links(TPinballTable* table)
 					x, y,
 					lightW, lightH,
 					0.02f, 0.02f, 1.0f,  // Pure blue
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 		}
@@ -741,7 +742,7 @@ void control::make_links(TPinballTable* table)
 					0.22f, 0.18f,      // Left rollover light
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 			
@@ -753,7 +754,7 @@ void control::make_links(TPinballTable* table)
 					0.305f, 0.18f,     // Center rollover light
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 			
@@ -765,7 +766,7 @@ void control::make_links(TPinballTable* table)
 					0.39f, 0.18f,      // Right rollover light
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 		}
@@ -787,7 +788,7 @@ void control::make_links(TPinballTable* table)
 					0.08f, 0.37f,
 					lightW, lightH,
 					0.0f, 0.0f, 1.0f,  // Blue
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 			
@@ -802,7 +803,7 @@ void control::make_links(TPinballTable* table)
 					0.08f, 0.51f,
 					lightW, lightH,
 					0.8f, 0.0f, 1.0f,  // Purple
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 			
@@ -815,7 +816,7 @@ void control::make_links(TPinballTable* table)
 					0.08f, 0.58f,
 					lightW, lightH,
 					1.0f, 0.0f, 0.0f,  // Red
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 			
@@ -828,7 +829,7 @@ void control::make_links(TPinballTable* table)
 					0.08f, 0.65f,
 					lightW, lightH,
 					1.0f, 0.3f, 0.0f,  // Amber
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 			
@@ -841,7 +842,7 @@ void control::make_links(TPinballTable* table)
 					0.08f, 0.72f,
 					lightW, lightH,
 					1.0f, 0.7f, 0.1f,  // Bright white-yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 		}
@@ -863,7 +864,7 @@ void control::make_links(TPinballTable* table)
 					0.12f, 0.32f + i * 0.06f,  // Positioned along the left ramp
 					lightW, lightH,
 					1.0f, 0.7f, 0.1f,  // Bright white-yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 1.0f, false
 				});
 			}
 		}
@@ -872,8 +873,8 @@ void control::make_links(TPinballTable* table)
 		// lite169, lite170, lite171 - very small yellow lights
 		{
 			float peakNits = HDR::GetMaxDisplayNits();
-			float lightW = 0.005f;  // Even smaller
-			float lightH = 0.005f / 0.61f;
+			float lightW = 0.02f;  // Even smaller
+			float lightH = 0.02f / 0.61f;
 			
 			// lite169 (left rollover)
 			if (control_lite169_tag.Component)
@@ -884,7 +885,7 @@ void control::make_links(TPinballTable* table)
 					0.18f, 0.25f,      // Left position above bumpers
 					lightW, lightH,
 					0.5f, 0.4f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 0.5f, false  // Much smaller glow
 				});
 			}
 			
@@ -897,7 +898,7 @@ void control::make_links(TPinballTable* table)
 					0.24f, 0.25f,      // Middle position above bumpers
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 0.5f, false  // Much smaller glow
 				});
 			}
 			
@@ -910,7 +911,7 @@ void control::make_links(TPinballTable* table)
 					0.30f, 0.25f,      // Right position above bumpers
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f
+					peakNits, peakNits, 0.5f, false  // Much smaller glow
 				});
 			}
 		}
@@ -927,7 +928,7 @@ void control::make_links(TPinballTable* table)
 				0.22f, 0.95f,      // X, Y position (left exit ramp, below left paddle)
 				0.04f, 0.04f / 0.61f,
 				1.0f, 0.0f, 0.0f,  // Pure red
-				peakNits, peakNits, 1.0f
+				peakNits, peakNits, 0.5f, false  // Reduced glow
 			});
 		}
 		
@@ -940,7 +941,7 @@ void control::make_links(TPinballTable* table)
 				0.39f, 0.95f,      // X, Y position (right exit ramp, below right paddle)
 				0.04f, 0.04f / 0.61f,
 				1.0f, 0.0f, 0.0f,  // Pure red
-				peakNits, peakNits, 1.0f
+				peakNits, peakNits, 0.5f, false  // Reduced glow
 			});
 		}
 		
