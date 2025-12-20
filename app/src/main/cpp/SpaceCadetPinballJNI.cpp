@@ -3,6 +3,7 @@
 #include "../../../../SpaceCadetPinball/Sound.h"
 #include "../../../../SpaceCadetPinball/pinball.h"
 #include "../../../../SpaceCadetPinball/control.h"
+#include "../../../../SpaceCadetPinball/HDRConfig.h"
 #include <jni.h>
 #include <android/log.h>
 
@@ -160,4 +161,50 @@ void SpaceCadetPinballJNI::triggerHapticFeedback(float intensity) {
     if (mid == nullptr) return;
 
     jniEnv->CallStaticVoidMethod(jniClass, mid, intensity);
+}
+
+// HDR Support Functions
+bool SpaceCadetPinballJNI::queryHDRSupport() {
+    return HDR::g_hdrCapabilities.isSupported;
+}
+
+float SpaceCadetPinballJNI::getMaxDisplayLuminance() {
+    return HDR::g_hdrCapabilities.maxLuminanceNits;
+}
+
+void SpaceCadetPinballJNI::setHDRCapabilities(bool supported, bool bt2020, bool pq, bool scrgb,
+                                              bool fp16, float maxNits, float minNits) {
+    HDR::g_hdrCapabilities.isSupported = supported;
+    HDR::g_hdrCapabilities.isBT2020Supported = bt2020;
+    HDR::g_hdrCapabilities.isPQSupported = pq;
+    HDR::g_hdrCapabilities.isScRGBSupported = scrgb;
+    HDR::g_hdrCapabilities.isFP16Supported = fp16;
+    HDR::g_hdrCapabilities.maxLuminanceNits = maxNits;
+    HDR::g_hdrCapabilities.minLuminanceNits = minNits;
+    
+    __android_log_print(ANDROID_LOG_INFO, "SpaceCadetPinballJNI", 
+        "HDR Capabilities: supported=%d, bt2020=%d, pq=%d, scrgb=%d, fp16=%d, maxNits=%.1f, minNits=%.4f",
+        supported, bt2020, pq, scrgb, fp16, maxNits, minNits);
+    
+    HDR::InitHDR();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setHDRCapabilities(JNIEnv *env, jobject thiz,
+        jboolean supported, jboolean bt2020, jboolean pq, jboolean scrgb,
+        jboolean fp16, jfloat maxNits, jfloat minNits) {
+    SpaceCadetPinballJNI::setHDRCapabilities(supported, bt2020, pq, scrgb, fp16, maxNits, minNits);
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_isHDRActive(JNIEnv *env, jobject thiz) {
+    return HDR::IsHDRActive();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setHDREnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+    HDR::SetHDREnabled(enabled);
 }

@@ -7,6 +7,9 @@
 #include "render.h"
 #include "timer.h"
 #include "TPinballTable.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#endif
 
 TPopupTarget::TPopupTarget(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
@@ -82,6 +85,11 @@ void TPopupTarget::Collision(TBall* ball, vector2* nextPosition, vector2* direct
 			loader::play_sound(this->HardHitSoundId);
 		this->Message(49, 0.0);
 		control::handler(63, this);
+
+#ifdef __ANDROID__
+		// Trigger haptic feedback when drop target is hit down
+		SpaceCadetPinballJNI::triggerHapticFeedback(0.8f);
+#endif
 	}
 }
 

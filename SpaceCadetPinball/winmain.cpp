@@ -9,6 +9,8 @@
 #include "pb.h"
 #include "render.h"
 #include "Sound.h"
+#include "HDRConfig.h"
+#include "HDRRenderer.h"
 
 SDL_Window* winmain::MainWindow = nullptr;
 SDL_Renderer* winmain::Renderer = nullptr;
@@ -52,6 +54,14 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 
 	// SDL init
 	SDL_SetMainReady();
+	
+	// Set HDR hint before SDL_Init if HDR is enabled
+	if (HDR::IsHDRActive())
+	{
+		SDL_SetHint("SDL_VIDEO_EGL_HDR", "1");
+		SDL_Log("HDR: Enabled SDL_VIDEO_EGL_HDR hint for HDR colorspace");
+	}
+	
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
 	{
 		SpaceCadetPinballJNI::show_error_dialog("Could not initialize SDL2", SDL_GetError());
@@ -238,7 +248,16 @@ int winmain::WinMain(LPCSTR lpCmdLine)
                 SDL_RenderFillRect(renderer, nullptr);
 				render::PresentVScreen();
 
-				SDL_RenderPresent(renderer);
+				// When using HDR, we use raw GL and need to swap buffers ourselves
+				// SDL_RenderPresent would overwrite our GL output
+				if (HDRRenderer::ShouldUseHDR())
+				{
+					SDL_GL_SwapWindow(MainWindow);
+				}
+				else
+				{
+					SDL_RenderPresent(renderer);
+				}
 				frameCounter++;
 				UpdateToFrameCounter -= UpdateToFrameRatio;
 			}

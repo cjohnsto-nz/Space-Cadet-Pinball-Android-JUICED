@@ -112,6 +112,87 @@
             app:layout_constraintTop_toBottomOf="@+id/music" />
 
         <View
+            android:id="@+id/divider11"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/hdrswitch" />
+
+        <Switch
+            android:id="@+id/hdrswitch"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="@+id/music"
+            app:layout_constraintStart_toStartOf="@+id/music"
+            app:layout_constraintTop_toBottomOf="@+id/divider10" />
+
+        <TextView
+            android:id="@+id/textViewHDR"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="HDR Display"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="@+id/hdrswitch"
+            app:layout_constraintEnd_toEndOf="@+id/textView22"
+            app:layout_constraintStart_toStartOf="@+id/textView2"
+            app:layout_constraintTop_toTopOf="@+id/hdrswitch" />
+
+        <TextView
+            android:id="@+id/hdrStatusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Checking HDR support..."
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="@+id/textViewHDR"
+            app:layout_constraintStart_toStartOf="@+id/textViewHDR"
+            app:layout_constraintTop_toBottomOf="@+id/hdrswitch" />
+
+        <TextView
+            android:id="@+id/textViewHDRNits"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Max Brightness (nits)"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/hdrNitsInput"
+            app:layout_constraintStart_toStartOf="@+id/textViewHDR"
+            app:layout_constraintTop_toBottomOf="@+id/hdrStatusText" />
+
+        <EditText
+            android:id="@+id/hdrNitsInput"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="16dp"
+            android:hint="Auto"
+            android:inputType="number"
+            android:textSize="14sp"
+            android:gravity="center"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/textViewHDRNits"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewHDRNits" />
+
+        <TextView
+            android:id="@+id/hdrNitsHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Leave empty for auto-detect, or enter your display's peak brightness"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintStart_toStartOf="@+id/textViewHDRNits"
+            app:layout_constraintTop_toBottomOf="@+id/hdrNitsInput" />
+
+        <View
             android:id="@+id/divider3"
             android:layout_width="match_parent"
             android:layout_height="1dp"
@@ -327,7 +408,7 @@
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/divider10" />
+            app:layout_constraintTop_toBottomOf="@+id/hdrNitsHint" />
 
         <Switch
             android:id="@+id/tiltbtns"

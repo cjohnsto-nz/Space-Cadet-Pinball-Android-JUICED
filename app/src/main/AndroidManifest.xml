@@ -23,7 +23,8 @@
             android:exported="false" />
         <activity
             android:name=".MainActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|colorMode"
+            android:colorMode="wideColorGamut"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

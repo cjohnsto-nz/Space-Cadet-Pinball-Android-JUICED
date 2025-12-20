@@ -37,6 +37,12 @@ public:
     static void postRemainingBalls(int balls);
 
     static void triggerHapticFeedback(float intensity);
+
+    // HDR support
+    static bool queryHDRSupport();
+    static float getMaxDisplayLuminance();
+    static void setHDRCapabilities(bool supported, bool bt2020, bool pq, bool scrgb, 
+                                   bool fp16, float maxNits, float minNits);
 };
 
 #endif // SPACECADETPINBALLJNI_H

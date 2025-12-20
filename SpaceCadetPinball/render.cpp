@@ -8,6 +8,8 @@
 #include "score.h"
 #include "TPinballTable.h"
 #include "winmain.h"
+#include "HDRConfig.h"
+#include "HDRRenderer.h"
 
 
 std::vector<render_sprite_type_struct*> render::dirty_list, render::sprite_list, render::ball_list;
@@ -49,10 +51,22 @@ void render::init(gdrv_bitmap8* bmp, float zMin, float zScaler, int width, int h
 		gdrv::fill_bitmap(vscreen, vscreen->Width, vscreen->Height, 0, 0, 0);
 
 	recreate_screen_texture();
+	
+	// Initialize HDR renderer if HDR is available
+	if (HDR::IsHDRActive())
+	{
+		HDRRenderer::Init(width, height);
+	}
 }
 
 void render::uninit()
 {
+	// Uninitialize HDR renderer
+	if (HDRRenderer::IsInitialized())
+	{
+		HDRRenderer::Uninit();
+	}
+	
 	delete vscreen;
 	delete zscreen;
 	for (auto sprite : sprite_list)
@@ -471,6 +485,20 @@ void render::PresentVScreen()
 {
 	BlitVScreen();
 
+	// Use HDR rendering path if available
+	if (HDRRenderer::ShouldUseHDR())
+	{
+		// Get actual window size for fullscreen output
+		int screenWidth, screenHeight;
+		SDL_GetWindowSize(winmain::MainWindow, &screenWidth, &screenHeight);
+		
+		// Upload SDR pixels to HDR renderer and present with PQ encoding
+		HDRRenderer::UploadTexture(vscreen->BmpBufPtr1, vscreen->Width, vscreen->Height);
+		HDRRenderer::Present(screenWidth, screenHeight);
+		return;
+	}
+
+	// Standard SDR rendering path
 	if (offset_x == 0 && offset_y == 0)
 	{
 		SDL_RenderCopy(winmain::Renderer, vScreenTex, nullptr, &DestinationRect);

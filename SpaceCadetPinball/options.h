@@ -76,6 +76,7 @@ struct optionsStruct
 	int SoundChannels;
 	int SoundVolume;
 	int MusicVolume;
+	bool HDREnabled;
 };
 
 struct ControlRef

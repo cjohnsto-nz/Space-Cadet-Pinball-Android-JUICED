@@ -1,5 +1,6 @@
 #pragma once
 #include "TPinballComponent.h"
+#include "HDRConfig.h"
 
 struct gdrv_bitmap8;
 
@@ -52,4 +53,15 @@ public:
 	int Timer2;
 	float Unknown20F{};
 	TLight_player_backup PlayerData[4]{};
+	
+	// HDR support - light intensity in nits
+	float HDRIntensityOff = HDR::Luminance::LIGHT_OFF;
+	float HDRIntensityOn = HDR::Luminance::LIGHT_NORMAL;
+	float HDRIntensityFlash = HDR::Luminance::LIGHT_FLASH_PEAK;
+	
+	// Get current HDR intensity based on light state
+	float GetCurrentHDRIntensity() const;
+	
+	// Set HDR intensity values (in nits)
+	void SetHDRIntensity(float offNits, float onNits, float flashNits);
 };

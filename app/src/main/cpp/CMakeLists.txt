@@ -123,6 +123,10 @@ set(SOURCE_FILES
         ../../../../SpaceCadetPinball/winmain.h
         ../../../../SpaceCadetPinball/zdrv.cpp
         ../../../../SpaceCadetPinball/zdrv.h
+        ../../../../SpaceCadetPinball/HDRConfig.cpp
+        ../../../../SpaceCadetPinball/HDRConfig.h
+        ../../../../SpaceCadetPinball/HDRRenderer.cpp
+        ../../../../SpaceCadetPinball/HDRRenderer.h
         SpaceCadetPinballJNI.cpp
         SpaceCadetPinballJNI.h)
 
@@ -135,5 +139,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/SDL)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/SDL_mixer)
 
 find_library(log-lib log)
+find_library(gles3-lib GLESv3)
+find_library(egl-lib EGL)
 
-target_link_libraries(SpaceCadetPinball SDL2 SDL2_mixer ${log-lib})
+target_link_libraries(SpaceCadetPinball SDL2 SDL2_mixer ${log-lib} ${gles3-lib} ${egl-lib})

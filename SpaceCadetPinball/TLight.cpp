@@ -319,3 +319,29 @@ void TLight::flasher_callback(int timerId, void* caller)
 	render::sprite_set_bitmap(flash->Sprite, flash->BmpArr[index]);
 	flash->Timer = timer::set(flash->TimerDelay[flash->BmpIndex], flash, flasher_callback);
 }
+
+float TLight::GetCurrentHDRIntensity() const
+{
+	if (FlasherActive)
+	{
+		// Flashing - alternate between on and flash intensity
+		return (Flasher.BmpIndex == 1) ? HDRIntensityFlash : HDRIntensityOn;
+	}
+	else if (BmpIndex1 == 1)
+	{
+		// Light is on
+		return HDRIntensityOn;
+	}
+	else
+	{
+		// Light is off
+		return HDRIntensityOff;
+	}
+}
+
+void TLight::SetHDRIntensity(float offNits, float onNits, float flashNits)
+{
+	HDRIntensityOff = offNits;
+	HDRIntensityOn = onNits;
+	HDRIntensityFlash = flashNits;
+}

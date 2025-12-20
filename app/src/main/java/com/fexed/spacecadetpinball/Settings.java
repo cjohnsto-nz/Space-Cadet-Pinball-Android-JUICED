@@ -99,6 +99,52 @@ public class Settings extends AppCompatActivity {
             PrefsHelper.setMusic(b);
         });
 
+        // HDR Settings
+        HDRHelper.HDRCapabilities hdrCaps = HDRHelper.queryHDRCapabilities(this);
+        boolean hdrEnabled = PrefsHelper.getHDREnabled();
+        mBinding.hdrswitch.setChecked(hdrEnabled);
+        mBinding.hdrswitch.setEnabled(hdrCaps.isSupported);
+        
+        if (hdrCaps.isSupported) {
+            String hdrStatus = "HDR supported (max " + (int)hdrCaps.maxLuminanceNits + " nits)";
+            mBinding.hdrStatusText.setText(hdrStatus);
+        } else {
+            mBinding.hdrStatusText.setText("HDR not supported on this device");
+            mBinding.hdrswitch.setChecked(false);
+        }
+        
+        mBinding.hdrswitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setHDREnabled(b);
+        });
+
+        // HDR Max Nits input
+        int savedNits = PrefsHelper.getHDRMaxNits();
+        if (savedNits > 0) {
+            mBinding.hdrNitsInput.setText(String.valueOf(savedNits));
+        }
+        mBinding.hdrNitsInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String text = s.toString().trim();
+                if (text.isEmpty()) {
+                    PrefsHelper.setHDRMaxNits(0); // 0 = auto
+                } else {
+                    try {
+                        int nits = Integer.parseInt(text);
+                        PrefsHelper.setHDRMaxNits(nits);
+                    } catch (NumberFormatException e) {
+                        // Ignore invalid input
+                    }
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
         mBinding.inpttxtusername.setText(PrefsHelper.getUsername("Player 1"));
         mBinding.inpttxtusername.addTextChangedListener(new TextWatcher() {
             @Override

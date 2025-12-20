@@ -18,6 +18,8 @@ public class PrefsHelper {
     private static final String KEY_SHOULDSHOWBOTTOMPLUNGER = "shouldshowbottomplunger";
     private static final String KEY_TILTBUTTONS = "tiltbuttons";
     private static final String KEY_CUSTOMFONTS = "customfonts";
+    private static final String KEY_HDR_ENABLED = "hdr_enabled";
+    private static final String KEY_HDR_MAX_NITS = "hdr_max_nits";
 
     public static SharedPreferences getPrefs() {
         return prefs;
@@ -121,5 +123,21 @@ public class PrefsHelper {
 
     public static boolean getMusic() {
         return prefs.getBoolean(KEY_MUSIC, false);
+    }
+
+    public static boolean getHDREnabled() {
+        return prefs.getBoolean(KEY_HDR_ENABLED, true);
+    }
+
+    public static void setHDREnabled(boolean value) {
+        prefs.edit().putBoolean(KEY_HDR_ENABLED, value).apply();
+    }
+
+    public static int getHDRMaxNits() {
+        return prefs.getInt(KEY_HDR_MAX_NITS, 0); // 0 = use auto-detected value
+    }
+
+    public static void setHDRMaxNits(int value) {
+        prefs.edit().putInt(KEY_HDR_MAX_NITS, value).apply();
     }
 }

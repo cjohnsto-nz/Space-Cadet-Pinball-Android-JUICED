@@ -74,8 +74,12 @@ public class MainActivity extends SDLActivity {
         super.onCreate(savedInstanceState);
         File filesDir = getFilesDir();
         copyAssets(filesDir);
-        initNative(filesDir.getAbsolutePath() + "/");
         PrefsHelper.setPrefs(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE));
+
+        // Initialize HDR capabilities BEFORE initNative so SDL can use HDR colorspace
+        initializeHDR();
+        
+        initNative(filesDir.getAbsolutePath() + "/");
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -290,6 +294,44 @@ public class MainActivity extends SDLActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void initializeHDR() {
+        HDRHelper.HDRCapabilities caps = HDRHelper.queryHDRCapabilities(this);
+        Log.i(TAG, "HDR Capabilities: " + caps);
+        
+        // Check if user has set a custom max nits value
+        int userMaxNits = PrefsHelper.getHDRMaxNits();
+        float maxNits = caps.maxLuminanceNits;
+        if (userMaxNits > 0) {
+            maxNits = (float) userMaxNits;
+            Log.i(TAG, "Using user-configured max nits: " + userMaxNits);
+        }
+        
+        // Check if user has HDR enabled in preferences
+        boolean hdrEnabled = PrefsHelper.getHDREnabled();
+        
+        // Pass HDR enabled state to native code first
+        setHDREnabled(hdrEnabled);
+        
+        // Pass HDR capabilities to native code
+        setHDRCapabilities(
+            caps.isSupported,
+            caps.isBT2020Supported,
+            caps.isPQSupported,
+            caps.isScRGBSupported,
+            caps.isFP16Supported,
+            maxNits,
+            caps.minLuminanceNits
+        );
+        
+        if (caps.isSupported && hdrEnabled) {
+            Log.i(TAG, "HDR is supported and enabled! Max luminance: " + maxNits + " nits");
+        } else if (caps.isSupported) {
+            Log.i(TAG, "HDR is supported but disabled by user");
+        } else {
+            Log.i(TAG, "HDR is not supported on this device, using SDR rendering");
         }
     }
 
@@ -758,4 +800,10 @@ public class MainActivity extends SDLActivity {
     private native void putString(int id, String str);
 
     private native boolean checkCheatsUsed();
+
+    // HDR native methods
+    private native void setHDRCapabilities(boolean supported, boolean bt2020, boolean pq, 
+                                           boolean scrgb, boolean fp16, float maxNits, float minNits);
+    private native boolean isHDRActive();
+    private native void setHDREnabled(boolean enabled);
 }

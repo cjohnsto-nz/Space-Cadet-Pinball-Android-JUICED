@@ -1,0 +1,65 @@
+#pragma once
+
+#include "pch.h"
+#include "HDRConfig.h"
+#include "gdrv.h"
+
+#ifdef __ANDROID__
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#else
+#include <SDL_opengl.h>
+#endif
+
+class HDRRenderer {
+public:
+    static bool Init(int width, int height);
+    static void Uninit();
+    static bool IsInitialized();
+    
+    // Upload SDR texture data and apply HDR intensity
+    static void UploadTexture(const ColorRgba* pixels, int width, int height);
+    
+    // Apply HDR intensity to a specific region (for lights)
+    static void ApplyHDRIntensity(int x, int y, int width, int height, float intensityNits);
+    
+    // Render the HDR framebuffer to screen with PQ encoding
+    static void Present(int screenWidth, int screenHeight);
+    
+    // Get the HDR framebuffer texture for blending
+    static GLuint GetHDRTexture() { return s_hdrTexture; }
+    
+    // Set overall scene exposure/brightness
+    static void SetExposure(float exposure);
+    
+    // Check if we should use HDR path
+    static bool ShouldUseHDR();
+
+private:
+    static bool s_initialized;
+    static int s_width;
+    static int s_height;
+    
+    // OpenGL resources
+    static GLuint s_hdrFBO;           // HDR framebuffer object
+    static GLuint s_hdrTexture;       // FP16 HDR texture (GL_RGBA16F)
+    static GLuint s_sdrTexture;       // Input SDR texture (GL_RGBA8)
+    static GLuint s_outputProgram;    // Shader for HDR to PQ conversion
+    static GLuint s_uploadProgram;    // Shader for SDR to HDR conversion
+    static GLuint s_quadVAO;          // Fullscreen quad VAO
+    static GLuint s_quadVBO;          // Fullscreen quad VBO
+    
+    static float s_exposure;
+    
+    // Shader compilation helpers
+    static GLuint CompileShader(GLenum type, const char* source);
+    static GLuint CreateProgram(const char* vertexSrc, const char* fragmentSrc);
+    static void CreateFullscreenQuad();
+    
+    // Shader sources
+    static const char* s_vertexShaderSrc;
+    static const char* s_hdrUploadFragmentSrc;
+    static const char* s_pqOutputFragmentSrc;
+};
