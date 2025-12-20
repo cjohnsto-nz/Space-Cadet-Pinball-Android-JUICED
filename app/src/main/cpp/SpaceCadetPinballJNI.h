@@ -43,6 +43,9 @@ public:
     static float getMaxDisplayLuminance();
     static void setHDRCapabilities(bool supported, bool bt2020, bool pq, bool scrgb, 
                                    bool fp16, float maxNits, float minNits);
+    
+    // Demo mode toggle (called from game thread)
+    static bool shouldToggleDemo();
 };
 
 #endif // SPACECADETPINBALLJNI_H

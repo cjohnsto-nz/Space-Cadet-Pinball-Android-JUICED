@@ -611,7 +611,7 @@ void control::make_links(TPinballTable* table)
 				"skill_shot_lights", 0,
 				0.88f, 0.75f,      // X, Y position (normalized)
 				0.04f, 0.04f,      // Width, Height
-				1.0f, 0.3f, 0.1f,  // R, G, B (orange-red)
+				1.0f, 0.7f, 0.1f,  // R, G, B (yellow-orange)
 				600.0f,            // Intensity when on (nits)
 				1000.0f,           // Intensity when flashing (nits)
 				1.0f               // Glow radius
@@ -622,7 +622,7 @@ void control::make_links(TPinballTable* table)
 				"skill_shot_lights", 1,
 				0.88f, 0.68f,
 				0.04f, 0.04f,
-				1.0f, 0.5f, 0.1f,  // Orange
+				1.0f, 0.7f, 0.1f,  // Yellow-orange
 				600.0f, 1000.0f, 1.0f
 			});
 			
@@ -640,7 +640,7 @@ void control::make_links(TPinballTable* table)
 				"skill_shot_lights", 3,
 				0.88f, 0.54f,
 				0.04f, 0.04f,
-				0.8f, 1.0f, 0.2f,  // Yellow-green
+				1.0f, 0.7f, 0.1f,  // Yellow-orange
 				600.0f, 1000.0f, 1.0f
 			});
 			
@@ -649,7 +649,7 @@ void control::make_links(TPinballTable* table)
 				"skill_shot_lights", 4,
 				0.88f, 0.47f,
 				0.04f, 0.04f,
-				0.2f, 1.0f, 0.3f,  // Green
+				1.0f, 0.7f, 0.1f,  // Yellow-orange
 				600.0f, 1000.0f, 1.0f
 			});
 			
@@ -658,7 +658,7 @@ void control::make_links(TPinballTable* table)
 				"skill_shot_lights", 5,
 				0.88f, 0.40f,
 				0.04f, 0.04f,
-				0.1f, 0.8f, 1.0f,  // Cyan
+				1.0f, 0.7f, 0.1f,  // Yellow-orange
 				700.0f, 1200.0f, 1.0f
 			});
 		}
@@ -721,6 +721,126 @@ void control::make_links(TPinballTable* table)
 					x, y,
 					lightW, lightH,
 					0.02f, 0.02f, 1.0f,  // Pure blue
+					peakNits, peakNits, 1.0f
+				});
+			}
+		}
+		
+		// Register re-entry lane rollover lights (small yellow lights at top center)
+		// lite8, lite9, lite10 - three lights in a row
+		{
+			float peakNits = HDR::GetMaxDisplayNits();
+			float lightW = 0.03f;
+			float lightH = 0.03f / 0.61f;
+			
+			if (control_lite8_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("lite8", control_lite8_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"lite8", 0,
+					0.22f, 0.18f,      // Left rollover light
+					lightW, lightH,
+					1.0f, 0.8f, 0.0f,  // Yellow
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			if (control_lite9_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("lite9", control_lite9_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"lite9", 0,
+					0.305f, 0.18f,     // Center rollover light
+					lightW, lightH,
+					1.0f, 0.8f, 0.0f,  // Yellow
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			if (control_lite10_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("lite10", control_lite10_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"lite10", 0,
+					0.39f, 0.18f,      // Right rollover light
+					lightW, lightH,
+					1.0f, 0.8f, 0.0f,  // Yellow
+					peakNits, peakNits, 1.0f
+				});
+			}
+		}
+		
+		// Register fuel ramp lights
+		// literoll179-184 - six lights along the fuel ramp
+		// From top to bottom: Blue, (not visible), Purple, Red, Orange, Yellow
+		{
+			float peakNits = HDR::GetMaxDisplayNits();
+			float lightW = 0.03f;
+			float lightH = 0.03f / 0.61f;
+			
+			// literoll184 (top) - Blue
+			if (control_literoll184_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("literoll184", control_literoll184_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"literoll184", 0,
+					0.08f, 0.37f,
+					lightW, lightH,
+					0.0f, 0.0f, 1.0f,  // Blue
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			// literoll183 - Not visible (skip)
+			
+			// literoll182 - Purple
+			if (control_literoll182_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("literoll182", control_literoll182_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"literoll182", 0,
+					0.08f, 0.51f,
+					lightW, lightH,
+					0.8f, 0.0f, 1.0f,  // Purple
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			// literoll181 - Red
+			if (control_literoll181_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("literoll181", control_literoll181_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"literoll181", 0,
+					0.08f, 0.58f,
+					lightW, lightH,
+					1.0f, 0.0f, 0.0f,  // Red
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			// literoll180 - Orange
+			if (control_literoll180_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("literoll180", control_literoll180_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"literoll180", 0,
+					0.08f, 0.65f,
+					lightW, lightH,
+					1.0f, 0.5f, 0.0f,  // Orange
+					peakNits, peakNits, 1.0f
+				});
+			}
+			
+			// literoll179 (bottom) - Yellow
+			if (control_literoll179_tag.Component)
+			{
+				HDRLightOverlay::RegisterIndividualLight("literoll179", control_literoll179_tag.Component);
+				HDRLightOverlay::AddLightConfig({
+					"literoll179", 0,
+					0.08f, 0.72f,
+					lightW, lightH,
+					1.0f, 0.8f, 0.0f,  // Yellow
 					peakNits, peakNits, 1.0f
 				});
 			}

@@ -272,6 +272,13 @@ public class MainActivity extends SDLActivity {
             Intent i = new Intent(this, Settings.class);
             startActivity(i);
         });
+        
+        mBinding.settingsbtn.setOnLongClickListener(view -> {
+            exeHaptic();
+            triggerDemoMode();
+            Toast.makeText(this, "Demo Mode", Toast.LENGTH_SHORT).show();
+            return true;
+        });
 
         firebaseAnalytics = FirebaseAnalytics.getInstance(this);
         firebaseAnalytics.logEvent(FirebaseAnalytics.Event.APP_OPEN, null);
@@ -893,4 +900,5 @@ public class MainActivity extends SDLActivity {
     private native boolean saveLightPositions(String filepath);
     private native boolean loadLightPositions(String filepath);
     private native int getSelectedLightIndex();
+    private native void triggerDemoMode();
 }

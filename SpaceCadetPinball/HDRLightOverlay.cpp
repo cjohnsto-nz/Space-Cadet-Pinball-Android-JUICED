@@ -799,17 +799,26 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
 
 int HDRLightOverlay::ResetOutOfBoundsLights() {
     int resetCount = 0;
-    const float margin = 0.05f;  // Small margin inside viewport
+    // Game canvas aspect ratio is ~0.61 (width/height)
+    // X coordinates are in range 0-0.61, Y in range 0-1
+    const float canvasAspect = 0.61f;
+    const float margin = 0.02f;  // Small margin inside viewport
     const float minX = margin;
-    const float maxX = 1.0f - margin;
+    const float maxX = canvasAspect - margin;
     const float minY = margin;
     const float maxY = 1.0f - margin;
     
     for (auto& config : s_lightConfigs) {
         bool outOfBounds = false;
         
-        if (config.X < 0.0f || config.X > 1.0f || 
+        // Check against actual canvas bounds (0.61 width, not 1.0)
+        if (config.X < 0.0f || config.X > canvasAspect || 
             config.Y < 0.0f || config.Y > 1.0f) {
+            outOfBounds = true;
+        }
+        
+        // Also check for NaN
+        if (config.X != config.X || config.Y != config.Y) {
             outOfBounds = true;
         }
         
@@ -820,7 +829,7 @@ int HDRLightOverlay::ResetOutOfBoundsLights() {
             
             // If still invalid (e.g., NaN), reset to center
             if (config.X != config.X || config.Y != config.Y) {  // NaN check
-                config.X = 0.5f;
+                config.X = canvasAspect / 2.0f;
                 config.Y = 0.5f;
             }
             
@@ -833,7 +842,8 @@ int HDRLightOverlay::ResetOutOfBoundsLights() {
     // Also reset test lights
     for (size_t i = 0; i < s_testLights.size(); i++) {
         auto& test = s_testLights[i];
-        if (test.x < 0.0f || test.x > 1.0f || test.y < 0.0f || test.y > 1.0f) {
+        if (test.x < 0.0f || test.x > canvasAspect || test.y < 0.0f || test.y > 1.0f ||
+            test.x != test.x || test.y != test.y) {
             test.x = std::max(minX, std::min(maxX, test.x));
             test.y = std::max(minY, std::min(maxY, test.y));
             resetCount++;

@@ -11,6 +11,7 @@
 #include "Sound.h"
 #include "HDRConfig.h"
 #include "HDRRenderer.h"
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 
 SDL_Window* winmain::MainWindow = nullptr;
 SDL_Renderer* winmain::Renderer = nullptr;
@@ -222,6 +223,11 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 			}
 			if (!single_step && !no_time_loss)
 			{
+				// Check for demo mode toggle request from UI thread
+				if (SpaceCadetPinballJNI::shouldToggleDemo()) {
+					pb::toggle_demo();
+				}
+				
 				auto dt = static_cast<float>(frameDuration.count());
 				auto dtWhole = static_cast<int>(std::round(dt));
 				pb::frame(dt);

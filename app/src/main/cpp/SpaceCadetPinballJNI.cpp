@@ -4,6 +4,7 @@
 #include "../../../../SpaceCadetPinball/pinball.h"
 #include "../../../../SpaceCadetPinball/control.h"
 #include "../../../../SpaceCadetPinball/HDRConfig.h"
+#include "../../../../SpaceCadetPinball/pb.h"
 #include <jni.h>
 #include <android/log.h>
 
@@ -301,4 +302,22 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_fexed_spacecadetpinball_Settings_resetOutOfBoundsLightsNative(JNIEnv *env, jobject thiz) {
     return HDRLightOverlay::ResetOutOfBoundsLights();
+}
+
+// Flag to request demo mode toggle from game thread
+static bool s_requestDemoToggle = false;
+
+bool SpaceCadetPinballJNI::shouldToggleDemo() {
+    if (s_requestDemoToggle) {
+        s_requestDemoToggle = false;
+        return true;
+    }
+    return false;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_triggerDemoMode(JNIEnv *env, jobject thiz) {
+    // Set flag to be processed on game thread
+    s_requestDemoToggle = true;
 }
