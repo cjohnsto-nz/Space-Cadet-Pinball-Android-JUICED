@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "HDRRenderer.h"
 #include "HDRConfig.h"
+#include "HDRLightOverlay.h"
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -20,6 +21,10 @@
 bool HDRRenderer::s_initialized = false;
 int HDRRenderer::s_width = 0;
 int HDRRenderer::s_height = 0;
+int HDRRenderer::s_viewportX = 0;
+int HDRRenderer::s_viewportY = 0;
+int HDRRenderer::s_viewportW = 0;
+int HDRRenderer::s_viewportH = 0;
 GLuint HDRRenderer::s_hdrFBO = 0;
 GLuint HDRRenderer::s_hdrTexture = 0;
 GLuint HDRRenderer::s_sdrTexture = 0;
@@ -118,27 +123,33 @@ vec3 bt709ToBt2020(vec3 color) {
     return M * color;
 }
 
-// Subtle vibrance boost - increases saturation of less saturated colors more
-vec3 applyVibrance(vec3 color, float amount) {
+// Luminance-dependent saturation boost - brighter colors get more saturation
+vec3 applySaturationBoost(vec3 color, float baseAmount, float brightnessScale) {
     float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-    float maxComponent = max(max(color.r, color.g), color.b);
-    float minComponent = min(min(color.r, color.g), color.b);
-    float saturation = (maxComponent > 0.0) ? (maxComponent - minComponent) / maxComponent : 0.0;
     
-    // Vibrance affects less saturated colors more
-    float vibranceAmount = amount * (1.0 - saturation);
+    // Boost saturation more for brighter pixels (luminance-dependent)
+    // Smoothstep creates a nice curve: low boost for darks, high boost for brights
+    float brightnessFactor = smoothstep(0.2, 0.9, luminance);
+    float satAmount = baseAmount + brightnessScale * brightnessFactor;
     
-    return mix(vec3(luminance), color, 1.0 + vibranceAmount);
+    // Apply saturation boost
+    return mix(vec3(luminance), color, 1.0 + satAmount);
 }
 
-// Gentle gamut expansion - slightly push colors toward BT.2020 primaries
-vec3 expandGamut(vec3 bt709Color, float amount) {
-    // This matrix slightly expands colors beyond BT.709 toward BT.2020
-    // amount of 0.0 = no expansion, 1.0 = full expansion
+// Luminance-dependent gamut expansion - brighter colors expand more into BT.2020
+vec3 expandGamut(vec3 bt709Color, float baseAmount, float brightnessScale) {
+    float luminance = dot(bt709Color, vec3(0.2126, 0.7152, 0.0722));
+    
+    // Expand gamut more for brighter pixels
+    float brightnessFactor = smoothstep(0.15, 0.85, luminance);
+    float amount = baseAmount + brightnessScale * brightnessFactor;
+    
+    // This matrix expands colors beyond BT.709 toward BT.2020
+    // Stronger expansion for brighter colors creates more vivid highlights
     mat3 expand = mat3(
-        1.0 + 0.1 * amount, -0.05 * amount, -0.05 * amount,
-        -0.05 * amount, 1.0 + 0.1 * amount, -0.05 * amount,
-        -0.05 * amount, -0.05 * amount, 1.0 + 0.1 * amount
+        1.0 + 0.15 * amount, -0.075 * amount, -0.075 * amount,
+        -0.075 * amount, 1.0 + 0.15 * amount, -0.075 * amount,
+        -0.075 * amount, -0.075 * amount, 1.0 + 0.15 * amount
     );
     return expand * bt709Color;
 }
@@ -146,15 +157,28 @@ vec3 expandGamut(vec3 bt709Color, float amount) {
 void main() {
     vec4 hdrColor = texture(uHDRTexture, vTexCoord);
     
-    // Apply vibrance boost (0.25 = 25% boost on desaturated colors)
-    vec3 vibranceColor = applyVibrance(hdrColor.rgb, 0.25);
+    // Gentle gamma lift to darken midtones slightly
+    vec3 darkenedColor = pow(hdrColor.rgb, vec3(1.15));
     
-    // Apply gamut expansion (0.35 = 35% toward wider gamut)
-    vec3 expandedColor = expandGamut(vibranceColor, 0.35);
+    // Calculate luminance for selective processing
+    float lum = dot(darkenedColor, vec3(0.2126, 0.7152, 0.0722));
     
-    // Subtle midpoint adjustment (darken midtones slightly for more punch)
-    // Using a gentle power curve: values < 1.0 darken midtones
-    expandedColor = pow(expandedColor, vec3(1.1));
+    // Saturation boost that scales strongly with brightness
+    // Darks: no change (factor ~1.0), Brights: significant boost (factor up to 1.6)
+    float satBoost = smoothstep(0.25, 0.75, lum) * 0.6;
+    vec3 saturatedColor = mix(vec3(lum), darkenedColor, 1.0 + satBoost);
+    
+    // Strong gamut expansion for bright pixels only
+    // Uses a steeper curve so only brighter pixels get expanded
+    float gamutAmount = smoothstep(0.3, 0.7, lum) * 0.8;
+    mat3 expand = mat3(
+        1.0 + 0.2 * gamutAmount, -0.1 * gamutAmount, -0.1 * gamutAmount,
+        -0.1 * gamutAmount, 1.0 + 0.2 * gamutAmount, -0.1 * gamutAmount,
+        -0.1 * gamutAmount, -0.1 * gamutAmount, 1.0 + 0.2 * gamutAmount
+    );
+    vec3 expandedColor = expand * saturatedColor;
+    
+    // No additional contrast adjustment
     
     // Full HDR PQ path for BT.2020 PQ surface
     // HDR color is in linear space, normalized to SDR white = 1.0
@@ -357,6 +381,8 @@ void HDRRenderer::UploadTexture(const ColorRgba* pixels, int width, int height) 
         HDR_ERR("GL error after FBO render: 0x%x", err);
     }
     
+    // Light overlays are now rendered in Present() after PQ encoding
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -403,6 +429,12 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     HDR_LOG("Present: screen %dx%d, texture %dx%d, viewport %d,%d %dx%d", 
             screenWidth, screenHeight, s_width, s_height, viewportX, viewportY, viewportW, viewportH);
     
+    // Store viewport for touch coordinate conversion
+    s_viewportX = viewportX;
+    s_viewportY = viewportY;
+    s_viewportW = viewportW;
+    s_viewportH = viewportH;
+    
     // Bind default framebuffer (screen)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
@@ -442,6 +474,15 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     glBindVertexArray(0);
     
     glUseProgram(0);
+    
+    // Render HDR light overlays on top of the PQ-encoded output
+    // These need to be rendered directly to screen with their own PQ encoding
+    HDRLightOverlay::UpdateLightStates();
+    if (HDRLightOverlay::HasActiveLights()) {
+        // Pass viewport info so overlays render in the correct position
+        HDRLightOverlay::RenderOverlaysPQ(viewportX, viewportY, viewportW, viewportH, 
+                                          s_width, s_height, HDR::GetMaxDisplayNits());
+    }
     
     // Check for GL errors
     GLenum err = glGetError();

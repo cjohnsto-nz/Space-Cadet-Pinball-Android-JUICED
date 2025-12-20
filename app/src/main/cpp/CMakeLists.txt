@@ -127,6 +127,8 @@ set(SOURCE_FILES
         ../../../../SpaceCadetPinball/HDRConfig.h
         ../../../../SpaceCadetPinball/HDRRenderer.cpp
         ../../../../SpaceCadetPinball/HDRRenderer.h
+        ../../../../SpaceCadetPinball/HDRLightOverlay.cpp
+        ../../../../SpaceCadetPinball/HDRLightOverlay.h
         SpaceCadetPinballJNI.cpp
         SpaceCadetPinballJNI.h)
 

@@ -36,11 +36,23 @@ public:
     
     // Check if we should use HDR path
     static bool ShouldUseHDR();
+    
+    // Get current viewport (for touch coordinate conversion)
+    static int GetViewportX() { return s_viewportX; }
+    static int GetViewportY() { return s_viewportY; }
+    static int GetViewportW() { return s_viewportW; }
+    static int GetViewportH() { return s_viewportH; }
 
 private:
     static bool s_initialized;
     static int s_width;
     static int s_height;
+    
+    // Current viewport (updated in Present)
+    static int s_viewportX;
+    static int s_viewportY;
+    static int s_viewportW;
+    static int s_viewportH;
     
     // OpenGL resources
     static GLuint s_hdrFBO;           // HDR framebuffer object

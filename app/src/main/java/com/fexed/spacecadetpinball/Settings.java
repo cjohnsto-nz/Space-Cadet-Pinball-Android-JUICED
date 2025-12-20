@@ -33,7 +33,6 @@ import com.fexed.spacecadetpinball.databinding.ActivitySettingsBinding;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.libsdl.app.SDLActivity;
-import org.w3c.dom.Text;
 
 import java.security.PublicKey;
 import java.util.Random;
@@ -41,6 +40,14 @@ import java.util.Random;
 public class Settings extends AppCompatActivity {
 
     private ActivitySettingsBinding mBinding;
+
+    // Load native library for light position saving
+    static {
+        System.loadLibrary("SpaceCadetPinball");
+    }
+
+    private native boolean saveLightPositionsNative(String filepath);
+    private native int resetOutOfBoundsLightsNative();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,6 +150,33 @@ public class Settings extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+
+        // Light editor toggle
+        mBinding.lightEditSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setLightEditMode(b);
+            if (b) {
+                Toast.makeText(this, "Light Edit Mode ON - go back to game and drag lights", Toast.LENGTH_LONG).show();
+            }
+        });
+        mBinding.lightEditSwitch.setChecked(PrefsHelper.getLightEditMode());
+        
+        mBinding.saveLightsBtn.setOnClickListener(v -> {
+            String path = getFilesDir().getAbsolutePath() + "/light_positions.cfg";
+            if (saveLightPositionsNative(path)) {
+                Toast.makeText(this, "Light positions saved!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Failed to save light positions", Toast.LENGTH_SHORT).show();
+            }
+        });
+        
+        mBinding.resetLightsBtn.setOnClickListener(v -> {
+            int count = resetOutOfBoundsLightsNative();
+            if (count > 0) {
+                Toast.makeText(this, "Reset " + count + " out-of-bounds lights", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "All lights are within bounds", Toast.LENGTH_SHORT).show();
+            }
         });
 
         mBinding.inpttxtusername.setText(PrefsHelper.getUsername("Player 1"));

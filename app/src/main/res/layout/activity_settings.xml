@@ -192,15 +192,69 @@
             app:layout_constraintStart_toStartOf="@+id/textViewHDRNits"
             app:layout_constraintTop_toBottomOf="@+id/hdrNitsInput" />
 
+        <TextView
+            android:id="@+id/textViewLightEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Light Position Editor"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/lightEditSwitch"
+            app:layout_constraintStart_toStartOf="@+id/textViewHDRNits"
+            app:layout_constraintTop_toBottomOf="@+id/hdrNitsHint" />
+
+        <Switch
+            android:id="@+id/lightEditSwitch"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintTop_toTopOf="@+id/textViewLightEdit"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewLightEdit" />
+
+        <Button
+            android:id="@+id/saveLightsBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:text="Save Positions"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@+id/textViewLightEdit"
+            app:layout_constraintTop_toBottomOf="@+id/textViewLightEdit" />
+
+        <Button
+            android:id="@+id/resetLightsBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Reset Lost"
+            android:textSize="12sp"
+            app:layout_constraintStart_toEndOf="@+id/saveLightsBtn"
+            app:layout_constraintTop_toBottomOf="@+id/textViewLightEdit" />
+
+        <TextView
+            android:id="@+id/lightEditHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Enable to drag HDR lights to new positions"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintStart_toStartOf="@+id/textViewLightEdit"
+            app:layout_constraintTop_toBottomOf="@+id/saveLightsBtn" />
+
         <View
             android:id="@+id/divider3"
             android:layout_width="match_parent"
             android:layout_height="1dp"
+            android:layout_marginTop="16dp"
             android:background="?android:attr/listDivider"
             app:layout_constraintBottom_toTopOf="@+id/textView6"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/volumebar" />
+            app:layout_constraintTop_toBottomOf="@+id/lightEditHint" />
 
         <TextView
             android:id="@+id/textView21"
@@ -401,14 +455,14 @@
             android:id="@+id/textView4"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:text="@string/volume"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/hdrNitsHint" />
+            app:layout_constraintTop_toBottomOf="@+id/lightEditHint" />
 
         <Switch
             android:id="@+id/tiltbtns"

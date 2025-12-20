@@ -20,6 +20,7 @@ public class PrefsHelper {
     private static final String KEY_CUSTOMFONTS = "customfonts";
     private static final String KEY_HDR_ENABLED = "hdr_enabled";
     private static final String KEY_HDR_MAX_NITS = "hdr_max_nits";
+    private static final String KEY_LIGHT_EDIT_MODE = "light_edit_mode";
 
     public static SharedPreferences getPrefs() {
         return prefs;
@@ -139,5 +140,13 @@ public class PrefsHelper {
 
     public static void setHDRMaxNits(int value) {
         prefs.edit().putInt(KEY_HDR_MAX_NITS, value).apply();
+    }
+
+    public static boolean getLightEditMode() {
+        return prefs.getBoolean(KEY_LIGHT_EDIT_MODE, false);
+    }
+
+    public static void setLightEditMode(boolean value) {
+        prefs.edit().putBoolean(KEY_LIGHT_EDIT_MODE, value).apply();
     }
 }

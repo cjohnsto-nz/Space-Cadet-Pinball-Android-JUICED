@@ -208,3 +208,97 @@ JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_setHDREnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     HDR::SetHDREnabled(enabled);
 }
+
+// Light editor JNI functions
+#include "../../../../SpaceCadetPinball/HDRLightOverlay.h"
+#include "../../../../SpaceCadetPinball/HDRRenderer.h"
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setLightEditMode(JNIEnv *env, jobject thiz, jboolean enabled) {
+    HDRLightOverlay::SetEditMode(enabled);
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getLightEditMode(JNIEnv *env, jobject thiz) {
+    return HDRLightOverlay::GetEditMode();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchDown(JNIEnv *env, jobject thiz, 
+        jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
+    // Use viewport from HDRRenderer instead of passed values (more accurate)
+    int vx = HDRRenderer::GetViewportX();
+    int vy = HDRRenderer::GetViewportY();
+    int vw = HDRRenderer::GetViewportW();
+    int vh = HDRRenderer::GetViewportH();
+    if (vw > 0 && vh > 0) {
+        HDRLightOverlay::OnTouchDown(screenX, screenY, vx, vy, vw, vh);
+    } else {
+        HDRLightOverlay::OnTouchDown(screenX, screenY, viewportX, viewportY, viewportW, viewportH);
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchMove(JNIEnv *env, jobject thiz,
+        jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
+    // Use viewport from HDRRenderer instead of passed values (more accurate)
+    int vx = HDRRenderer::GetViewportX();
+    int vy = HDRRenderer::GetViewportY();
+    int vw = HDRRenderer::GetViewportW();
+    int vh = HDRRenderer::GetViewportH();
+    if (vw > 0 && vh > 0) {
+        HDRLightOverlay::OnTouchMove(screenX, screenY, vx, vy, vw, vh);
+    } else {
+        HDRLightOverlay::OnTouchMove(screenX, screenY, viewportX, viewportY, viewportW, viewportH);
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchUp(JNIEnv *env, jobject thiz) {
+    HDRLightOverlay::OnTouchUp();
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_saveLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
+    const char* path = env->GetStringUTFChars(filepath, nullptr);
+    bool result = HDRLightOverlay::SaveLightPositions(path);
+    env->ReleaseStringUTFChars(filepath, path);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
+    const char* path = env->GetStringUTFChars(filepath, nullptr);
+    bool result = HDRLightOverlay::LoadLightPositions(path);
+    env->ReleaseStringUTFChars(filepath, path);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getSelectedLightIndex(JNIEnv *env, jobject thiz) {
+    return HDRLightOverlay::GetSelectedLightIndex();
+}
+
+// Settings activity save function
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_Settings_saveLightPositionsNative(JNIEnv *env, jobject thiz, jstring filepath) {
+    const char* path = env->GetStringUTFChars(filepath, nullptr);
+    bool result = HDRLightOverlay::SaveLightPositions(path);
+    env->ReleaseStringUTFChars(filepath, path);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_Settings_resetOutOfBoundsLightsNative(JNIEnv *env, jobject thiz) {
+    return HDRLightOverlay::ResetOutOfBoundsLights();
+}

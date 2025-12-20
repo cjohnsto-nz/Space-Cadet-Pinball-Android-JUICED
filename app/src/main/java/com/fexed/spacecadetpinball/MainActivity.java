@@ -68,6 +68,10 @@ public class MainActivity extends SDLActivity {
     private SensorManager sensorManager;
     private Sensor accelerometer;
 
+    // Light editor state
+    private boolean lightEditModeEnabled = false;
+    private int[] lastViewport = new int[4];  // x, y, w, h
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -657,6 +661,10 @@ public class MainActivity extends SDLActivity {
         configurePlunger();
         setFullscreen();
         sensorManager.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        
+        // Sync light edit mode from preferences
+        lightEditModeEnabled = PrefsHelper.getLightEditMode();
+        setLightEditMode(lightEditModeEnabled);
     }
 
     private void setBallsText() {
@@ -801,9 +809,88 @@ public class MainActivity extends SDLActivity {
 
     private native boolean checkCheatsUsed();
 
+    // Light editor public methods
+    public void toggleLightEditMode() {
+        lightEditModeEnabled = !lightEditModeEnabled;
+        setLightEditMode(lightEditModeEnabled);
+        if (lightEditModeEnabled) {
+            Toast.makeText(this, "Light Edit Mode ON - drag lights to reposition", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "Light Edit Mode OFF", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    public void saveLightConfig() {
+        String path = getFilesDir().getAbsolutePath() + "/light_positions.cfg";
+        if (saveLightPositions(path)) {
+            Toast.makeText(this, "Light positions saved to " + path, Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "Failed to save light positions", Toast.LENGTH_SHORT).show();
+        }
+    }
+    public void loadLightConfig() {
+        String path = getFilesDir().getAbsolutePath() + "/light_positions.cfg";
+        if (loadLightPositions(path)) {
+            Toast.makeText(this, "Light positions loaded", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Track if we're currently dragging a light
+    private boolean isDraggingLight = false;
+
+    // Override dispatchTouchEvent to intercept touches for light editing
+    // Only consume touches when actually dragging a light
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (lightEditModeEnabled) {
+            int viewportW = getWindow().getDecorView().getWidth();
+            int viewportH = getWindow().getDecorView().getHeight();
+
+            float x = event.getX();
+            float y = event.getY();
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    // Check if touch is near a light - native code will set selection
+                    onLightTouchDown(x, y, 0, 0, viewportW, viewportH);
+                    // Check if a light was selected
+                    isDraggingLight = (getSelectedLightIndex() != -1);
+                    if (isDraggingLight) {
+                        return true; // Consume touch if we selected a light
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (isDraggingLight) {
+                        onLightTouchMove(x, y, 0, 0, viewportW, viewportH);
+                        return true; // Consume while dragging
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (isDraggingLight) {
+                        onLightTouchUp();
+                        isDraggingLight = false;
+                        return true;
+                    }
+                    break;
+            }
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
     // HDR native methods
     private native void setHDRCapabilities(boolean supported, boolean bt2020, boolean pq, 
                                            boolean scrgb, boolean fp16, float maxNits, float minNits);
     private native boolean isHDRActive();
     private native void setHDREnabled(boolean enabled);
+
+    // Light editor native methods
+    private native void setLightEditMode(boolean enabled);
+    private native boolean getLightEditMode();
+    private native void onLightTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
+    private native void onLightTouchMove(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
+    private native void onLightTouchUp();
+    private native boolean saveLightPositions(String filepath);
+    private native boolean loadLightPositions(String filepath);
+    private native int getSelectedLightIndex();
 }

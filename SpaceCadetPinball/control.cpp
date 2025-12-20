@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "control.h"
 
-
+#include <cmath>
 
 #include "pb.h"
 #include "pinball.h"
@@ -28,6 +28,8 @@
 #include "TOneway.h"
 #include "TRamp.h"
 #include "TPlunger.h"
+#include "HDRLightOverlay.h"
+#include "HDRConfig.h"
 #include "TWall.h"
 #include "TTextBox.h"
 
@@ -590,6 +592,173 @@ void control::make_links(TPinballTable* table)
 
 	for (int i = 0; i < 142; ++i)
 		make_component_link(simple_components[i]);
+	
+	// Register HDR light overlays if HDR is active
+	if (HDR::IsHDRActive())
+	{
+		// Register skill shot lights group
+		if (control_skill_shot_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("skill_shot_lights", control_skill_shot_lights_tag.Component);
+			
+			// Add light configurations for each light in the skill shot group
+			// These positions are approximate - will need tuning based on actual game coordinates
+			// The skill shot lights are on the right side of the plunger ramp
+			// Positions are normalized 0-1 relative to game texture
+			
+			// Skill shot light 1 (bottom)
+			HDRLightOverlay::AddLightConfig({
+				"skill_shot_lights", 0,
+				0.88f, 0.75f,      // X, Y position (normalized)
+				0.04f, 0.04f,      // Width, Height
+				1.0f, 0.3f, 0.1f,  // R, G, B (orange-red)
+				600.0f,            // Intensity when on (nits)
+				1000.0f,           // Intensity when flashing (nits)
+				1.0f               // Glow radius
+			});
+			
+			// Skill shot light 2
+			HDRLightOverlay::AddLightConfig({
+				"skill_shot_lights", 1,
+				0.88f, 0.68f,
+				0.04f, 0.04f,
+				1.0f, 0.5f, 0.1f,  // Orange
+				600.0f, 1000.0f, 1.0f
+			});
+			
+			// Skill shot light 3
+			HDRLightOverlay::AddLightConfig({
+				"skill_shot_lights", 2,
+				0.88f, 0.61f,
+				0.04f, 0.04f,
+				1.0f, 0.7f, 0.1f,  // Yellow-orange
+				600.0f, 1000.0f, 1.0f
+			});
+			
+			// Skill shot light 4
+			HDRLightOverlay::AddLightConfig({
+				"skill_shot_lights", 3,
+				0.88f, 0.54f,
+				0.04f, 0.04f,
+				0.8f, 1.0f, 0.2f,  // Yellow-green
+				600.0f, 1000.0f, 1.0f
+			});
+			
+			// Skill shot light 5
+			HDRLightOverlay::AddLightConfig({
+				"skill_shot_lights", 4,
+				0.88f, 0.47f,
+				0.04f, 0.04f,
+				0.2f, 1.0f, 0.3f,  // Green
+				600.0f, 1000.0f, 1.0f
+			});
+			
+			// Skill shot light 6 (top)
+			HDRLightOverlay::AddLightConfig({
+				"skill_shot_lights", 5,
+				0.88f, 0.40f,
+				0.04f, 0.04f,
+				0.1f, 0.8f, 1.0f,  // Cyan
+				700.0f, 1200.0f, 1.0f
+			});
+		}
+		
+		// Register middle circle (inner ring of score lights - orange)
+		if (control_middle_circle_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("middle_circle", control_middle_circle_tag.Component);
+			
+			// The middle circle has 9 lights arranged in a ring
+			// Canvas is wider than tall, visible X is 0-0.61, Y is 0-1
+			// To make circles: Y values need to be larger (divide by 0.61)
+			float centerX = 0.305f;
+			float centerY = 0.65f;
+			float radiusX = 0.05f;
+			float radiusY = 0.05f / 0.61f;  // Make Y larger to compensate
+			float lightW = 0.04f;
+			float lightH = 0.04f / 0.61f;  // Make height larger
+			
+			for (int i = 0; i < 9; i++)
+			{
+				float angle = (float)i * (360.0f / 9.0f) - 90.0f;
+				float rad = angle * 3.14159f / 180.0f;
+				float x = centerX + radiusX * cosf(rad);
+				float y = centerY + radiusY * sinf(rad);
+				
+				HDRLightOverlay::AddLightConfig({
+					"middle_circle", i,
+					x, y,
+					lightW, lightH,
+					1.0f, 0.3f, 0.0f,  // Yellow
+					600.0f, 1000.0f, 1.0f
+				});
+			}
+		}
+		
+		// Register outer circle (outer ring of lights - blue)
+		if (control_outer_circle_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("outer_circle", control_outer_circle_tag.Component);
+			
+			// The outer circle has 18 lights arranged in a larger ring around the middle circle
+			float centerX = 0.305f;
+			float centerY = 0.65f;
+			float radiusX = 0.09f;  // Larger radius than middle circle
+			float radiusY = 0.09f / 0.61f;
+			float lightW = 0.04f;
+			float lightH = 0.04f / 0.61f;
+			float peakNits = HDR::GetMaxDisplayNits();
+			
+			for (int i = 0; i < 18; i++)
+			{
+				float angle = (float)i * (360.0f / 18.0f) - 90.0f;
+				float rad = angle * 3.14159f / 180.0f;
+				float x = centerX + radiusX * cosf(rad);
+				float y = centerY + radiusY * sinf(rad);
+				
+				HDRLightOverlay::AddLightConfig({
+					"outer_circle", i,
+					x, y,
+					lightW, lightH,
+					0.02f, 0.02f, 1.0f,  // Pure blue
+					peakNits, peakNits, 1.0f
+				});
+			}
+		}
+		
+		// Register exit ramp lights (red lights below paddles)
+		// lite199 = Replay indicator (left side)
+		// lite200 = Shoot Again / grace period light (right side)
+		if (control_lite199_tag.Component)
+		{
+			HDRLightOverlay::RegisterIndividualLight("lite199", control_lite199_tag.Component);
+			float peakNits = HDR::GetMaxDisplayNits();
+			HDRLightOverlay::AddLightConfig({
+				"lite199", 0,
+				0.22f, 0.95f,      // X, Y position (left exit ramp, below left paddle)
+				0.04f, 0.04f / 0.61f,
+				1.0f, 0.0f, 0.0f,  // Pure red
+				peakNits, peakNits, 1.0f
+			});
+		}
+		
+		if (control_lite200_tag.Component)
+		{
+			HDRLightOverlay::RegisterIndividualLight("lite200", control_lite200_tag.Component);
+			float peakNits = HDR::GetMaxDisplayNits();
+			HDRLightOverlay::AddLightConfig({
+				"lite200", 0,
+				0.39f, 0.95f,      // X, Y position (right exit ramp, below right paddle)
+				0.04f, 0.04f / 0.61f,
+				1.0f, 0.0f, 0.0f,  // Pure red
+				peakNits, peakNits, 1.0f
+			});
+		}
+		
+		// Load saved light positions (if any)
+		// Try common Android app data paths
+		HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions.cfg");
+	}
 }
 
 void control::ClearLinks()

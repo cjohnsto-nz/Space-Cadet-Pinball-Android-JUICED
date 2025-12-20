@@ -10,6 +10,8 @@
 #include "winmain.h"
 #include "HDRConfig.h"
 #include "HDRRenderer.h"
+#include "HDRLightOverlay.h"
+#include "control.h"
 
 
 std::vector<render_sprite_type_struct*> render::dirty_list, render::sprite_list, render::ball_list;
@@ -56,12 +58,19 @@ void render::init(gdrv_bitmap8* bmp, float zMin, float zScaler, int width, int h
 	if (HDR::IsHDRActive())
 	{
 		HDRRenderer::Init(width, height);
+		
+		// Initialize HDR light overlay system
+		HDRLightOverlay::Init();
+		
+		// Register skill shot lights group for HDR overlays
+		// The actual light group will be registered after control::make_component_list is called
 	}
 }
 
 void render::uninit()
 {
-	// Uninitialize HDR renderer
+	// Uninitialize HDR light overlay and renderer
+	HDRLightOverlay::Uninit();
 	if (HDRRenderer::IsInitialized())
 	{
 		HDRRenderer::Uninit();
