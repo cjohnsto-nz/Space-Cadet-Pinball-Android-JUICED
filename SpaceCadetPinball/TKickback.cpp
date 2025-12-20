@@ -8,6 +8,9 @@
 #include "render.h"
 #include "timer.h"
 #include "TPinballTable.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#endif
 
 TKickback::TKickback(TPinballTable* table, int groupIndex): TCollisionComponent(table, groupIndex, true)
 {
@@ -74,6 +77,11 @@ void TKickback::TimerExpired(int timerId, void* caller)
 				bmp->XPosition - kick->PinballTable->XOffset,
 				bmp->YPosition - kick->PinballTable->YOffset);
 		}
+
+#ifdef __ANDROID__
+		// Trigger haptic feedback for kickback launch - full intensity
+		SpaceCadetPinballJNI::triggerHapticFeedback(1.0f);
+#endif
 	}
 	else
 	{

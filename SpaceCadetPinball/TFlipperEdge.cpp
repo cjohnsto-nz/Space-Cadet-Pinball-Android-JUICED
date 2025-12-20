@@ -2,9 +2,15 @@
 #include "TFlipperEdge.h"
 
 
+#include "TBall.h"
 #include "TLine.h"
 #include "TPinballTable.h"
 #include "TTableLayer.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#include <chrono>
+static long long lastFlipperHapticTime = 0;
+#endif
 
 float TFlipperEdge::flipper_sin_angle, TFlipperEdge::flipper_cos_angle;
 vector2 TFlipperEdge::A1, TFlipperEdge::A2, TFlipperEdge::B1, TFlipperEdge::B2, TFlipperEdge::T1;
@@ -301,6 +307,15 @@ float TFlipperEdge::FindCollisionDistance(ray_type* ray)
 void TFlipperEdge::EdgeCollision(TBall* ball, float coef)
 {
 	EdgeCollisionFlag = 1;
+	
+#ifdef __ANDROID__
+	// Trigger haptic feedback based on ball speed - only for meaningful collisions
+	float intensity = ball->Speed / 20.0f;  // Normalize speed to 0-1 range
+	if (intensity > 1.0f) intensity = 1.0f;
+	if (intensity > 0.1f)  // Only trigger for noticeable collisions, not resting ball
+		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+#endif
+
 	if (!FlipperFlag || !CollisionFlag2 || CollisionFlag1)
 	{
 		float boost = 0.0;

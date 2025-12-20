@@ -10,6 +10,9 @@
 #include "timer.h"
 #include "TPinballTable.h"
 #include "TTableLayer.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#endif
 
 TKickout::TKickout(TPinballTable* table, int groupIndex, bool someFlag): TCollisionComponent(
 	table, groupIndex, false)
@@ -125,6 +128,11 @@ void TKickout::Collision(TBall* ball, vector2* nextPosition, vector2* direction,
 			loader::play_sound(SoftHitSoundId);
 			control::handler(63, this);
 		}
+
+#ifdef __ANDROID__
+		// Trigger haptic feedback for ball capture into hole/saucer
+		SpaceCadetPinballJNI::triggerHapticFeedback(0.6f);
+#endif
 	}
 }
 
@@ -159,6 +167,11 @@ void TKickout::TimerExpired(int timerId, void* caller)
 			kick->ActiveFlag = 0;
 			kick->Ball = nullptr;
 			loader::play_sound(kick->HardHitSoundId);
+
+#ifdef __ANDROID__
+			// Trigger haptic feedback for ball launch/eject
+			SpaceCadetPinballJNI::triggerHapticFeedback(0.7f);
+#endif
 		}
 	}
 }

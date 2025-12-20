@@ -451,25 +451,31 @@ public class MainActivity extends SDLActivity {
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         if (vibrator == null || !vibrator.hasVibrator()) return;
 
-        if (Build.VERSION.SDK_INT >= 26) {
-            // Clamp intensity between 0 and 1
-            float clampedIntensity = Math.max(0.0f, Math.min(1.0f, intensity));
-            
-            // Map intensity to amplitude (1-255) and duration
-            int amplitude = (int) (clampedIntensity * 255);
-            amplitude = Math.max(1, amplitude); // Minimum amplitude of 1
-            
-            // Duration scales with intensity: 5ms for soft hits, up to 30ms for hard hits
-            long duration = (long) (5 + clampedIntensity * 25);
-            
-            if (Build.VERSION.SDK_INT >= 26) {
-                VibrationEffect effect = VibrationEffect.createOneShot(duration, amplitude);
-                vibrator.vibrate(effect);
+        if (Build.VERSION.SDK_INT >= 29) {
+            // Use predefined haptic effects for better HD haptics feel
+            VibrationEffect effect;
+            if (intensity >= 0.7f) {
+                // Heavy collision - use heavy click
+                effect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+            } else if (intensity >= 0.3f) {
+                // Medium collision - use click
+                effect = VibrationEffect.createPredefined(EFFECT_CLICK);
+            } else {
+                // Light collision - use tick
+                effect = VibrationEffect.createPredefined(EFFECT_TICK);
             }
+            vibrator.vibrate(effect);
+        } else if (Build.VERSION.SDK_INT >= 26) {
+            // Fallback for older devices
+            float clampedIntensity = Math.max(0.0f, Math.min(1.0f, intensity));
+            int amplitude = (int) (clampedIntensity * 255);
+            amplitude = Math.max(1, amplitude);
+            long duration = (long) (5 + clampedIntensity * 25);
+            VibrationEffect effect = VibrationEffect.createOneShot(duration, amplitude);
+            vibrator.vibrate(effect);
         }
     }
 
-    
     private void setFullscreen() {
         int ui_Options = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION

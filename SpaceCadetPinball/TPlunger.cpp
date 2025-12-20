@@ -10,6 +10,9 @@
 #include "TBall.h"
 #include "timer.h"
 #include "TPinballTable.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#endif
 
 TPlunger::TPlunger(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
@@ -39,6 +42,13 @@ void TPlunger::Collision(TBall* ball, vector2* nextPosition, vector2* direction,
 		Message(1017, 0.0);
 	coef = RandFloat() * Boost * 0.1f + Boost; // it is intended that the passed in coef is never used!
 	maths::basic_collision(ball, nextPosition, direction, Elasticity, Smoothness, Threshold, coef);
+
+#ifdef __ANDROID__
+	// Trigger strong haptic feedback for plunger launch based on boost power
+	float intensity = Boost / static_cast<float>(MaxPullback);
+	if (intensity > 0.1f)
+		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+#endif
 }
 
 int TPlunger::Message(int code, float value)
