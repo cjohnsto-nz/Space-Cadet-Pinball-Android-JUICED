@@ -31,11 +31,17 @@ std::vector<HDRLightOverlay::TrailPoint> HDRLightOverlay::s_ballTrail;
 float HDRLightOverlay::s_lastBallX = 0.0f;
 float HDRLightOverlay::s_lastBallY = 0.0f;
 float HDRLightOverlay::s_trailTime = 0.0f;
+float HDRLightOverlay::s_glowModifier = 1.0f;
+float HDRLightOverlay::s_trailOpacity = 0.85f;
+float HDRLightOverlay::s_trailLifetimeSetting = 3.5f;
 bool HDRLightOverlay::s_initialized = false;
 GLuint HDRLightOverlay::s_overlayProgram = 0;
 GLuint HDRLightOverlay::s_overlayProgramPQ = 0;
 GLuint HDRLightOverlay::s_overlayVAO = 0;
 GLuint HDRLightOverlay::s_overlayVBO = 0;
+GLuint HDRLightOverlay::s_trailProgram = 0;
+GLuint HDRLightOverlay::s_trailVAO = 0;
+GLuint HDRLightOverlay::s_trailVBO = 0;
 static bool s_debugAllLightsOn = false;  // Debug mode - shows all lights regardless of state
 static bool s_editMode = false;  // Edit mode - allows dragging lights to reposition
 static int s_selectedLightIndex = -1;  // >= 0 for lights, < -1 for test lights
@@ -164,6 +170,73 @@ void main() {
 }
 )";
 
+// Trail vertex shader - takes pre-computed positions with alpha
+static const char* s_trailVertexSrc = R"(#version 300 es
+precision highp float;
+
+layout(location = 0) in vec2 aPos;      // Position in normalized coords (0-1)
+layout(location = 1) in float aAlpha;   // Alpha/fade value
+layout(location = 2) in float aEdge;    // 0 = center, 1 = edge (for soft edges)
+
+out float vAlpha;
+out float vEdge;
+
+void main() {
+    // Convert to clip space
+    vec2 pos;
+    pos.x = aPos.x * 2.0 - 1.0;
+    pos.y = 1.0 - aPos.y * 2.0;
+    
+    gl_Position = vec4(pos, 0.0, 1.0);
+    vAlpha = aAlpha;
+    vEdge = aEdge;
+}
+)";
+
+// Trail fragment shader - smooth gradient with PQ encoding
+static const char* s_trailFragmentSrc = R"(#version 300 es
+precision highp float;
+
+in float vAlpha;
+in float vEdge;
+out vec4 fragColor;
+
+uniform vec3 uTrailColor;
+uniform float uMaxNits;
+uniform float uIntensityNits;
+uniform float uMaxOpacity;
+
+// PQ constants
+const float m1 = 0.1593017578125;
+const float m2 = 78.84375;
+const float c1 = 0.8359375;
+const float c2 = 18.8515625;
+const float c3 = 18.6875;
+
+vec3 linearToPQ(vec3 linearNits) {
+    vec3 Y = linearNits / 10000.0;
+    Y = max(Y, vec3(0.0));
+    vec3 Ym1 = pow(Y, vec3(m1));
+    vec3 numerator = c1 + c2 * Ym1;
+    vec3 denominator = 1.0 + c3 * Ym1;
+    return pow(numerator / denominator, vec3(m2));
+}
+
+void main() {
+    // Soft edge falloff
+    float edgeFade = 1.0 - smoothstep(0.0, 1.0, vEdge);
+    float alpha = vAlpha * edgeFade * uMaxOpacity;  // Use dynamic max opacity
+    
+    if (alpha < 0.01) discard;
+    
+    // HDR color
+    vec3 hdrColorNits = uTrailColor * uIntensityNits;
+    vec3 pqColor = linearToPQ(hdrColorNits);
+    
+    fragColor = vec4(pqColor, alpha);
+}
+)";
+
 void HDRLightOverlay::Init() {
     if (s_initialized) return;
     
@@ -171,6 +244,7 @@ void HDRLightOverlay::Init() {
     
     CreateShaders();
     CreateQuad();
+    CreateTrailShader();
     
     s_initialized = true;
 }
@@ -467,7 +541,7 @@ void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
         glUniform1f(intensityLoc, linearIntensity);
         
         GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
-        glUniform1f(glowLoc, config->GlowRadius);
+        glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -489,7 +563,7 @@ void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
         glUniform1f(intensityLoc, linearIntensity);
         
         GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
-        glUniform1f(glowLoc, 1.0f);
+        glUniform1f(glowLoc, 1.0f * s_glowModifier);
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -537,9 +611,9 @@ void HDRLightOverlay::RenderSingleLight(const LightState& state, int texWidth, i
     float linearIntensity = state.currentIntensity / HDR::Luminance::SDR_WHITE_NITS;
     glUniform1f(intensityLoc, linearIntensity);
     
-    // Set glow radius
+    // Set glow radius (apply global modifier)
     GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
-    glUniform1f(glowLoc, config->GlowRadius);
+    glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
     
     // Draw the quad
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -599,7 +673,7 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
         glUniform1f(maxNitsLoc, maxNits);
         
         GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-        glUniform1f(glowLoc, config->GlowRadius);
+        glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -619,79 +693,18 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
         glUniform1f(maxNitsLoc, maxNits);
         
         GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-        glUniform1f(glowLoc, 1.0f);
+        glUniform1f(glowLoc, 1.0f * s_glowModifier);
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     
-    // Render continuous ball trail with interpolation
-    if (s_ballTrail.size() >= 2) {
-        // Draw interpolated segments between trail points for smooth continuous trail
-        for (size_t i = 0; i < s_ballTrail.size() - 1; i++) {
-            TrailPoint& p1 = s_ballTrail[i];
-            TrailPoint& p2 = s_ballTrail[i + 1];
-            
-            // Time-based fade
-            float age1 = s_trailTime - p1.timestamp;
-            float age2 = s_trailTime - p2.timestamp;
-            float fade1 = 1.0f - (age1 / TRAIL_LIFETIME);
-            float fade2 = 1.0f - (age2 / TRAIL_LIFETIME);
-            if (fade1 <= 0.0f && fade2 <= 0.0f) continue;
-            
-            // Calculate velocity magnitude for intensity scaling
-            float vel = sqrtf(p1.vx * p1.vx + p1.vy * p1.vy);
-            float velFactor = fminf(vel / 2.0f, 1.0f);  // Normalize velocity
-            
-            // Calculate distance between points to determine interpolation
-            float segDx = p2.x - p1.x;
-            float segDy = p2.y - p1.y;
-            float segDist = sqrtf(segDx * segDx + segDy * segDy);
-            
-            // More segments for longer distances, minimum 1
-            int numSegments = (int)(segDist / 0.003f) + 1;
-            if (numSegments > 20) numSegments = 20;  // Cap to avoid too many draws
-            
-            for (int s = 0; s < numSegments; s++) {
-                float t = (float)s / (float)numSegments;
-                float x = p1.x + t * (p2.x - p1.x);
-                float y = p1.y + t * (p2.y - p1.y);
-                float fade = fade1 + t * (fade2 - fade1);
-                
-                if (fade <= 0.0f) continue;
-                
-                // Skip trail points that are obscured by the ball
-                float ballDx = x - s_debugBallX;
-                float ballDy = y - s_debugBallY;
-                float ballDist = sqrtf(ballDx * ballDx + ballDy * ballDy);
-                if (ballDist < 0.01f) continue;  // Ball occlusion radius
-                
-                // Trail size - larger glow that overlaps to create continuous look
-                // Size decreases with fade for tapered tail
-                float baseSize = 0.02f * (0.5f + 0.5f * velFactor);
-                float trailSize = baseSize * (0.3f + 0.7f * fade);
-                
-                GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
-                glUniform4f(rectLoc, x, y, trailSize, trailSize);
-                
-                // White-blue trail color
-                GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
-                glUniform3f(colorLoc, 0.85f, 0.92f, 1.0f);
-                
-                // Intensity based on fade - use higher glow to blend points together
-                GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
-                glUniform1f(intensityLoc, 200.0f * fade * (0.4f + 0.6f * velFactor));
-                
-                GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
-                glUniform1f(maxNitsLoc, maxNits);
-                
-                // High glow radius to blend points into continuous trail
-                GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-                glUniform1f(glowLoc, 1.5f);
-                
-                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-            }
-        }
-    }
+    // Render smooth curved ball trail as triangle strip mesh
+    glBindVertexArray(0);  // Unbind current VAO before switching
+    RenderTrailMesh(maxNits);
+    
+    // Re-bind for debug ball rendering
+    glUseProgram(s_overlayProgramPQ);
+    glBindVertexArray(s_overlayVAO);
     
     // Render debug ball if enabled (PQ encoding) - simple red circle, no glow
     if (s_debugBallEnabled) {
@@ -749,9 +762,9 @@ void HDRLightOverlay::RenderSingleLightPQ(const LightState& state, float maxNits
     GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
     glUniform1f(maxNitsLoc, maxNits);
     
-    // Set glow radius
+    // Set glow radius (apply global modifier)
     GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-    glUniform1f(glowLoc, config->GlowRadius);
+    glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
     
     // Draw the quad
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -908,13 +921,13 @@ void HDRLightOverlay::SetDebugBallPosition(float x, float y) {
     // Increment trail time
     s_trailTime += dt;
     
-    // Always add a new trail point with current velocity
+    // Always add trail point
     TrailPoint newPoint = {x, y, vx, vy, s_trailTime};
     s_ballTrail.insert(s_ballTrail.begin(), newPoint);
     
-    // Remove old points that have exceeded lifetime
+    // Remove old points that have exceeded lifetime (use dynamic setting)
     while (!s_ballTrail.empty() && 
-           (s_trailTime - s_ballTrail.back().timestamp) > TRAIL_LIFETIME) {
+           (s_trailTime - s_ballTrail.back().timestamp) > s_trailLifetimeSetting) {
         s_ballTrail.pop_back();
     }
     
@@ -932,6 +945,21 @@ void HDRLightOverlay::SetDebugBallPosition(float x, float y) {
 void HDRLightOverlay::EnableDebugBall(bool enabled) {
     s_debugBallEnabled = enabled;
     HDRLIGHT_LOG("Debug ball %s", enabled ? "enabled" : "disabled");
+}
+
+void HDRLightOverlay::SetGlowModifier(float modifier) {
+    s_glowModifier = modifier;
+    HDRLIGHT_LOG("Glow modifier set to %.2f", modifier);
+}
+
+void HDRLightOverlay::SetTrailOpacity(float opacity) {
+    s_trailOpacity = opacity;
+    HDRLIGHT_LOG("Trail opacity set to %.2f", opacity);
+}
+
+void HDRLightOverlay::SetTrailLifetime(float seconds) {
+    s_trailLifetimeSetting = seconds;
+    HDRLIGHT_LOG("Trail lifetime set to %.2f seconds", seconds);
 }
 
 void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH) {
@@ -1220,4 +1248,300 @@ int HDRLightOverlay::ResetOutOfBoundsLights() {
     
     HDRLIGHT_LOG("Reset %d out-of-bounds lights", resetCount);
     return resetCount;
+}
+
+void HDRLightOverlay::CreateTrailShader() {
+    // Compile trail vertex shader
+    GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertShader, 1, &s_trailVertexSrc, nullptr);
+    glCompileShader(vertShader);
+    
+    GLint success;
+    glGetShaderiv(vertShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(vertShader, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Trail vertex shader error: %s", infoLog);
+    }
+    
+    // Compile trail fragment shader
+    GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragShader, 1, &s_trailFragmentSrc, nullptr);
+    glCompileShader(fragShader);
+    
+    glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(fragShader, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Trail fragment shader error: %s", infoLog);
+    }
+    
+    // Link program
+    s_trailProgram = glCreateProgram();
+    glAttachShader(s_trailProgram, vertShader);
+    glAttachShader(s_trailProgram, fragShader);
+    glLinkProgram(s_trailProgram);
+    
+    glGetProgramiv(s_trailProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(s_trailProgram, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Trail program link error: %s", infoLog);
+    }
+    
+    glDeleteShader(vertShader);
+    glDeleteShader(fragShader);
+    
+    // Create trail VAO and VBO
+    glGenVertexArrays(1, &s_trailVAO);
+    glGenBuffers(1, &s_trailVBO);
+    
+    glBindVertexArray(s_trailVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, s_trailVBO);
+    // Allocate buffer for dynamic trail vertices: x, y, alpha, edge per vertex
+    glBufferData(GL_ARRAY_BUFFER, MAX_TRAIL_VERTICES * 4 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+    
+    // Position (x, y)
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // Alpha
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    // Edge
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    
+    glBindVertexArray(0);
+    
+    HDRLIGHT_LOG("Trail shader created successfully");
+}
+
+void HDRLightOverlay::RenderTrailMesh(float maxNits) {
+    if (s_ballTrail.size() < 2) return;
+    if (s_trailProgram == 0) {
+        static int warnCount = 0;
+        if (warnCount++ < 5) HDRLIGHT_LOG("Trail program not initialized!");
+        return;
+    }
+    
+    // Build smoothed trail using Catmull-Rom spline interpolation
+    // First, build a list of valid points with their properties
+    struct SmoothPoint {
+        float x, y, fade, vx, vy;
+    };
+    std::vector<SmoothPoint> validPoints;
+    validPoints.reserve(s_ballTrail.size());
+    
+    for (size_t i = 0; i < s_ballTrail.size(); i++) {
+        const TrailPoint& p = s_ballTrail[i];
+        
+        // Calculate age-based fade
+        float age = s_trailTime - p.timestamp;
+        float fade = 1.0f - (age / s_trailLifetimeSetting);
+        if (fade <= 0.0f) continue;
+        
+        // Calculate velocity-based opacity
+        float vel = sqrtf(p.vx * p.vx + p.vy * p.vy);
+        float velFactor = fminf(vel / 1.5f, 1.0f);
+        velFactor = sqrtf(velFactor);
+        fade *= velFactor;
+        
+        // Skip points too close to ball
+        float ballDx = p.x - s_debugBallX;
+        float ballDy = p.y - s_debugBallY;
+        float ballDist = sqrtf(ballDx * ballDx + ballDy * ballDy);
+        if (ballDist < 0.012f) continue;
+        
+        // Check for teleportation - compare to LAST added valid point
+        // If distance is too large, insert a break marker before this point
+        if (!validPoints.empty() && validPoints.back().fade >= 0) {
+            float segDx = p.x - validPoints.back().x;
+            float segDy = p.y - validPoints.back().y;
+            float segDist = sqrtf(segDx * segDx + segDy * segDy);
+            if (segDist > 0.15f) {
+                // Insert a break marker (fade = -1) before this point
+                validPoints.push_back({0, 0, -1.0f, 0, 0});
+            }
+        }
+        
+        // Add this point
+        validPoints.push_back({p.x, p.y, fade, p.vx, p.vy});
+    }
+    
+    if (validPoints.size() < 2) return;
+    
+    // Split validPoints into separate segments at break markers
+    std::vector<std::vector<SmoothPoint>> segments;
+    segments.push_back(std::vector<SmoothPoint>());
+    
+    for (size_t i = 0; i < validPoints.size(); i++) {
+        if (validPoints[i].fade < 0) {
+            // Break marker - start a new segment if current one has points
+            if (!segments.back().empty()) {
+                segments.push_back(std::vector<SmoothPoint>());
+            }
+        } else {
+            segments.back().push_back(validPoints[i]);
+        }
+    }
+    
+    // Remove empty segments
+    segments.erase(std::remove_if(segments.begin(), segments.end(),
+        [](const std::vector<SmoothPoint>& seg) { return seg.size() < 2; }), segments.end());
+    
+    if (segments.empty()) return;
+    
+    // Catmull-Rom interpolation helper lambda
+    auto catmullRom = [](float p0, float p1, float p2, float p3, float t) -> float {
+        float t2 = t * t;
+        float t3 = t2 * t;
+        return 0.5f * ((2.0f * p1) +
+                       (-p0 + p2) * t +
+                       (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+                       (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3);
+    };
+    
+    // Catmull-Rom derivative (tangent) helper lambda
+    auto catmullRomDerivative = [](float p0, float p1, float p2, float p3, float t) -> float {
+        float t2 = t * t;
+        return 0.5f * ((-p0 + p2) +
+                       2.0f * (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t +
+                       3.0f * (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t2);
+    };
+    
+    // Build vertices for all segments and track segment boundaries
+    std::vector<float> vertices;
+    std::vector<std::pair<size_t, size_t>> segmentRanges;  // start vertex, count
+    vertices.reserve(validPoints.size() * 8 * 4);
+    
+    for (const auto& segment : segments) {
+        size_t startVertex = vertices.size() / 4;
+        
+        for (size_t i = 0; i < segment.size(); i++) {
+            // Get 4 control points for Catmull-Rom (clamp at ends)
+            size_t i0 = (i > 0) ? i - 1 : 0;
+            size_t i1 = i;
+            size_t i2 = (i + 1 < segment.size()) ? i + 1 : i;
+            size_t i3 = (i + 2 < segment.size()) ? i + 2 : i2;
+            
+            bool hasNext = (i + 1 < segment.size());
+            
+            // If no next point, just render raw point
+            if (!hasNext) {
+                const SmoothPoint& sp = segment[i];
+                float widthFactor = sqrtf(sp.fade);
+                float width = 0.006f * widthFactor;
+                
+                float dx = sp.vx, dy = sp.vy;
+                float len = sqrtf(dx * dx + dy * dy);
+                if (len < 0.0001f) { dx = 0; dy = 1; len = 1; }
+                dx /= len; dy /= len;
+                float perpX = -dy, perpY = dx;
+                
+                vertices.push_back(sp.x + perpX * width);
+                vertices.push_back(sp.y + perpY * width);
+                vertices.push_back(sp.fade);
+                vertices.push_back(0.3f);
+                vertices.push_back(sp.x - perpX * width);
+                vertices.push_back(sp.y - perpY * width);
+                vertices.push_back(sp.fade);
+                vertices.push_back(0.3f);
+                continue;
+            }
+            
+            // Interpolate between i1 and i2
+            int numSteps = 3;
+            for (int step = 0; step <= numSteps; step++) {
+                float t = (float)step / (float)numSteps;
+                
+                float x = catmullRom(segment[i0].x, segment[i1].x, segment[i2].x, segment[i3].x, t);
+                float y = catmullRom(segment[i0].y, segment[i1].y, segment[i2].y, segment[i3].y, t);
+                float fade = segment[i1].fade * (1.0f - t) + segment[i2].fade * t;
+                
+                float dx = catmullRomDerivative(segment[i0].x, segment[i1].x, segment[i2].x, segment[i3].x, t);
+                float dy = catmullRomDerivative(segment[i0].y, segment[i1].y, segment[i2].y, segment[i3].y, t);
+                float len = sqrtf(dx * dx + dy * dy);
+                if (len > 0.0001f) { dx /= len; dy /= len; }
+                else {
+                    dx = segment[i2].x - segment[i1].x;
+                    dy = segment[i2].y - segment[i1].y;
+                    len = sqrtf(dx * dx + dy * dy);
+                    if (len > 0.0001f) { dx /= len; dy /= len; }
+                    else { dx = 0; dy = 1; }
+                }
+                
+                float perpX = -dy;
+                float perpY = dx;
+                float widthFactor = sqrtf(fade);
+                float width = 0.006f * widthFactor;
+                
+                vertices.push_back(x + perpX * width);
+                vertices.push_back(y + perpY * width);
+                vertices.push_back(fade);
+                vertices.push_back(0.3f);
+                vertices.push_back(x - perpX * width);
+                vertices.push_back(y - perpY * width);
+                vertices.push_back(fade);
+                vertices.push_back(0.3f);
+            }
+        }
+        
+        size_t vertexCount = (vertices.size() / 4) - startVertex;
+        if (vertexCount >= 4) {
+            segmentRanges.push_back({startVertex, vertexCount});
+        }
+    }
+    
+    if (vertices.empty() || segmentRanges.empty()) return;
+    
+    // Clamp to buffer size to prevent overflow
+    size_t maxFloats = MAX_TRAIL_VERTICES * 4;
+    if (vertices.size() > maxFloats) {
+        vertices.resize(maxFloats);
+        // Recalculate segment ranges that fit
+        segmentRanges.erase(std::remove_if(segmentRanges.begin(), segmentRanges.end(),
+            [maxFloats](const std::pair<size_t, size_t>& range) {
+                return range.first >= maxFloats / 4;
+            }), segmentRanges.end());
+    }
+    
+    static int trailLogCount = 0;
+    if (trailLogCount++ % 60 == 0) {
+        HDRLIGHT_LOG("Trail: %zu segments, %zu vertices, program=%u", 
+                     segmentRanges.size(), vertices.size() / 4, s_trailProgram);
+    }
+    
+    // Upload vertices
+    glBindBuffer(GL_ARRAY_BUFFER, s_trailVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), vertices.data());
+    
+    // Use standard alpha blending
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // Render
+    glUseProgram(s_trailProgram);
+    glBindVertexArray(s_trailVAO);
+    
+    // Set uniforms
+    GLint colorLoc = glGetUniformLocation(s_trailProgram, "uTrailColor");
+    glUniform3f(colorLoc, 0.8f, 0.9f, 1.0f);
+    
+    GLint maxNitsLoc = glGetUniformLocation(s_trailProgram, "uMaxNits");
+    glUniform1f(maxNitsLoc, maxNits);
+    
+    GLint intensityLoc = glGetUniformLocation(s_trailProgram, "uIntensityNits");
+    glUniform1f(intensityLoc, 400.0f);
+    
+    GLint opacityLoc = glGetUniformLocation(s_trailProgram, "uMaxOpacity");
+    glUniform1f(opacityLoc, s_trailOpacity);
+    
+    // Draw each segment separately
+    for (const auto& range : segmentRanges) {
+        glDrawArrays(GL_TRIANGLE_STRIP, (GLint)range.first, (GLsizei)range.second);
+    }
+    
+    glBindVertexArray(0);
+    
+    // Restore additive blending for other overlays
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 }

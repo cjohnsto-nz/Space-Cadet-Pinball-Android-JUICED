@@ -339,3 +339,21 @@ Java_com_fexed_spacecadetpinball_MainActivity_triggerDemoMode(JNIEnv *env, jobje
     // Set flag to be processed on game thread
     s_requestDemoToggle = true;
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setHDRGlowModifier(JNIEnv *env, jobject thiz, jfloat modifier) {
+    HDRLightOverlay::SetGlowModifier(modifier);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setTrailOpacity(JNIEnv *env, jobject thiz, jfloat opacity) {
+    HDRLightOverlay::SetTrailOpacity(opacity);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setTrailLifetime(JNIEnv *env, jobject thiz, jfloat seconds) {
+    HDRLightOverlay::SetTrailLifetime(seconds);
+}

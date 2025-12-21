@@ -344,6 +344,22 @@ public class MainActivity extends SDLActivity {
         } else {
             Log.i(TAG, "HDR is not supported on this device, using SDR rendering");
         }
+        
+        // Apply saved glow intensity modifier
+        int glowPercent = PrefsHelper.getHDRGlowIntensity();
+        float glowModifier = glowPercent / 100.0f;
+        setHDRGlowModifier(glowModifier);
+        Log.i(TAG, "HDR glow modifier set to " + glowPercent + "% (" + glowModifier + ")");
+        
+        // Apply saved trail settings
+        int trailOpacityPercent = PrefsHelper.getTrailOpacity();
+        float trailOpacity = trailOpacityPercent / 100.0f;
+        setTrailOpacity(trailOpacity);
+        
+        int trailLifetimeTenths = PrefsHelper.getTrailLifetime();
+        float trailLifetime = trailLifetimeTenths / 10.0f;
+        setTrailLifetime(trailLifetime);
+        Log.i(TAG, "Trail settings: opacity=" + trailOpacityPercent + "%, lifetime=" + trailLifetime + "s");
     }
 
     private final SensorEventListener accelerometerListener = new SensorEventListener() {
@@ -909,4 +925,7 @@ public class MainActivity extends SDLActivity {
     private native void setDebugBallPosition(float x, float y);
     private native void enableDebugBall(boolean enabled);
     private native void triggerDemoMode();
+    private native void setHDRGlowModifier(float modifier);
+    private native void setTrailOpacity(float opacity);
+    private native void setTrailLifetime(float seconds);
 }

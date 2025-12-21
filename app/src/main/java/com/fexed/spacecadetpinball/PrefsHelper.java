@@ -21,6 +21,9 @@ public class PrefsHelper {
     private static final String KEY_HDR_ENABLED = "hdr_enabled";
     private static final String KEY_HDR_MAX_NITS = "hdr_max_nits";
     private static final String KEY_LIGHT_EDIT_MODE = "light_edit_mode";
+    private static final String KEY_HDR_GLOW_INTENSITY = "hdr_glow_intensity";
+    private static final String KEY_TRAIL_OPACITY = "trail_opacity";
+    private static final String KEY_TRAIL_LIFETIME = "trail_lifetime";
 
     public static SharedPreferences getPrefs() {
         return prefs;
@@ -148,5 +151,31 @@ public class PrefsHelper {
 
     public static void setLightEditMode(boolean value) {
         prefs.edit().putBoolean(KEY_LIGHT_EDIT_MODE, value).apply();
+    }
+
+    public static int getHDRGlowIntensity() {
+        return prefs.getInt(KEY_HDR_GLOW_INTENSITY, 100); // 100 = 1.0x (default)
+    }
+
+    public static void setHDRGlowIntensity(int value) {
+        prefs.edit().putInt(KEY_HDR_GLOW_INTENSITY, value).apply();
+    }
+
+    // Trail opacity (0-100, default 85)
+    public static int getTrailOpacity() {
+        return prefs.getInt(KEY_TRAIL_OPACITY, 85);
+    }
+
+    public static void setTrailOpacity(int value) {
+        prefs.edit().putInt(KEY_TRAIL_OPACITY, value).apply();
+    }
+
+    // Trail lifetime in tenths of seconds (5-100, default 35 = 3.5 seconds)
+    public static int getTrailLifetime() {
+        return prefs.getInt(KEY_TRAIL_LIFETIME, 35);
+    }
+
+    public static void setTrailLifetime(int value) {
+        prefs.edit().putInt(KEY_TRAIL_LIFETIME, value).apply();
     }
 }

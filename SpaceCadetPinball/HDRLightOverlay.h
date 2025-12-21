@@ -97,6 +97,16 @@ public:
     static float GetBallX() { return s_debugBallX; }
     static float GetBallY() { return s_debugBallY; }
     static bool IsBallActive() { return s_debugBallEnabled; }  // Returns true if ball position is being tracked
+    
+    // Global glow intensity modifier (0.0 to 2.0, default 1.0)
+    static void SetGlowModifier(float modifier);
+    static float GetGlowModifier() { return s_glowModifier; }
+    
+    // Trail settings
+    static void SetTrailOpacity(float opacity);  // 0.0 to 1.0
+    static float GetTrailOpacity() { return s_trailOpacity; }
+    static void SetTrailLifetime(float seconds);  // in seconds
+    static float GetTrailLifetime() { return s_trailLifetimeSetting; }
 
 private:
     struct RegisteredGroup {
@@ -149,6 +159,13 @@ private:
     static float s_debugBallX, s_debugBallY;
     static bool s_debugBallEnabled;
     
+    // Global glow modifier
+    static float s_glowModifier;
+    
+    // Trail settings (user-configurable)
+    static float s_trailOpacity;        // 0.0 to 1.0, default 0.85
+    static float s_trailLifetimeSetting; // in seconds, default 3.5
+    
     // Ball trail effect - continuous adaptive trail
     struct TrailPoint {
         float x, y;
@@ -157,7 +174,7 @@ private:
     };
     static std::vector<TrailPoint> s_ballTrail;
     static constexpr int MAX_TRAIL_POINTS = 600;  // Allow many more points for long trails
-    static constexpr float TRAIL_LIFETIME = 1.0f;  // seconds before trail fades completely
+    static constexpr float TRAIL_LIFETIME = 3.5f;  // seconds before trail fades completely
     static float s_lastBallX, s_lastBallY;
     static float s_trailTime;  // accumulated time for trail aging
     
@@ -167,8 +184,16 @@ private:
     static GLuint s_overlayVAO;
     static GLuint s_overlayVBO;
     
+    // Trail mesh rendering
+    static GLuint s_trailProgram;
+    static GLuint s_trailVAO;
+    static GLuint s_trailVBO;
+    static constexpr int MAX_TRAIL_VERTICES = 8192;
+    
     static void CreateShaders();
     static void CreateQuad();
+    static void CreateTrailShader();
     static void RenderSingleLight(const LightState& state, int texWidth, int texHeight);
     static void RenderSingleLightPQ(const LightState& state, float maxNits);
+    static void RenderTrailMesh(float maxNits);
 };

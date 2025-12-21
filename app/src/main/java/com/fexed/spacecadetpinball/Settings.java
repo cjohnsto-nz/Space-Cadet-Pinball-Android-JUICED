@@ -152,6 +152,26 @@ public class Settings extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
+        // Glow Intensity SeekBar
+        int savedGlow = PrefsHelper.getHDRGlowIntensity();
+        mBinding.glowIntensityBar.setProgress(savedGlow);
+        mBinding.glowIntensityValue.setText(savedGlow + "%");
+        mBinding.glowIntensityBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                mBinding.glowIntensityValue.setText(progress + "%");
+                if (fromUser) {
+                    PrefsHelper.setHDRGlowIntensity(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
         // Light editor toggle
         mBinding.lightEditSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
             PrefsHelper.setLightEditMode(b);
@@ -160,7 +180,51 @@ public class Settings extends AppCompatActivity {
             }
         });
         mBinding.lightEditSwitch.setChecked(PrefsHelper.getLightEditMode());
-        
+
+        // Trail Opacity SeekBar
+        int savedOpacity = PrefsHelper.getTrailOpacity();
+        mBinding.trailOpacityBar.setProgress(savedOpacity);
+        mBinding.trailOpacityValue.setText(savedOpacity + "%");
+        mBinding.trailOpacityBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                mBinding.trailOpacityValue.setText(progress + "%");
+                if (fromUser) {
+                    PrefsHelper.setTrailOpacity(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // Trail Lifetime SeekBar (stored as tenths of seconds, 5-100 = 0.5s to 10s)
+        int savedLifetime = PrefsHelper.getTrailLifetime();
+        mBinding.trailLifetimeBar.setProgress(savedLifetime);
+        float lifetimeSeconds = savedLifetime / 10.0f;
+        mBinding.trailLifetimeValue.setText(String.format("%.1fs", lifetimeSeconds));
+        mBinding.trailLifetimeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                // Minimum 5 (0.5s)
+                if (progress < 5) progress = 5;
+                float seconds = progress / 10.0f;
+                mBinding.trailLifetimeValue.setText(String.format("%.1fs", seconds));
+                if (fromUser) {
+                    PrefsHelper.setTrailLifetime(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
         mBinding.saveLightsBtn.setOnClickListener(v -> {
             String path = getFilesDir().getAbsolutePath() + "/light_positions.cfg";
             if (saveLightPositionsNative(path)) {

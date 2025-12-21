@@ -193,6 +193,132 @@
             app:layout_constraintTop_toBottomOf="@+id/hdrNitsInput" />
 
         <TextView
+            android:id="@+id/textViewGlowIntensity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Glow Intensity"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/glowIntensityValue"
+            app:layout_constraintStart_toStartOf="@+id/textViewHDRNits"
+            app:layout_constraintTop_toBottomOf="@+id/hdrNitsHint" />
+
+        <TextView
+            android:id="@+id/glowIntensityValue"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="100%"
+            android:textAlignment="textEnd"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintTop_toTopOf="@+id/textViewGlowIntensity"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewGlowIntensity" />
+
+        <SeekBar
+            android:id="@+id/glowIntensityBar"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:max="200"
+            android:progress="100"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintStart_toStartOf="@+id/textViewGlowIntensity"
+            app:layout_constraintTop_toBottomOf="@+id/textViewGlowIntensity" />
+
+        <TextView
+            android:id="@+id/glowIntensityHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Adjust HDR light glow size (0-200%, default 100%)"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/glowIntensityBar"
+            app:layout_constraintStart_toStartOf="@+id/glowIntensityBar"
+            app:layout_constraintTop_toBottomOf="@+id/glowIntensityBar" />
+
+        <TextView
+            android:id="@+id/textViewTrailOpacity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Trail Opacity"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/trailOpacityValue"
+            app:layout_constraintStart_toStartOf="@+id/textViewGlowIntensity"
+            app:layout_constraintTop_toBottomOf="@+id/glowIntensityHint" />
+
+        <TextView
+            android:id="@+id/trailOpacityValue"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="85%"
+            android:textAlignment="textEnd"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="@+id/glowIntensityValue"
+            app:layout_constraintTop_toTopOf="@+id/textViewTrailOpacity"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewTrailOpacity" />
+
+        <SeekBar
+            android:id="@+id/trailOpacityBar"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:max="100"
+            android:progress="85"
+            app:layout_constraintEnd_toEndOf="@+id/glowIntensityBar"
+            app:layout_constraintStart_toStartOf="@+id/textViewTrailOpacity"
+            app:layout_constraintTop_toBottomOf="@+id/textViewTrailOpacity" />
+
+        <TextView
+            android:id="@+id/textViewTrailLifetime"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Trail Duration"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/trailLifetimeValue"
+            app:layout_constraintStart_toStartOf="@+id/textViewTrailOpacity"
+            app:layout_constraintTop_toBottomOf="@+id/trailOpacityBar" />
+
+        <TextView
+            android:id="@+id/trailLifetimeValue"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="3.5s"
+            android:textAlignment="textEnd"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="@+id/trailOpacityValue"
+            app:layout_constraintTop_toTopOf="@+id/textViewTrailLifetime"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewTrailLifetime" />
+
+        <SeekBar
+            android:id="@+id/trailLifetimeBar"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:max="100"
+            android:progress="35"
+            app:layout_constraintEnd_toEndOf="@+id/trailOpacityBar"
+            app:layout_constraintStart_toStartOf="@+id/textViewTrailLifetime"
+            app:layout_constraintTop_toBottomOf="@+id/textViewTrailLifetime" />
+
+        <TextView
+            android:id="@+id/trailSettingsHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Ball trail effect settings (opacity 0-100%, duration 0.5-10s)"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/trailLifetimeBar"
+            app:layout_constraintStart_toStartOf="@+id/trailLifetimeBar"
+            app:layout_constraintTop_toBottomOf="@+id/trailLifetimeBar" />
+
+        <TextView
             android:id="@+id/textViewLightEdit"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -201,8 +327,8 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@+id/lightEditSwitch"
-            app:layout_constraintStart_toStartOf="@+id/textViewHDRNits"
-            app:layout_constraintTop_toBottomOf="@+id/hdrNitsHint" />
+            app:layout_constraintStart_toStartOf="@+id/textViewTrailOpacity"
+            app:layout_constraintTop_toBottomOf="@+id/trailSettingsHint" />
 
         <Switch
             android:id="@+id/lightEditSwitch"
