@@ -98,6 +98,8 @@ public:
     static float GetBallX() { return s_debugBallX; }
     static float GetBallY() { return s_debugBallY; }
     static bool IsBallActive() { return s_debugBallEnabled; }  // Returns true if ball position is being tracked
+    static void SetBallValid(bool valid) { s_ballValid = valid; }
+    static bool IsBallValid() { return s_ballValid; }
     
     // Global glow intensity modifier (0.0 to 2.0, default 1.0)
     static void SetGlowModifier(float modifier);
@@ -159,6 +161,7 @@ private:
     // Debug ball tracking
     static float s_debugBallX, s_debugBallY;
     static bool s_debugBallEnabled;
+    static bool s_ballValid;
     
     // Global glow modifier
     static float s_glowModifier;

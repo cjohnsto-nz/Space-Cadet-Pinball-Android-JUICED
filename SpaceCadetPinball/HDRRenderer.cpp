@@ -2,6 +2,7 @@
 #include "HDRRenderer.h"
 #include "HDRConfig.h"
 #include "HDRLightOverlay.h"
+#include "render.h"
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -99,6 +100,11 @@ uniform float uMaxNits;
 uniform float uSDRWhiteNits;
 uniform float uCameraZoom;
 uniform vec2 uCameraCenter;
+uniform vec2 uViewportSize;    // actual viewport width, height in pixels
+uniform vec2 uViewportOffset;  // viewport X, Y offset from window origin
+uniform vec2 uLastBallPos;     // last known valid ball position
+uniform float uBallValid;      // 1.0 if ball is valid, 0.0 if in teleporter
+uniform vec2 uSmoothedCameraPos; // smoothed camera position with center bias
 
 // ST.2084 PQ constants
 const float m1 = 0.1593017578125;
@@ -163,21 +169,73 @@ vec3 expandGamut(vec3 bt709Color, float baseAmount, float brightnessScale) {
 }
 
 void main() {
-    // Apply camera zoom and pan for texture sampling
-    float zoom = uCameraZoom > 0.0 ? uCameraZoom : 1.0;
-    vec2 center = (uCameraCenter.x == 0.0 && uCameraCenter.y == 0.0) ? vec2(0.5) : uCameraCenter;
+    // BASIC: No camera transform, just sample texture directly
+    vec4 hdrColor = texture(uHDRTexture, vTexCoord);
     
-    // Transform screen coords to texture coords
-    // Screen center (0.5) should map to camera center
-    vec2 screenCenter = vec2(0.5);
-    vec2 fromScreenCenter = vTexCoord - screenCenter;
-    vec2 scaledOffset = fromScreenCenter / zoom;
-    vec2 texCoord = center + scaledOffset;
+    // DEBUG: Draw a vertical red line at the CENTER OF THE TABLE (not scoreboard)
+    // The texture includes the scoreboard on the right (~40% of width)
+    // Table is ~60.7% of texture width
+    // Screen width is 2989, table takes up 0.607 * 2989 = 1814 pixels
+    // Table center on screen = 1814 / 2 = 907 pixels
     
-    // Clamp to valid texture range
-    texCoord = clamp(texCoord, vec2(0.0), vec2(1.0));
+    // HARDCODE TEST: table center at ~907 pixels
+    float tableCenterX = 907.0;
+    if (abs(gl_FragCoord.x - tableCenterX) < 3.0) {
+        hdrColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red line at TABLE center
+    }
     
-    vec4 hdrColor = texture(uHDRTexture, texCoord);
+    // DEBUG: Draw a vertical GREEN line at the ball position
+    // Ball position (uCameraCenter) is in texture coords (0-1)
+    // Need to convert to screen pixels
+    // Ball X in texture coords * screen width = ball X in pixels
+    float ballScreenX = uCameraCenter.x * uViewportSize.x;
+    if (abs(gl_FragCoord.x - ballScreenX) < 3.0) {
+        hdrColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green line at ball position
+    }
+    
+    // DEBUG: Draw a vertical YELLOW line at last known ball position
+    // Only visible when ball is INVALID (in teleporter)
+    if (uBallValid < 0.5) {
+        float lastBallScreenX = uLastBallPos.x * uViewportSize.x;
+        if (abs(gl_FragCoord.x - lastBallScreenX) < 3.0) {
+            hdrColor = vec4(1.0, 1.0, 0.0, 1.0);  // Yellow line at last known position
+        }
+    }
+    
+    // DEBUG: Draw a vertical CYAN line at smoothed camera position
+    // This is the actual camera target - smoothed and biased toward center
+    float smoothedScreenX = uSmoothedCameraPos.x * uViewportSize.x;
+    if (abs(gl_FragCoord.x - smoothedScreenX) < 3.0) {
+        hdrColor = vec4(0.0, 1.0, 1.0, 1.0);  // Cyan line at smoothed camera position
+    }
+    
+    // DEBUG: HORIZONTAL lines for Y position verification
+    // gl_FragCoord.y is inverted (0 at bottom), so invert the Y coordinates
+    // Red horizontal - table center Y (0.5)
+    float tableCenterScreenY = (1.0 - 0.5) * uViewportSize.y;
+    if (abs(gl_FragCoord.y - tableCenterScreenY) < 2.0) {
+        hdrColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red horizontal at Y center
+    }
+    
+    // Green horizontal - ball Y position (inverted)
+    float ballScreenY = (1.0 - uCameraCenter.y) * uViewportSize.y;
+    if (abs(gl_FragCoord.y - ballScreenY) < 2.0) {
+        hdrColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green horizontal at ball Y
+    }
+    
+    // Yellow horizontal - last valid ball Y position (only when invalid)
+    if (uBallValid < 0.5) {
+        float lastBallScreenY = (1.0 - uLastBallPos.y) * uViewportSize.y;
+        if (abs(gl_FragCoord.y - lastBallScreenY) < 2.0) {
+            hdrColor = vec4(1.0, 1.0, 0.0, 1.0);  // Yellow horizontal at last valid Y
+        }
+    }
+    
+    // Cyan horizontal - smoothed camera Y position (inverted)
+    float smoothedScreenY = (1.0 - uSmoothedCameraPos.y) * uViewportSize.y;
+    if (abs(gl_FragCoord.y - smoothedScreenY) < 2.0) {
+        hdrColor = vec4(0.0, 1.0, 1.0, 1.0);  // Cyan horizontal at smoothed Y
+    }
     
     // Gentle gamma lift to darken midtones slightly
     vec3 darkenedColor = pow(hdrColor.rgb, vec3(1.15));
@@ -484,35 +542,74 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     // Set camera tracking uniforms
     GLint zoomLoc = glGetUniformLocation(s_outputProgram, "uCameraZoom");
     GLint centerLoc = glGetUniformLocation(s_outputProgram, "uCameraCenter");
+    GLint viewportSizeLoc = glGetUniformLocation(s_outputProgram, "uViewportSize");
+    
+    // Set viewport size and offset for screen-space calculations
+    GLint viewportOffsetLoc = glGetUniformLocation(s_outputProgram, "uViewportOffset");
+    glUniform2f(viewportSizeLoc, (float)viewportW, (float)viewportH);
+    glUniform2f(viewportOffsetLoc, (float)viewportX, (float)viewportY);
+    
+    // DEBUG: Log viewport info
+    static int vpLogCount = 0;
+    if (++vpLogCount >= 120) {
+        vpLogCount = 0;
+        HDR_LOG("Viewport: offset=(%d,%d) size=(%d,%d) screen=(%d,%d) uniformLocs=(%d,%d)", 
+                viewportX, viewportY, viewportW, viewportH, screenWidth, screenHeight,
+                viewportSizeLoc, viewportOffsetLoc);
+    }
     
     // Store current camera state for light overlay rendering
     float currentZoom = 1.0f;
     float cameraCenterX = 0.5f;
     float cameraCenterY = 0.5f;
     
-    if (s_cameraTrackingEnabled) {
-        currentZoom = s_cameraZoom;
-        
-        // Get ball position from HDRLightOverlay
-        float ballX = HDRLightOverlay::GetBallX();
-        float ballY = HDRLightOverlay::GetBallY();
-        
-        // Calculate the visible range at this zoom level
-        // At zoom Z, we can see 1/Z of the texture in each direction from center
-        float halfVisibleRange = 0.5f / currentZoom;
-        
-        // Clamp camera center so the view stays within texture bounds
-        // This keeps the ball strongly centered while preventing out-of-bounds
-        cameraCenterX = fmaxf(halfVisibleRange, fminf(1.0f - halfVisibleRange, ballX));
-        cameraCenterY = fmaxf(halfVisibleRange, fminf(1.0f - halfVisibleRange, ballY));
-        
-        glUniform1f(zoomLoc, currentZoom);
-        glUniform2f(centerLoc, cameraCenterX, cameraCenterY);
-    } else {
-        // No zoom, center on middle
-        glUniform1f(zoomLoc, 1.0f);
-        glUniform2f(centerLoc, 0.5f, 0.5f);
+    // DEBUG: Disable zoom but still pass ball position for green line
+    float ballX = HDRLightOverlay::GetBallX();
+    float ballY = HDRLightOverlay::GetBallY();
+    bool ballValid = HDRLightOverlay::IsBallValid();
+    
+    // Track last known valid ball position (for when ball is in teleporter)
+    static float lastValidBallX = 0.3f;
+    static float lastValidBallY = 0.5f;
+    
+    // Smoothed camera position with bias toward table center
+    static float smoothedCameraX = 0.3f;
+    static float smoothedCameraY = 0.5f;
+    
+    // Only update last valid position if ball is valid
+    if (ballValid) {
+        lastValidBallX = ballX;
+        lastValidBallY = ballY;
     }
+    
+    // Calculate target position (use last valid when ball is invalid)
+    float targetX = ballValid ? ballX : lastValidBallX;
+    float targetY = ballValid ? ballY : lastValidBallY;
+    
+    // Table center in texture coordinates (center of table, not including scoreboard)
+    // Table is ~60.7% of texture width, so center is at 0.607/2 = 0.3035
+    float tableCenterX = 0.3035f;
+    float tableCenterY = 0.5f;
+    
+    // Bias target 25% toward table center
+    float biasedTargetX = targetX * 0.75f + tableCenterX * 0.25f;
+    float biasedTargetY = targetY * 0.75f + tableCenterY * 0.25f;
+    
+    // Smooth the camera position (lerp toward biased target)
+    float smoothFactor = 0.08f;  // Lower = smoother/slower
+    smoothedCameraX += (biasedTargetX - smoothedCameraX) * smoothFactor;
+    smoothedCameraY += (biasedTargetY - smoothedCameraY) * smoothFactor;
+    
+    glUniform1f(zoomLoc, 1.0f);
+    glUniform2f(centerLoc, ballX, ballY);  // Pass ball position for debug line
+    
+    // Pass last valid position and validity flag
+    GLint lastPosLoc = glGetUniformLocation(s_outputProgram, "uLastBallPos");
+    GLint ballValidLoc = glGetUniformLocation(s_outputProgram, "uBallValid");
+    GLint smoothedPosLoc = glGetUniformLocation(s_outputProgram, "uSmoothedCameraPos");
+    glUniform2f(lastPosLoc, lastValidBallX, lastValidBallY);
+    glUniform1f(ballValidLoc, ballValid ? 1.0f : 0.0f);
+    glUniform2f(smoothedPosLoc, smoothedCameraX, smoothedCameraY);
     
     // Store camera state for light overlay
     s_currentCameraZoom = currentZoom;

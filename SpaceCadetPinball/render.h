@@ -52,6 +52,7 @@ public:
 	static void build_occlude_list();
 	static void SpriteViewer(bool* show);
 	static void PresentVScreen();
+	static float GetTableWidthCoef();  // Returns ratio of table width to full vscreen width
 private:
 	static std::vector<render_sprite_type_struct*> dirty_list, sprite_list, ball_list;
 	static zmap_header_type* background_zmap;

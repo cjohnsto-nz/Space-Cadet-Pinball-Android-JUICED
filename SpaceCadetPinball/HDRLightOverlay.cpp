@@ -28,6 +28,7 @@ std::vector<HDRLightOverlay::TestLight> HDRLightOverlay::s_testLights;
 float HDRLightOverlay::s_debugBallX = 0.0f;
 float HDRLightOverlay::s_debugBallY = 0.0f;
 bool HDRLightOverlay::s_debugBallEnabled = false;  // Disabled - only used for position tracking
+bool HDRLightOverlay::s_ballValid = true;  // True when ball is active and visible
 std::vector<HDRLightOverlay::TrailPoint> HDRLightOverlay::s_ballTrail;
 float HDRLightOverlay::s_lastBallX = 0.0f;
 float HDRLightOverlay::s_lastBallY = 0.0f;

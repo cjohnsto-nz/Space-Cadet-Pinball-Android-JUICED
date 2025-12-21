@@ -571,3 +571,10 @@ void render::PresentVScreen()
 #endif
 	}
 }
+
+float render::GetTableWidthCoef()
+{
+	if (pb::MainTable && vscreen)
+		return static_cast<float>(pb::MainTable->Width) / vscreen->Width;
+	return 1.0f;  // Default to full width if not available
+}

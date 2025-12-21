@@ -256,28 +256,30 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 						float pos2D[2];
 						proj::xform_to_2d_float(&activeBall->Position, pos2D);
 						
-						// Get render screen dimensions
-						float screenWidth = static_cast<float>(render::vscreen->Width);
-						float screenHeight = static_cast<float>(render::vscreen->Height);
+						// Get vscreen dimensions for texture coordinate conversion
+						float vscreenWidth = static_cast<float>(render::vscreen->Width);
+						float vscreenHeight = static_cast<float>(render::vscreen->Height);
 						
-						// Normalize to 0-1 range (preserving subpixel precision)
-						float normX = pos2D[0] / screenWidth;
-						float normY = pos2D[1] / screenHeight;
+						// Ball position from proj is in table pixel coordinates
+						// Normalize to texture coordinates (0-1 range of full vscreen/texture)
+						float normX = pos2D[0] / vscreenWidth;
+						float normY = pos2D[1] / vscreenHeight;
 						
 						// Log coordinates every second
 						static int logCounter = 0;
 						if (++logCounter >= 60) {
 							logCounter = 0;
 							__android_log_print(ANDROID_LOG_INFO, "DebugBall", 
-								"Ball 2D: (%.2f, %.2f) Screen: (%.0f x %.0f) Norm: (%.4f, %.4f)", 
-								pos2D[0], pos2D[1], screenWidth, screenHeight, normX, normY);
+								"Ball 2D: (%.2f, %.2f) VScreen: (%.0f x %.0f) Norm: (%.4f, %.4f)", 
+								pos2D[0], pos2D[1], vscreenWidth, vscreenHeight, normX, normY);
 						}
 						
 						// Set debug ball position
 						HDRLightOverlay::SetDebugBallPosition(normX, normY);
+						HDRLightOverlay::SetBallValid(true);
 					} else {
-						// No active ball - draw at center for testing
-						HDRLightOverlay::SetDebugBallPosition(0.3f, 0.5f);
+						// No active ball - ball is in teleporter or inactive
+						HDRLightOverlay::SetBallValid(false);
 					}
 				} else {
 					// No table - draw at center for testing
