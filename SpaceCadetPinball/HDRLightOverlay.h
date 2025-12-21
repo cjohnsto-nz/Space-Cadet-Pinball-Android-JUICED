@@ -100,6 +100,7 @@ public:
     static bool IsBallActive() { return s_debugBallEnabled; }  // Returns true if ball position is being tracked
     static void SetBallValid(bool valid) { s_ballValid = valid; }
     static bool IsBallValid() { return s_ballValid; }
+    static void DecayTrail();  // Decay trail without adding new points (call when ball inactive)
     
     // Global glow intensity modifier (0.0 to 2.0, default 1.0)
     static void SetGlowModifier(float modifier);

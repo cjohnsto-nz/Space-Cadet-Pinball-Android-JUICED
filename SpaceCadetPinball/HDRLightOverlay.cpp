@@ -81,11 +81,11 @@ void main() {
     worldPos.x = uLightRect.x + (localPos.x - 0.5) * uLightRect.z;
     worldPos.y = uLightRect.y + (localPos.y - 0.5) * uLightRect.w;
     
-    // Apply camera transform (same as main texture)
-    // Transform from world space to camera space
-    vec2 centered = worldPos - uCameraCenter;
-    vec2 zoomed = centered * uCameraZoom;
-    vec2 screenPos = zoomed + vec2(0.5);  // Center on screen
+    // Apply camera transform (matching new main texture transform)
+    // Main texture: texCoord = (screenPos - 0.5) / zoom + 0.5 - (center - 0.5)
+    //             = (screenPos - 0.5) / zoom + 1.0 - center
+    // Inverse: screenPos = (texPos - 1.0 + center) * zoom + 0.5
+    vec2 screenPos = (worldPos - 1.0 + uCameraCenter) * uCameraZoom + 0.5;
     
     // Convert to clip space (-1 to 1)
     // 0 -> -1, 1 -> +1 for X
@@ -202,10 +202,9 @@ out float vAlpha;
 out float vEdge;
 
 void main() {
-    // Apply camera transform (same as lights)
-    vec2 centered = aPos - uCameraCenter;
-    vec2 zoomed = centered * uCameraZoom;
-    vec2 screenPos = zoomed + vec2(0.5);  // Center on screen
+    // Apply camera transform (matching lights)
+    // screenPos = (texPos - 1.0 + center) * zoom + 0.5
+    vec2 screenPos = (aPos - 1.0 + uCameraCenter) * uCameraZoom + 0.5;
     
     // Convert to clip space
     vec2 pos;
@@ -1046,6 +1045,18 @@ void HDRLightOverlay::SetDebugBallPosition(float x, float y) {
     s_lastBallY = y;
     s_debugBallX = x;
     s_debugBallY = y;
+}
+
+void HDRLightOverlay::DecayTrail() {
+    // Decay trail without adding new points (call when ball is inactive)
+    float dt = 0.0167f;
+    s_trailTime += dt;
+    
+    // Remove old points that have exceeded lifetime
+    while (!s_ballTrail.empty() && 
+           (s_trailTime - s_ballTrail.back().timestamp) > s_trailLifetimeSetting) {
+        s_ballTrail.pop_back();
+    }
 }
 
 void HDRLightOverlay::NotifyBallTeleported() {

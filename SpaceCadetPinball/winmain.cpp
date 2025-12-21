@@ -280,6 +280,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 					} else {
 						// No active ball - ball is in teleporter or inactive
 						HDRLightOverlay::SetBallValid(false);
+						HDRLightOverlay::DecayTrail();  // Keep trail decaying even when ball inactive
 					}
 				} else {
 					// No table - draw at center for testing
