@@ -37,6 +37,14 @@ public:
     // Check if we should use HDR path
     static bool ShouldUseHDR();
     
+    // Camera tracking mode
+    static void SetCameraTracking(bool enabled, float zoom);
+    static bool IsCameraTrackingEnabled() { return s_cameraTrackingEnabled; }
+    static float GetCameraZoom() { return s_cameraZoom; }
+    static float GetCurrentCameraZoom() { return s_currentCameraZoom; }
+    static float GetCurrentCameraCenterX() { return s_currentCameraCenterX; }
+    static float GetCurrentCameraCenterY() { return s_currentCameraCenterY; }
+    
     // Get current viewport (for touch coordinate conversion)
     static int GetViewportX() { return s_viewportX; }
     static int GetViewportY() { return s_viewportY; }
@@ -64,6 +72,13 @@ private:
     static GLuint s_quadVBO;          // Fullscreen quad VBO
     
     static float s_exposure;
+    
+    // Camera tracking
+    static bool s_cameraTrackingEnabled;
+    static float s_cameraZoom;
+    static float s_currentCameraZoom;      // Current frame's zoom (for overlay rendering)
+    static float s_currentCameraCenterX;   // Current frame's camera center X
+    static float s_currentCameraCenterY;   // Current frame's camera center Y
     
     // Shader compilation helpers
     static GLuint CompileShader(GLenum type, const char* source);

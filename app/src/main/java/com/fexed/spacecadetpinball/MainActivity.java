@@ -360,6 +360,13 @@ public class MainActivity extends SDLActivity {
         float trailLifetime = trailLifetimeTenths / 10.0f;
         setTrailLifetime(trailLifetime);
         Log.i(TAG, "Trail settings: opacity=" + trailOpacityPercent + "%, lifetime=" + trailLifetime + "s");
+        
+        // Apply saved camera tracking settings
+        boolean cameraTrackingEnabled = PrefsHelper.getCameraTracking();
+        int cameraZoomPercent = PrefsHelper.getCameraZoom();
+        float cameraZoom = cameraZoomPercent / 100.0f;
+        setCameraTracking(cameraTrackingEnabled, cameraZoom);
+        Log.i(TAG, "Camera tracking: enabled=" + cameraTrackingEnabled + ", zoom=" + cameraZoom + "x");
     }
 
     private final SensorEventListener accelerometerListener = new SensorEventListener() {
@@ -928,4 +935,5 @@ public class MainActivity extends SDLActivity {
     private native void setHDRGlowModifier(float modifier);
     private native void setTrailOpacity(float opacity);
     private native void setTrailLifetime(float seconds);
+    private native void setCameraTracking(boolean enabled, float zoom);
 }

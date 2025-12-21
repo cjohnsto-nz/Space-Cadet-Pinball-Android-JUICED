@@ -225,6 +225,34 @@ public class Settings extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
+        // Camera Tracking toggle
+        boolean cameraTracking = PrefsHelper.getCameraTracking();
+        mBinding.cameraTrackingSwitch.setChecked(cameraTracking);
+        mBinding.cameraTrackingSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setCameraTracking(b);
+        });
+
+        // Camera Zoom SeekBar (100-400, default 200 = 2x)
+        int savedZoom = PrefsHelper.getCameraZoom();
+        mBinding.cameraZoomBar.setProgress(savedZoom - 100); // SeekBar is 0-300, representing 100-400
+        mBinding.cameraZoomValue.setText(String.format("%.1fx", savedZoom / 100.0f));
+        mBinding.cameraZoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int zoom = progress + 100; // Convert 0-300 to 100-400
+                mBinding.cameraZoomValue.setText(String.format("%.1fx", zoom / 100.0f));
+                if (fromUser) {
+                    PrefsHelper.setCameraZoom(zoom);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
         mBinding.saveLightsBtn.setOnClickListener(v -> {
             String path = getFilesDir().getAbsolutePath() + "/light_positions.cfg";
             if (saveLightPositionsNative(path)) {

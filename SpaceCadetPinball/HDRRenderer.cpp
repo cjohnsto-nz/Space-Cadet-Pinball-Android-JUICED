@@ -33,13 +33,19 @@ GLuint HDRRenderer::s_uploadProgram = 0;
 GLuint HDRRenderer::s_quadVAO = 0;
 GLuint HDRRenderer::s_quadVBO = 0;
 float HDRRenderer::s_exposure = 1.0f;
+bool HDRRenderer::s_cameraTrackingEnabled = false;
+float HDRRenderer::s_cameraZoom = 2.0f;
+float HDRRenderer::s_currentCameraZoom = 1.0f;
+float HDRRenderer::s_currentCameraCenterX = 0.5f;
+float HDRRenderer::s_currentCameraCenterY = 0.5f;
 
-// Vertex shader - simple fullscreen quad
+// Vertex shader - simple fullscreen quad (camera transform done in fragment shader)
 const char* HDRRenderer::s_vertexShaderSrc = R"(#version 300 es
 precision highp float;
 layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 aTexCoord;
 out vec2 vTexCoord;
+
 void main() {
     gl_Position = vec4(aPos, 0.0, 1.0);
     vTexCoord = aTexCoord;
@@ -91,6 +97,8 @@ out vec4 fragColor;
 uniform sampler2D uHDRTexture;
 uniform float uMaxNits;
 uniform float uSDRWhiteNits;
+uniform float uCameraZoom;
+uniform vec2 uCameraCenter;
 
 // ST.2084 PQ constants
 const float m1 = 0.1593017578125;
@@ -155,7 +163,21 @@ vec3 expandGamut(vec3 bt709Color, float baseAmount, float brightnessScale) {
 }
 
 void main() {
-    vec4 hdrColor = texture(uHDRTexture, vTexCoord);
+    // Apply camera zoom and pan for texture sampling
+    float zoom = uCameraZoom > 0.0 ? uCameraZoom : 1.0;
+    vec2 center = (uCameraCenter.x == 0.0 && uCameraCenter.y == 0.0) ? vec2(0.5) : uCameraCenter;
+    
+    // Transform screen coords to texture coords
+    // Screen center (0.5) should map to camera center
+    vec2 screenCenter = vec2(0.5);
+    vec2 fromScreenCenter = vTexCoord - screenCenter;
+    vec2 scaledOffset = fromScreenCenter / zoom;
+    vec2 texCoord = center + scaledOffset;
+    
+    // Clamp to valid texture range
+    texCoord = clamp(texCoord, vec2(0.0), vec2(1.0));
+    
+    vec4 hdrColor = texture(uHDRTexture, texCoord);
     
     // Gentle gamma lift to darken midtones slightly
     vec3 darkenedColor = pow(hdrColor.rgb, vec3(1.15));
@@ -459,6 +481,44 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     glUniform1f(maxNitsLoc, HDR::GetMaxDisplayNits());
     glUniform1f(sdrWhiteLoc, HDR::Luminance::SDR_WHITE_NITS);
     
+    // Set camera tracking uniforms
+    GLint zoomLoc = glGetUniformLocation(s_outputProgram, "uCameraZoom");
+    GLint centerLoc = glGetUniformLocation(s_outputProgram, "uCameraCenter");
+    
+    // Store current camera state for light overlay rendering
+    float currentZoom = 1.0f;
+    float cameraCenterX = 0.5f;
+    float cameraCenterY = 0.5f;
+    
+    if (s_cameraTrackingEnabled) {
+        currentZoom = s_cameraZoom;
+        
+        // Get ball position from HDRLightOverlay
+        float ballX = HDRLightOverlay::GetBallX();
+        float ballY = HDRLightOverlay::GetBallY();
+        
+        // Calculate the visible range at this zoom level
+        // At zoom Z, we can see 1/Z of the texture in each direction from center
+        float halfVisibleRange = 0.5f / currentZoom;
+        
+        // Clamp camera center so the view stays within texture bounds
+        // This keeps the ball strongly centered while preventing out-of-bounds
+        cameraCenterX = fmaxf(halfVisibleRange, fminf(1.0f - halfVisibleRange, ballX));
+        cameraCenterY = fmaxf(halfVisibleRange, fminf(1.0f - halfVisibleRange, ballY));
+        
+        glUniform1f(zoomLoc, currentZoom);
+        glUniform2f(centerLoc, cameraCenterX, cameraCenterY);
+    } else {
+        // No zoom, center on middle
+        glUniform1f(zoomLoc, 1.0f);
+        glUniform2f(centerLoc, 0.5f, 0.5f);
+    }
+    
+    // Store camera state for light overlay
+    s_currentCameraZoom = currentZoom;
+    s_currentCameraCenterX = cameraCenterX;
+    s_currentCameraCenterY = cameraCenterY;
+    
     HDR_LOG("Present: maxNits=%.1f, sdrWhite=%.1f", HDR::GetMaxDisplayNits(), HDR::Luminance::SDR_WHITE_NITS);
     
     glActiveTexture(GL_TEXTURE0);
@@ -493,6 +553,12 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
 
 void HDRRenderer::SetExposure(float exposure) {
     s_exposure = exposure;
+}
+
+void HDRRenderer::SetCameraTracking(bool enabled, float zoom) {
+    s_cameraTrackingEnabled = enabled;
+    s_cameraZoom = zoom;
+    HDR_LOG("Camera tracking %s, zoom=%.2fx", enabled ? "enabled" : "disabled", zoom);
 }
 
 GLuint HDRRenderer::CompileShader(GLenum type, const char* source) {

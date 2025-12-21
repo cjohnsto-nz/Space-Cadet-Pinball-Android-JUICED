@@ -24,6 +24,8 @@ public class PrefsHelper {
     private static final String KEY_HDR_GLOW_INTENSITY = "hdr_glow_intensity";
     private static final String KEY_TRAIL_OPACITY = "trail_opacity";
     private static final String KEY_TRAIL_LIFETIME = "trail_lifetime";
+    private static final String KEY_CAMERA_TRACKING = "camera_tracking";
+    private static final String KEY_CAMERA_ZOOM = "camera_zoom";
 
     public static SharedPreferences getPrefs() {
         return prefs;
@@ -177,5 +179,23 @@ public class PrefsHelper {
 
     public static void setTrailLifetime(int value) {
         prefs.edit().putInt(KEY_TRAIL_LIFETIME, value).apply();
+    }
+
+    // Camera tracking mode (ball-following zoom)
+    public static boolean getCameraTracking() {
+        return prefs.getBoolean(KEY_CAMERA_TRACKING, false);
+    }
+
+    public static void setCameraTracking(boolean value) {
+        prefs.edit().putBoolean(KEY_CAMERA_TRACKING, value).apply();
+    }
+
+    // Camera zoom level (100-400, default 200 = 2x zoom)
+    public static int getCameraZoom() {
+        return prefs.getInt(KEY_CAMERA_ZOOM, 200);
+    }
+
+    public static void setCameraZoom(int value) {
+        prefs.edit().putInt(KEY_CAMERA_ZOOM, value).apply();
     }
 }

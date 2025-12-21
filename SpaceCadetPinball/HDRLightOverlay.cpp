@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "HDRLightOverlay.h"
+#include "HDRRenderer.h"
 #include "TLightGroup.h"
 #include "TLight.h"
 #include "TBumper.h"
@@ -56,13 +57,15 @@ static float s_dragOffsetX = 0.0f;
 static float s_dragOffsetY = 0.0f;
 
 // Vertex shader for light overlay
-// Simple absolute positioning - no scaling or compensation
+// Supports camera zoom/pan transform
 static const char* s_overlayVertexSrc = R"(#version 300 es
 precision highp float;
 layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 aTexCoord;
 
 uniform vec4 uLightRect;  // x, y, width, height in normalized coords (0-1)
+uniform float uCameraZoom;      // 1.0 = no zoom, 2.0 = 2x zoom, etc.
+uniform vec2 uCameraCenter;     // Normalized center point (0-1)
 
 out vec2 vLocalCoord;  // 0-1 within the light quad
 
@@ -70,20 +73,26 @@ void main() {
     // aPos is -1 to 1, convert to 0-1
     vec2 localPos = aPos * 0.5 + 0.5;
     
-    // Simple absolute positioning
+    // Calculate world position of this vertex
     // uLightRect.xy = center position (0-1)
     // uLightRect.zw = width, height (0-1)
-    vec2 pos;
-    pos.x = uLightRect.x + (localPos.x - 0.5) * uLightRect.z;
-    pos.y = uLightRect.y + (localPos.y - 0.5) * uLightRect.w;
+    vec2 worldPos;
+    worldPos.x = uLightRect.x + (localPos.x - 0.5) * uLightRect.z;
+    worldPos.y = uLightRect.y + (localPos.y - 0.5) * uLightRect.w;
+    
+    // Apply camera transform (same as main texture)
+    // Transform from world space to camera space
+    vec2 centered = worldPos - uCameraCenter;
+    vec2 zoomed = centered * uCameraZoom;
+    vec2 screenPos = zoomed + vec2(0.5);  // Center on screen
     
     // Convert to clip space (-1 to 1)
     // 0 -> -1, 1 -> +1 for X
     // 0 -> +1, 1 -> -1 for Y (flip for top-left origin)
-    pos.x = pos.x * 2.0 - 1.0;
-    pos.y = 1.0 - pos.y * 2.0;
+    screenPos.x = screenPos.x * 2.0 - 1.0;
+    screenPos.y = 1.0 - screenPos.y * 2.0;
     
-    gl_Position = vec4(pos, 0.0, 1.0);
+    gl_Position = vec4(screenPos, 0.0, 1.0);
     vLocalCoord = aTexCoord;
 }
 )";
@@ -177,6 +186,7 @@ void main() {
 )";
 
 // Trail vertex shader - takes pre-computed positions with alpha
+// Supports camera zoom/pan transform
 static const char* s_trailVertexSrc = R"(#version 300 es
 precision highp float;
 
@@ -184,14 +194,22 @@ layout(location = 0) in vec2 aPos;      // Position in normalized coords (0-1)
 layout(location = 1) in float aAlpha;   // Alpha/fade value
 layout(location = 2) in float aEdge;    // 0 = center, 1 = edge (for soft edges)
 
+uniform float uCameraZoom;      // 1.0 = no zoom, 2.0 = 2x zoom, etc.
+uniform vec2 uCameraCenter;     // Normalized center point (0-1)
+
 out float vAlpha;
 out float vEdge;
 
 void main() {
+    // Apply camera transform (same as lights)
+    vec2 centered = aPos - uCameraCenter;
+    vec2 zoomed = centered * uCameraZoom;
+    vec2 screenPos = zoomed + vec2(0.5);  // Center on screen
+    
     // Convert to clip space
     vec2 pos;
-    pos.x = aPos.x * 2.0 - 1.0;
-    pos.y = 1.0 - aPos.y * 2.0;
+    pos.x = screenPos.x * 2.0 - 1.0;
+    pos.y = 1.0 - screenPos.y * 2.0;
     
     gl_Position = vec4(pos, 0.0, 1.0);
     vAlpha = aAlpha;
@@ -715,6 +733,16 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
     
     glUseProgram(s_overlayProgramPQ);
     glBindVertexArray(s_overlayVAO);
+    
+    // Set camera transform uniforms (get from HDRRenderer)
+    float cameraZoom = HDRRenderer::GetCurrentCameraZoom();
+    float cameraCenterX = HDRRenderer::GetCurrentCameraCenterX();
+    float cameraCenterY = HDRRenderer::GetCurrentCameraCenterY();
+    
+    GLint zoomLoc = glGetUniformLocation(s_overlayProgramPQ, "uCameraZoom");
+    GLint centerLoc = glGetUniformLocation(s_overlayProgramPQ, "uCameraCenter");
+    glUniform1f(zoomLoc, cameraZoom);
+    glUniform2f(centerLoc, cameraCenterX, cameraCenterY);
     
     // Render game lights with PQ encoding
     for (const auto& state : s_lightStates) {
@@ -1698,6 +1726,16 @@ void HDRLightOverlay::RenderTrailMesh(float maxNits) {
     
     glUseProgram(s_trailProgram);
     glBindVertexArray(s_trailVAO);
+    
+    // Set camera transform uniforms (get from HDRRenderer)
+    float cameraZoom = HDRRenderer::GetCurrentCameraZoom();
+    float cameraCenterX = HDRRenderer::GetCurrentCameraCenterX();
+    float cameraCenterY = HDRRenderer::GetCurrentCameraCenterY();
+    
+    GLint trailZoomLoc = glGetUniformLocation(s_trailProgram, "uCameraZoom");
+    GLint trailCenterLoc = glGetUniformLocation(s_trailProgram, "uCameraCenter");
+    glUniform1f(trailZoomLoc, cameraZoom);
+    glUniform2f(trailCenterLoc, cameraCenterX, cameraCenterY);
     
     // Set uniforms for texture pass (no PQ encoding)
     GLint colorLoc = glGetUniformLocation(s_trailProgram, "uTrailColor");

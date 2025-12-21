@@ -357,3 +357,9 @@ JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_setTrailLifetime(JNIEnv *env, jobject thiz, jfloat seconds) {
     HDRLightOverlay::SetTrailLifetime(seconds);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setCameraTracking(JNIEnv *env, jobject thiz, jboolean enabled, jfloat zoom) {
+    HDRRenderer::SetCameraTracking(enabled, zoom);
+}

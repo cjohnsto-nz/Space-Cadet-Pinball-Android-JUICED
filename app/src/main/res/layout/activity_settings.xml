@@ -313,10 +313,73 @@
             android:layout_marginTop="2dp"
             android:text="Ball trail effect settings (opacity 0-100%, duration 0.5-10s)"
             android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-            android:textSize="11sp"
             app:layout_constraintEnd_toEndOf="@+id/trailLifetimeBar"
             app:layout_constraintStart_toStartOf="@+id/trailLifetimeBar"
             app:layout_constraintTop_toBottomOf="@+id/trailLifetimeBar" />
+
+        <TextView
+            android:id="@+id/textViewCameraTracking"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Ball Tracking Camera"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/cameraTrackingSwitch"
+            app:layout_constraintStart_toStartOf="@+id/textViewTrailOpacity"
+            app:layout_constraintTop_toBottomOf="@+id/trailSettingsHint" />
+
+        <Switch
+            android:id="@+id/cameraTrackingSwitch"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintTop_toTopOf="@+id/textViewCameraTracking"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewCameraTracking" />
+
+        <TextView
+            android:id="@+id/textViewCameraZoom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Zoom Level"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/textViewCameraTracking"
+            app:layout_constraintTop_toBottomOf="@+id/textViewCameraTracking" />
+
+        <TextView
+            android:id="@+id/cameraZoomValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2.0x"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="@+id/cameraTrackingSwitch"
+            app:layout_constraintTop_toTopOf="@+id/textViewCameraZoom"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewCameraZoom" />
+
+        <SeekBar
+            android:id="@+id/cameraZoomBar"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:max="300"
+            android:progress="100"
+            app:layout_constraintEnd_toEndOf="@+id/cameraTrackingSwitch"
+            app:layout_constraintStart_toStartOf="@+id/textViewCameraZoom"
+            app:layout_constraintTop_toBottomOf="@+id/textViewCameraZoom" />
+
+        <TextView
+            android:id="@+id/cameraSettingsHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Zooms and follows the ball (1x-4x zoom)"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/cameraZoomBar"
+            app:layout_constraintStart_toStartOf="@+id/cameraZoomBar"
+            app:layout_constraintTop_toBottomOf="@+id/cameraZoomBar" />
 
         <TextView
             android:id="@+id/textViewLightEdit"
@@ -328,7 +391,7 @@
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@+id/lightEditSwitch"
             app:layout_constraintStart_toStartOf="@+id/textViewTrailOpacity"
-            app:layout_constraintTop_toBottomOf="@+id/trailSettingsHint" />
+            app:layout_constraintTop_toBottomOf="@+id/cameraSettingsHint" />
 
         <Switch
             android:id="@+id/lightEditSwitch"
