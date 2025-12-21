@@ -1083,8 +1083,38 @@ void HDRLightOverlay::SetTrailLifetime(float seconds) {
     HDRLIGHT_LOG("Trail lifetime set to %.2f seconds", seconds);
 }
 
+bool HDRLightOverlay::ShouldBlockTouch(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH) {
+    if (!s_editMode) return false;
+    
+    // Convert screen coords to normalized canvas coords (0-1)
+    float normX = (screenX - viewportX) / viewportW;
+    float normY = (screenY - viewportY) / viewportH;
+    
+    // Settings button detection area based on user touches at X=0.57, Y=0.02-0.06
+    float detectionAreaMinX = 0.5f;   // Start at middle
+    float detectionAreaMaxX = 0.65f;  // Cover middle-right area
+    float detectionAreaMinY = 0.0f;   // Extend to very top of screen
+    float detectionAreaMaxY = 0.15f;  // Cover upper area
+    
+    // Check if touch is within settings button detection area
+    bool inButtonBounds = (normX >= detectionAreaMinX && normX <= detectionAreaMaxX &&
+                          normY >= detectionAreaMinY && normY <= detectionAreaMaxY);
+    
+    if (inButtonBounds) {
+        HDRLIGHT_LOG("Touch on settings button at norm (%.3f, %.3f), blocking touch", normX, normY);
+        return true;  // Block this touch
+    }
+    
+    return false;  // Don't block this touch
+}
+
 void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH) {
     if (!s_editMode) return;
+    
+    // Check if touch should be blocked (settings button area)
+    if (ShouldBlockTouch(screenX, screenY, viewportX, viewportY, viewportW, viewportH)) {
+        return;  // Don't select lights if touching settings button
+    }
     
     // Convert screen coords to normalized canvas coords (0-1)
     float normX = (screenX - viewportX) / viewportW;
@@ -1103,6 +1133,10 @@ void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, i
     // Check lights first
     for (int i = 0; i < (int)s_lightConfigs.size(); i++) {
         const auto& config = s_lightConfigs[i];
+        // Skip locked lights
+        if (config.Locked) {
+            continue;
+        }
         float dx = normX - config.X;
         float dy = normY - config.Y;
         float dist = sqrtf(dx * dx + dy * dy);
@@ -1121,6 +1155,10 @@ void HDRLightOverlay::OnTouchDown(float screenX, float screenY, int viewportX, i
     HDRLIGHT_LOG("Checking %zu bumpers for selection (bumperMinDist=%.2f)", s_bumperConfigs.size(), bumperMinDist);
     for (int i = 0; i < (int)s_bumperConfigs.size(); i++) {
         const auto& config = s_bumperConfigs[i];
+        // Skip locked bumpers
+        if (config.Locked) {
+            continue;
+        }
         float dx = normX - config.X;
         float dy = normY - config.Y;
         float dist = sqrtf(dx * dx + dy * dy);
@@ -1181,13 +1219,19 @@ void HDRLightOverlay::OnTouchMove(float screenX, float screenY, int viewportX, i
     float newY = normY - s_dragOffsetY;
     
     if (s_selectedBumperIndex >= 0) {
-        // Update bumper config position
-        s_bumperConfigs[s_selectedBumperIndex].X = newX;
-        s_bumperConfigs[s_selectedBumperIndex].Y = newY;
+        // Check if bumper is locked before moving
+        if (!s_bumperConfigs[s_selectedBumperIndex].Locked) {
+            // Update bumper config position
+            s_bumperConfigs[s_selectedBumperIndex].X = newX;
+            s_bumperConfigs[s_selectedBumperIndex].Y = newY;
+        }
     } else if (s_selectedLightIndex >= 0) {
-        // Update light config position
-        s_lightConfigs[s_selectedLightIndex].X = newX;
-        s_lightConfigs[s_selectedLightIndex].Y = newY;
+        // Check if light is locked before moving
+        if (!s_lightConfigs[s_selectedLightIndex].Locked) {
+            // Update light config position
+            s_lightConfigs[s_selectedLightIndex].X = newX;
+            s_lightConfigs[s_selectedLightIndex].Y = newY;
+        }
     } else if (s_selectedLightIndex < -1) {
         // Update test light position
         int testIdx = -(s_selectedLightIndex + 1);
@@ -1227,20 +1271,22 @@ bool HDRLightOverlay::SaveLightPositions(const char* filepath) {
     }
     
     fprintf(f, "# HDR Light Positions\n");
-    fprintf(f, "# Format: group,index,x,y,w,h,r,g,b\n\n");
+    fprintf(f, "# Format: group,index,x,y,w,h,r,g,b,locked\n\n");
     
     for (const auto& config : s_lightConfigs) {
-        fprintf(f, "%s,%d,%.6f,%.6f,%.6f,%.6f,%.3f,%.3f,%.3f\n",
+        fprintf(f, "%s,%d,%.6f,%.6f,%.6f,%.6f,%.3f,%.3f,%.3f,%d\n",
                 config.GroupName, config.LightIndex,
                 config.X, config.Y, config.Width, config.Height,
-                config.R, config.G, config.B);
+                config.R, config.G, config.B, config.Locked ? 1 : 0);
     }
     
     fprintf(f, "\n# Bumpers\n");
+    fprintf(f, "# Format: group,index,x,y,w,h,r,g,b,locked\n");
     for (const auto& config : s_bumperConfigs) {
-        fprintf(f, "bumper_%s,0,%.6f,%.6f,%.6f,%.6f,0,0,0\n",
+        fprintf(f, "bumper_%s,0,%.6f,%.6f,%.6f,%.6f,0,0,0,%d\n",
                 config.BumperName,
-                config.X, config.Y, config.Width, config.Height);
+                config.X, config.Y, config.Width, config.Height,
+                config.Locked ? 1 : 0);
     }
     
     fprintf(f, "\n# Test lights\n");
@@ -1267,11 +1313,11 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
         if (line[0] == '#' || line[0] == '\n') continue;
         
         char group[64];
-        int index;
+        int index, locked;
         float x, y, w, h, r, g, b;
         
-        if (sscanf(line, "%63[^,],%d,%f,%f,%f,%f,%f,%f,%f",
-                   group, &index, &x, &y, &w, &h, &r, &g, &b) == 9) {
+        if (sscanf(line, "%63[^,],%d,%f,%f,%f,%f,%f,%f,%f,%d",
+                   group, &index, &x, &y, &w, &h, &r, &g, &b, &locked) == 10) {
             
             if (strcmp(group, "test") == 0) {
                 // Update test light
@@ -1281,8 +1327,9 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
                     s_testLights[index].w = w;
                     s_testLights[index].h = h;
                 }
-            } else if (strncmp(group, "bumper_", 7) == 0) {
+            } else if (strncmp(group, "bumper_", 7) == 0 && strncmp(group, "bumper_target_lights", 20) != 0) {
                 // Update bumper config - extract bumper name after "bumper_"
+                // Note: exclude "bumper_target_lights" which is a light group, not a bumper
                 const char* bumperName = group + 7;
                 for (auto& config : s_bumperConfigs) {
                     if (strcmp(config.BumperName, bumperName) == 0) {
@@ -1290,7 +1337,8 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
                         config.Y = y;
                         config.Width = w;
                         config.Height = h;
-                        HDRLIGHT_LOG("Loaded bumper %s position: (%.4f, %.4f)", bumperName, x, y);
+                        config.Locked = (locked != 0);
+                        HDRLIGHT_LOG("Loaded bumper %s position: (%.4f, %.4f) locked=%d", bumperName, x, y, config.Locked);
                         break;
                     }
                 }
@@ -1298,10 +1346,13 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
                 // Find matching light config and update
                 for (auto& config : s_lightConfigs) {
                     if (strcmp(config.GroupName, group) == 0 && config.LightIndex == index) {
+                        HDRLIGHT_LOG("Loading %s[%d]: pos (%.6f, %.6f) -> (%.6f, %.6f)", 
+                                     group, index, config.X, config.Y, x, y);
                         config.X = x;
                         config.Y = y;
                         config.Width = w;
                         config.Height = h;
+                        config.Locked = (locked != 0);
                         break;
                     }
                 }

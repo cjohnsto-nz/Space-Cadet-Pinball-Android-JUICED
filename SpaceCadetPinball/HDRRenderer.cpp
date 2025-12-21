@@ -34,7 +34,7 @@ GLuint HDRRenderer::s_uploadProgram = 0;
 GLuint HDRRenderer::s_quadVAO = 0;
 GLuint HDRRenderer::s_quadVBO = 0;
 float HDRRenderer::s_exposure = 1.0f;
-bool HDRRenderer::s_cameraTrackingEnabled = true;  // Enable by default for testing
+bool HDRRenderer::s_cameraTrackingEnabled = false;  // Match Java default
 float HDRRenderer::s_cameraZoom = 2.0f;
 float HDRRenderer::s_currentCameraZoom = 1.0f;
 float HDRRenderer::s_currentCameraCenterX = 0.5f;
@@ -455,7 +455,7 @@ void HDRRenderer::UploadTexture(const ColorRgba* pixels, int width, int height) 
     GLint intensityLoc = glGetUniformLocation(s_uploadProgram, "uIntensityMultiplier");
     GLint exposureLoc = glGetUniformLocation(s_uploadProgram, "uExposure");
     
-    HDR_LOG("UploadTexture: uniform locations tex=%d, intensity=%d, exposure=%d", texLoc, intensityLoc, exposureLoc);
+    // HDR_LOG("UploadTexture: uniform locations tex=%d, intensity=%d, exposure=%d", texLoc, intensityLoc, exposureLoc);
     
     glUniform1i(texLoc, 0);
     glUniform1f(intensityLoc, 1.0f);  // Default SDR intensity
@@ -519,8 +519,8 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
         viewportY = 0;
     }
     
-    HDR_LOG("Present: screen %dx%d, texture %dx%d, viewport %d,%d %dx%d", 
-            screenWidth, screenHeight, s_width, s_height, viewportX, viewportY, viewportW, viewportH);
+    // HDR_LOG("Present: screen %dx%d, texture %dx%d, viewport %d,%d %dx%d", 
+    //        screenWidth, screenHeight, s_width, s_height, viewportX, viewportY, viewportW, viewportH);
     
     // Store viewport for touch coordinate conversion
     s_viewportX = viewportX;
@@ -546,7 +546,7 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     GLint maxNitsLoc = glGetUniformLocation(s_outputProgram, "uMaxNits");
     GLint sdrWhiteLoc = glGetUniformLocation(s_outputProgram, "uSDRWhiteNits");
     
-    HDR_LOG("Present: uniform locations tex=%d, maxNits=%d, sdrWhite=%d", texLoc, maxNitsLoc, sdrWhiteLoc);
+    // HDR_LOG("Present: uniform locations tex=%d, maxNits=%d, sdrWhite=%d", texLoc, maxNitsLoc, sdrWhiteLoc);
     
     glUniform1i(texLoc, 0);
     glUniform1f(maxNitsLoc, HDR::GetMaxDisplayNits());
@@ -576,63 +576,62 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     float cameraCenterX = 0.5f;
     float cameraCenterY = 0.5f;
     
-    // DEBUG: Disable zoom but still pass ball position for green line
-    float ballX = HDRLightOverlay::GetBallX();
-    float ballY = HDRLightOverlay::GetBallY();
-    bool ballValid = HDRLightOverlay::IsBallValid();
-    
-    // Track last known valid ball position (for when ball is in teleporter)
+    // Variables for camera tracking (declared outside conditional)
+    float ballX = 0.3f, ballY = 0.5f;
+    bool ballValid = false;
     static float lastValidBallX = 0.3f;
     static float lastValidBallY = 0.5f;
-    
-    // Smoothed camera position with bias toward table center
     static float smoothedCameraX = 0.3f;
     static float smoothedCameraY = 0.5f;
     
-    // Only update last valid position if ball is valid
-    if (ballValid) {
-        lastValidBallX = ballX;
-        lastValidBallY = ballY;
+    // Only apply camera tracking if enabled
+    if (s_cameraTrackingEnabled) {
+        // DEBUG: Disable zoom but still pass ball position for green line
+        ballX = HDRLightOverlay::GetBallX();
+        ballY = HDRLightOverlay::GetBallY();
+        ballValid = HDRLightOverlay::IsBallValid();
+        
+        // Only update last valid position if ball is valid
+        if (ballValid) {
+            lastValidBallX = ballX;
+            lastValidBallY = ballY;
+        }
+        
+        // Calculate target position (use last valid when ball is invalid)
+        float targetX = ballValid ? ballX : lastValidBallX;
+        float targetY = ballValid ? ballY : lastValidBallY;
+        
+        // Table center in texture coordinates (center of table, not including scoreboard)
+        // Table is ~60.7% of texture width, so center is at 0.607/2 = 0.3035
+        float tableCenterX = 0.3035f;
+        float tableCenterY = 0.5f;
+        
+        // Bias target 25% toward table center
+        // float biasedTargetX = targetX * 0.75f + tableCenterX * 0.25f;
+        // float biasedTargetY = targetY * 0.75f + tableCenterY * 0.25f;
+        // 50% toward table center
+        float biasedTargetX = targetX * 0.5f + tableCenterX * 0.5f;
+        float biasedTargetY = targetY * 0.5f + tableCenterY * 0.5f;
+        
+        // Smooth the camera position (lerp toward biased target)
+        // float smoothFactor = 0.08f;  // Lower = smoother/slower
+        float smoothFactor = 0.03f;
+        smoothedCameraX += (biasedTargetX - smoothedCameraX) * smoothFactor;
+        smoothedCameraY += (biasedTargetY - smoothedCameraY) * smoothFactor;
+        
+        // Follow cyan (smoothedCamera) - invert both X and Y
+        cameraCenterX = 1.0f - smoothedCameraX -0.2f / s_cameraZoom;  // Invert X and add offset
+        cameraCenterY = 1.0f - smoothedCameraY;  // Invert Y
+        currentZoom = s_cameraZoom;
+        
+        // Also pass raw ball position for green debug line
+        GLint rawBallPosLoc = glGetUniformLocation(s_outputProgram, "uRawBallPos");
+        glUniform2f(rawBallPosLoc, ballX, ballY);
     }
     
-    // Calculate target position (use last valid when ball is invalid)
-    float targetX = ballValid ? ballX : lastValidBallX;
-    float targetY = ballValid ? ballY : lastValidBallY;
-    
-    // Table center in texture coordinates (center of table, not including scoreboard)
-    // Table is ~60.7% of texture width, so center is at 0.607/2 = 0.3035
-    float tableCenterX = 0.3035f;
-    float tableCenterY = 0.5f;
-    
-    // Bias target 25% toward table center
-    // float biasedTargetX = targetX * 0.75f + tableCenterX * 0.25f;
-    // float biasedTargetY = targetY * 0.75f + tableCenterY * 0.25f;
-    // 50% toward table center
-    float biasedTargetX = targetX * 0.5f + tableCenterX * 0.5f;
-    float biasedTargetY = targetY * 0.5f + tableCenterY * 0.5f;
-    
-    // Smooth the camera position (lerp toward biased target)
-    // float smoothFactor = 0.08f;  // Lower = smoother/slower
-    float smoothFactor = 0.03f;
-    smoothedCameraX += (biasedTargetX - smoothedCameraX) * smoothFactor;
-    smoothedCameraY += (biasedTargetY - smoothedCameraY) * smoothFactor;
-    
-    // Follow cyan (smoothedCamera) - invert both X and Y
-    float cameraX = 1.0f - smoothedCameraX -0.2f / s_cameraZoom;  // Invert X and add offset
-    float cameraY = 1.0f - smoothedCameraY;  // Invert Y
-    glUniform1f(zoomLoc, s_cameraZoom);
-    glUniform2f(centerLoc, cameraX, cameraY);
-    
-    // DEBUG: Log camera values
-    static int camLogCount = 0;
-    if (++camLogCount >= 60) {
-        camLogCount = 0;
-        HDR_LOG("Camera: zoom=%.2f center=(0.5, 0.5) [VIEWPORT CENTER]", s_cameraZoom);
-    }
-    
-    // Also pass raw ball position for green debug line
-    GLint rawBallPosLoc = glGetUniformLocation(s_outputProgram, "uRawBallPos");
-    glUniform2f(rawBallPosLoc, ballX, ballY);
+    // Set camera tracking uniforms
+    glUniform1f(zoomLoc, currentZoom);
+    glUniform2f(centerLoc, cameraCenterX, cameraCenterY);
     
     // Pass last valid position and validity flag
     GLint lastPosLoc = glGetUniformLocation(s_outputProgram, "uLastBallPos");
@@ -643,11 +642,11 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     glUniform2f(smoothedPosLoc, smoothedCameraX, smoothedCameraY);
     
     // Store camera state for light overlay - use SAME position as main texture
-    s_currentCameraZoom = s_cameraZoom;
-    s_currentCameraCenterX = cameraX;  // Same as what we pass to the shader
-    s_currentCameraCenterY = cameraY;
+    s_currentCameraZoom = currentZoom;
+    s_currentCameraCenterX = cameraCenterX;  // Same as what we pass to the shader
+    s_currentCameraCenterY = cameraCenterY;
     
-    HDR_LOG("Present: maxNits=%.1f, sdrWhite=%.1f", HDR::GetMaxDisplayNits(), HDR::Luminance::SDR_WHITE_NITS);
+    // HDR_LOG("Present: maxNits=%.1f, sdrWhite=%.1f", HDR::GetMaxDisplayNits(), HDR::Luminance::SDR_WHITE_NITS);
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s_hdrTexture);

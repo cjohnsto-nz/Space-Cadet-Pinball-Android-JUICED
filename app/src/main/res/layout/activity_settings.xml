@@ -101,18 +101,52 @@
             app:layout_constraintTop_toBottomOf="@+id/fullscreenplunger" />
 
         <View
-            android:id="@+id/divider10"
+            android:id="@+id/divider9"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginStart="32dp"
             android:layout_marginEnd="32dp"
             android:background="?android:attr/listDivider"
+            app:layout_constraintBottom_toTopOf="@+id/enhancedAudioSwitch"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/music" />
 
+        <Switch
+            android:id="@+id/enhancedAudioSwitch"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="@+id/music"
+            app:layout_constraintStart_toStartOf="@+id/music"
+            app:layout_constraintTop_toBottomOf="@+id/divider9" />
+
+        <TextView
+            android:id="@+id/textViewEnhancedAudio"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Enhanced Audio (AI Upscaled)"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="@+id/enhancedAudioSwitch"
+            app:layout_constraintEnd_toEndOf="@+id/textViewHDR"
+            app:layout_constraintStart_toStartOf="@+id/textView2"
+            app:layout_constraintTop_toTopOf="@+id/enhancedAudioSwitch" />
+
+        <TextView
+            android:id="@+id/enhancedAudioStatusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Requires app restart to take effect"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="@+id/textViewEnhancedAudio"
+            app:layout_constraintStart_toStartOf="@+id/textViewEnhancedAudio"
+            app:layout_constraintTop_toBottomOf="@+id/enhancedAudioSwitch" />
+
         <View
-            android:id="@+id/divider11"
+            android:id="@+id/dividerEnhancedAudio"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginStart="32dp"
@@ -120,7 +154,7 @@
             android:background="?android:attr/listDivider"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/hdrswitch" />
+            app:layout_constraintTop_toBottomOf="@+id/enhancedAudioStatusText" />
 
         <Switch
             android:id="@+id/hdrswitch"
@@ -129,7 +163,7 @@
             android:layout_marginTop="8dp"
             app:layout_constraintEnd_toEndOf="@+id/music"
             app:layout_constraintStart_toStartOf="@+id/music"
-            app:layout_constraintTop_toBottomOf="@+id/divider10" />
+            app:layout_constraintTop_toBottomOf="@+id/dividerEnhancedAudio" />
 
         <TextView
             android:id="@+id/textViewHDR"

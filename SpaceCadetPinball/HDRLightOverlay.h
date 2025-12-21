@@ -18,6 +18,7 @@ struct HDRLightConfig {
     float IntensityFlash;       // Intensity when flashing (in nits, e.g., 1000)
     float GlowRadius;           // Radius of glow effect (0-1)
     bool AboveBall;             // True if light is above ball (not occluded), false if below (can be occluded)
+    bool Locked;                // True if light position is locked and cannot be edited
 };
 
 class TLightGroup;
@@ -32,6 +33,7 @@ struct HDRBumperConfig {
     float Colors[4][3];         // RGB colors for each upgrade level (0-3)
     float Intensity;            // Intensity in nits
     float GlowRadius;           // Radius of glow effect (0-1)
+    bool Locked;                // True if bumper position is locked and cannot be edited
 };
 
 class HDRLightOverlay {
@@ -78,6 +80,7 @@ public:
     // Light position editor
     static void SetEditMode(bool enabled);
     static bool GetEditMode();
+    static bool ShouldBlockTouch(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     static void OnTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     static void OnTouchMove(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     static void OnTouchUp();

@@ -102,6 +102,10 @@ void options::init()
 	Options.SoundVolume = Clamp(get_int("Sound Volume", DefVolume), MinVolume, MaxVolume);
 	Options.MusicVolume = Clamp(get_int("Music Volume", DefVolume), MinVolume, MaxVolume);
 	Options.HDREnabled = get_int("HDR Enabled", true);
+	// EnhancedAudio may be set from Java before init() runs, preserve that value
+	// Only read from native storage if not already set (default is false)
+	if (!Options.EnhancedAudio)
+		Options.EnhancedAudio = get_int("Enhanced Audio", false);
 
 	winmain::UpdateFrameRate();
 
@@ -135,6 +139,7 @@ void options::uninit()
 	set_int("Sound Volume", Options.SoundVolume);
 	set_int("Music Volume", Options.MusicVolume);
 	set_int("HDR Enabled", Options.HDREnabled);
+	set_int("Enhanced Audio", Options.EnhancedAudio);
 }
 
 

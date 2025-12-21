@@ -83,7 +83,8 @@ public class MainActivity extends SDLActivity {
         // Initialize HDR capabilities BEFORE initNative so SDL can use HDR colorspace
         initializeHDR();
         
-        initNative(filesDir.getAbsolutePath() + "/");
+        // Pass enhanced audio setting to initNative (sounds load during init)
+        initNative(filesDir.getAbsolutePath() + "/", PrefsHelper.getEnhancedAudio());
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -355,24 +356,55 @@ public class MainActivity extends SDLActivity {
     private void copyAssets(File filesDir) {
         if (!new File(filesDir, "PINBALL.DAT").exists()) {
             AssetManager assetManager = getAssets();
-            try {
-                for (String asset : assetManager.list("")) {
-                    Log.d(TAG, "Copying " + asset);
-                    try (InputStream is = assetManager.open(asset)){
-                        try (OutputStream os = new FileOutputStream(new File(filesDir, asset))) {
-                            byte[] buffer = new byte[1024];
-                            int len;
-                            while ((len = is.read(buffer)) != -1) {
-                                os.write(buffer, 0, len);
-                            }
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            copyAssetFolder(assetManager, "", filesDir);
+        }
+        // Always check and copy enhanced audio folder (may be added after initial install)
+        File enhancedDir = new File(filesDir, "enhanced");
+        if (!enhancedDir.exists()) {
+            AssetManager assetManager = getAssets();
+            copyAssetFolder(assetManager, "enhanced", enhancedDir);
+        }
+    }
+    
+    private void copyAssetFolder(AssetManager assetManager, String assetPath, File targetDir) {
+        try {
+            String[] assets = assetManager.list(assetPath);
+            if (assets == null || assets.length == 0) {
+                // It's a file, copy it
+                copyAssetFile(assetManager, assetPath, new File(targetDir.getParent(), new File(assetPath).getName()));
+            } else {
+                // It's a directory
+                if (!targetDir.exists()) {
+                    targetDir.mkdirs();
+                }
+                for (String asset : assets) {
+                    String fullAssetPath = assetPath.isEmpty() ? asset : assetPath + "/" + asset;
+                    String[] subAssets = assetManager.list(fullAssetPath);
+                    if (subAssets != null && subAssets.length > 0) {
+                        // It's a subdirectory, recurse
+                        copyAssetFolder(assetManager, fullAssetPath, new File(targetDir, asset));
+                    } else {
+                        // It's a file
+                        copyAssetFile(assetManager, fullAssetPath, new File(targetDir, asset));
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void copyAssetFile(AssetManager assetManager, String assetPath, File targetFile) {
+        try (InputStream is = assetManager.open(assetPath);
+             OutputStream os = new FileOutputStream(targetFile)) {
+            Log.d(TAG, "Copying " + assetPath + " to " + targetFile.getAbsolutePath());
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                os.write(buffer, 0, len);
+            }
+        } catch (IOException e) {
+            // Silently ignore - might be a directory
         }
     }
 
@@ -909,7 +941,7 @@ public class MainActivity extends SDLActivity {
         }
     }
 
-    private native void initNative(String dataPath);
+    private native void initNative(String dataPath, boolean enhancedAudio);
 
     private native void setVolume(int vol);
 
@@ -975,6 +1007,10 @@ public class MainActivity extends SDLActivity {
 
                 switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    // Check if touch should be blocked (settings button area)
+                    if (shouldBlockTouch(x, y, 0, 0, viewportW, viewportH)) {
+                        return super.dispatchTouchEvent(event); // Pass to Android UI
+                    }
                     // Check if touch is near a light or bumper - native code will set selection
                     onLightTouchDown(x, y, 0, 0, viewportW, viewportH);
                     // Check if a light or bumper was selected
@@ -1015,6 +1051,7 @@ public class MainActivity extends SDLActivity {
     // Light editor native methods
     private native void setLightEditMode(boolean enabled);
     private native boolean getLightEditMode();
+    private native boolean shouldBlockTouch(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     private native void onLightTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     private native void onLightTouchMove(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     private native void onLightTouchUp();
@@ -1033,4 +1070,7 @@ public class MainActivity extends SDLActivity {
     // Plunger control native methods
     private native void updatePlungerPosition(float position);
     private native void setPlungerLaunchPower(float power);
+
+    // Enhanced audio native method
+    private native void setEnhancedAudio(boolean enabled);
 }

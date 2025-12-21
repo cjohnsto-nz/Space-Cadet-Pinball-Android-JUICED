@@ -5,6 +5,7 @@
 #include "pinball.h"
 #include "Sound.h"
 #include "zdrv.h"
+#include "options.h"
 
 
 errorMsg loader::loader_errors[] =
@@ -156,7 +157,36 @@ int loader::get_sound_id(int groupIndex)
 				// }
 
 				float duration = -1;
-				auto filePath = pinball::make_path_name(fileName);
+				std::string filePath;
+				
+				SDL_Log("Loading sound: %s, EnhancedAudio option: %d", fileName.c_str(), options::Options.EnhancedAudio ? 1 : 0);
+				
+				// Check for enhanced audio if option is enabled
+				if (options::Options.EnhancedAudio)
+				{
+					// Try enhanced version first: enhanced/SOUNDXX_enhanced.wav
+					std::string baseName = fileName.substr(0, fileName.find_last_of('.'));
+					std::string enhancedFileName = "enhanced" + std::string(1, PathSeparator) + baseName + "_enhanced.wav";
+					auto enhancedPath = pinball::make_path_name(enhancedFileName);
+					auto enhancedFile = fopen(enhancedPath.c_str(), "rb");
+					if (enhancedFile)
+					{
+						fclose(enhancedFile);
+						filePath = enhancedPath;
+						SDL_Log("Enhanced audio loaded: %s", enhancedPath.c_str());
+					}
+					else
+					{
+						SDL_Log("Enhanced audio not found: %s (using original)", enhancedPath.c_str());
+					}
+				}
+				
+				// Fall back to original file if enhanced not found or not enabled
+				if (filePath.empty())
+				{
+					filePath = pinball::make_path_name(fileName);
+				}
+				
 				auto file = fopen(filePath.c_str(), "rb");
 				if (file)
 				{

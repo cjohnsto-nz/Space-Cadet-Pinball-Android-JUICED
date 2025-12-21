@@ -575,6 +575,9 @@ component_tag_base* control::wormhole_tag_array3[3] =
 void control::make_links(TPinballTable* table)
 {
 	TableG = table;
+	
+	// Get peak nits for all light configurations
+	float peakNits = HDR::GetMaxDisplayNits();
 
 	for (int index = 0; index < 88; index++)
 	{
@@ -609,58 +612,59 @@ void control::make_links(TPinballTable* table)
 			// Skill shot light 1 (bottom)
 			HDRLightOverlay::AddLightConfig({
 				"skill_shot_lights", 0,
-				0.88f, 0.75f,      // X, Y position (normalized)
+				0.518366f, 0.575480f,      // X, Y position (normalized)
 				0.04f, 0.04f,      // Width, Height
 				1.0f, 0.7f, 0.1f,  // R, G, B (yellow-orange)
 				600.0f,            // Intensity when on (nits)
 				1000.0f,           // Intensity when flashing (nits)
 				1.0f,              // Glow radius
-				true               // AboveBall (not occluded)
+				true,              // AboveBall (not occluded)
+				true               // Locked
 			});
 			
 			// Skill shot light 2
 			HDRLightOverlay::AddLightConfig({
 				"skill_shot_lights", 1,
-				0.88f, 0.68f,
+				0.504916f, 0.453200f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f, true
+				peakNits, peakNits, 1.0f, true, true
 			});
 			
 			// Skill shot light 3
 			HDRLightOverlay::AddLightConfig({
 				"skill_shot_lights", 2,
-				0.88f, 0.61f,
+				0.493206f, 0.338865f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f, true
+				peakNits, peakNits, 1.0f, true, true
 			});
 			
 			// Skill shot light 4
 			HDRLightOverlay::AddLightConfig({
 				"skill_shot_lights", 3,
-				0.88f, 0.54f,
+				0.484177f, 0.238625f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f, true
+				peakNits, peakNits, 1.0f, true, true
 			});
 			
 			// Skill shot light 5
 			HDRLightOverlay::AddLightConfig({
 				"skill_shot_lights", 4,
-				0.88f, 0.47f,
+				0.460645f, 0.164781f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				600.0f, 1000.0f, 1.0f, false
+				peakNits, peakNits, 1.0f, false, true
 			});
 			
 			// Skill shot light 6 (top)
 			HDRLightOverlay::AddLightConfig({
 				"skill_shot_lights", 5,
-				0.88f, 0.40f,
+				0.418464f, 0.108107f,
 				0.04f, 0.04f,
 				1.0f, 0.7f, 0.1f,  // Yellow-orange
-				700.0f, 1200.0f, 1.0f, true
+				700.0f, 1200.0f, 1.0f, true, true
 			});
 		}
 		
@@ -670,30 +674,69 @@ void control::make_links(TPinballTable* table)
 			HDRLightOverlay::RegisterLightGroup("middle_circle", control_middle_circle_tag.Component);
 			
 			// The middle circle has 9 lights arranged in a ring
-			// Canvas is wider than tall, visible X is 0-0.61, Y is 0-1
-			// To make circles: Y values need to be larger (divide by 0.61)
-			float centerX = 0.305f;
-			float centerY = 0.65f;
-			float radiusX = 0.05f;
-			float radiusY = 0.05f / 0.61f;  // Make Y larger to compensate
-			float lightW = 0.04f;
-			float lightH = 0.04f / 0.61f;  // Make height larger
-			
-			for (int i = 0; i < 9; i++)
-			{
-				float angle = (float)i * (360.0f / 9.0f) - 90.0f;
-				float rad = angle * 3.14159f / 180.0f;
-				float x = centerX + radiusX * cosf(rad);
-				float y = centerY + radiusY * sinf(rad);
-				
-				HDRLightOverlay::AddLightConfig({
-					"middle_circle", i,
-					x, y,
-					lightW, lightH,
-					1.0f, 0.3f, 0.0f,  // Yellow
-					600.0f, 1000.0f, 1.0f, false
-				});
-			}
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 0,
+				0.294936f, 0.578540f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 1,
+				0.328999f, 0.584519f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 2,
+				0.350836f, 0.625003f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 3,
+				0.353777f, 0.663306f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 4,
+				0.331721f, 0.704472f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 5,
+				0.294855f, 0.711025f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 6,
+				0.260959f, 0.682270f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 7,
+				0.255760f, 0.635767f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"middle_circle", 8,
+				0.266496f, 0.597461f,
+				0.04f, 0.065574f,
+				1.0f, 0.3f, 0.0f,  // Orange
+				peakNits, peakNits, 1.0f, false, true
+			});
 		}
 		
 		// Register outer circle (outer ring of lights - blue)
@@ -702,29 +745,134 @@ void control::make_links(TPinballTable* table)
 			HDRLightOverlay::RegisterLightGroup("outer_circle", control_outer_circle_tag.Component);
 			
 			// The outer circle has 18 lights arranged in a larger ring around the middle circle
-			float centerX = 0.305f;
-			float centerY = 0.65f;
-			float radiusX = 0.09f;  // Larger radius than middle circle
-			float radiusY = 0.09f / 0.61f;
-			float lightW = 0.04f;
-			float lightH = 0.04f / 0.61f;
 			float peakNits = HDR::GetMaxDisplayNits();
 			
-			for (int i = 0; i < 18; i++)
-			{
-				float angle = (float)i * (360.0f / 18.0f) - 90.0f;
-				float rad = angle * 3.14159f / 180.0f;
-				float x = centerX + radiusX * cosf(rad);
-				float y = centerY + radiusY * sinf(rad);
-				
-				HDRLightOverlay::AddLightConfig({
-					"outer_circle", i,
-					x, y,
-					lightW, lightH,
-					0.02f, 0.02f, 1.0f,  // Pure blue
-					peakNits, peakNits, 1.0f, false
-				});
-			}
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 0,
+				0.302717f, 0.546538f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 1,
+				0.329714f, 0.552617f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 2,
+				0.351085f, 0.569523f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 3,
+				0.367402f, 0.591606f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 4,
+				0.378241f, 0.621817f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 5,
+				0.380017f, 0.657040f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 6,
+				0.372434f, 0.690967f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 7,
+				0.357523f, 0.723301f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 8,
+				0.332970f, 0.743283f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 9,
+				0.304408f, 0.750900f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 10,
+				0.275846f, 0.739695f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 11,
+				0.250932f, 0.722020f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 12,
+				0.235790f, 0.690199f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 13,
+				0.228799f, 0.655888f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 14,
+				0.231315f, 0.619511f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 15,
+				0.242219f, 0.591606f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 16,
+				0.256400f, 0.565423f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"outer_circle", 17,
+				0.278954f, 0.551592f,
+				0.04f, 0.065574f,
+				0.02f, 0.02f, 1.0f,  // Blue
+				peakNits, peakNits, 1.0f, false, true
+			});
 		}
 		
 		// Register re-entry lane rollover lights (small yellow lights at top center)
@@ -739,10 +887,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("lite8", control_lite8_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"lite8", 0,
-					0.22f, 0.18f,      // Left rollover light
+					0.332482f, 0.125415f,      // Left rollover light
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f, false
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 			
@@ -751,10 +899,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("lite9", control_lite9_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"lite9", 0,
-					0.305f, 0.18f,     // Center rollover light
+					0.304704f, 0.121314f,     // Center rollover light
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f, false
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 			
@@ -763,10 +911,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("lite10", control_lite10_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"lite10", 0,
-					0.39f, 0.18f,      // Right rollover light
+					0.276408f, 0.127208f,      // Right rollover light
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f, false
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 		}
@@ -785,10 +933,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("literoll184", control_literoll184_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"literoll184", 0,
-					0.08f, 0.37f,
+					0.128693f, 0.314390f,
 					lightW, lightH,
 					0.0f, 0.0f, 1.0f,  // Blue
-					peakNits, peakNits, 1.0f, false
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 			
@@ -800,10 +948,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("literoll182", control_literoll182_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"literoll182", 0,
-					0.08f, 0.51f,
+					0.142458f, 0.379814f,
 					lightW, lightH,
 					0.8f, 0.0f, 1.0f,  // Purple
-					peakNits, peakNits, 1.0f, false
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 			
@@ -813,36 +961,36 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("literoll181", control_literoll181_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"literoll181", 0,
-					0.08f, 0.58f,
+					0.156074f, 0.410092f,
 					lightW, lightH,
 					1.0f, 0.0f, 0.0f,  // Red
-					peakNits, peakNits, 1.0f, false
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 			
-			// literoll180 - Amber
+			// literoll180 - Orange
 			if (control_literoll180_tag.Component)
 			{
 				HDRLightOverlay::RegisterIndividualLight("literoll180", control_literoll180_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"literoll180", 0,
-					0.08f, 0.65f,
+					0.170874f, 0.438833f,
 					lightW, lightH,
-					0.5f, 0.8f, 0.0f,  // Orange
-					peakNits, peakNits, 1.0f, false
+					1.0f, 0.3f, 0.0f,  // Orange
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 			
-			// literoll179 (bottom) - Bright white-yellow
+			// literoll179 (bottom) - Yellow
 			if (control_literoll179_tag.Component)
 			{
 				HDRLightOverlay::RegisterIndividualLight("literoll179", control_literoll179_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"literoll179", 0,
-					0.08f, 0.72f,
+					0.187303f, 0.471161f,
 					lightW, lightH,
-					1.0f, 0.7f, 0.1f,  // Bright white-yellow
-					peakNits, peakNits, 1.0f, false
+					1.0f, 0.7f, 0.1f,  // Yellow
+					peakNits, peakNits, 1.0f, false, true
 				});
 			}
 		}
@@ -857,16 +1005,20 @@ void control::make_links(TPinballTable* table)
 			float lightH = 0.03f / 0.61f;
 			
 			// Two lights arranged vertically in the left ramp (bottom one skipped)
-			for (int i = 0; i < 2; i++)
-			{
-				HDRLightOverlay::AddLightConfig({
-					"l_trek_lights", i,
-					0.12f, 0.32f + i * 0.06f,  // Positioned along the left ramp
-					lightW, lightH,
-					1.0f, 0.7f, 0.1f,  // Bright white-yellow
-					peakNits, peakNits, 1.0f, false
-				});
-			}
+			HDRLightOverlay::AddLightConfig({
+				"l_trek_lights", 0,
+				0.116448f, 0.185458f,  // Bottom light
+				lightW, lightH,
+				1.0f, 0.7f, 0.1f,  // Bright white-yellow
+				peakNits, peakNits, 1.0f, false, true
+			});
+			HDRLightOverlay::AddLightConfig({
+				"l_trek_lights", 1,
+				0.139240f, 0.135261f,  // Top light
+				lightW, lightH,
+				1.0f, 0.7f, 0.1f,  // Bright white-yellow
+				peakNits, peakNits, 1.0f, false, true
+			});
 		}
 		
 		// Register launch lane rollover lights (three lights above bumpers in left mission ramp)
@@ -882,10 +1034,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("lite169", control_lite169_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"lite169", 0,
-					0.18f, 0.25f,      // Left position above bumpers
+					0.094898f, 0.445022f,      // Left position above bumpers
 					lightW, lightH,
 					0.5f, 0.4f, 0.0f,  // Yellow
-					peakNits, peakNits, 0.5f, false  // Much smaller glow
+					peakNits, peakNits, 0.5f, false, true  // Much smaller glow
 				});
 			}
 			
@@ -895,10 +1047,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("lite170", control_lite170_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"lite170", 0,
-					0.24f, 0.25f,      // Middle position above bumpers
+					0.120413f, 0.452198f,      // Middle position above bumpers
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 0.5f, false  // Much smaller glow
+					peakNits, peakNits, 0.5f, false, true  // Much smaller glow
 				});
 			}
 			
@@ -908,10 +1060,10 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterIndividualLight("lite171", control_lite171_tag.Component);
 				HDRLightOverlay::AddLightConfig({
 					"lite171", 0,
-					0.30f, 0.25f,      // Right position above bumpers
+					0.148000f, 0.461680f,      // Right position above bumpers
 					lightW, lightH,
 					1.0f, 0.8f, 0.0f,  // Yellow
-					peakNits, peakNits, 0.5f, false  // Much smaller glow
+					peakNits, peakNits, 0.5f, false, true  // Much smaller glow
 				});
 			}
 		}
@@ -925,10 +1077,10 @@ void control::make_links(TPinballTable* table)
 			float peakNits = HDR::GetMaxDisplayNits();
 			HDRLightOverlay::AddLightConfig({
 				"lite199", 0,
-				0.22f, 0.95f,      // X, Y position (left exit ramp, below left paddle)
-				0.04f, 0.04f / 0.61f,
+				0.192027f, 0.922579f,      // X, Y position (left exit ramp, below left paddle)
+				0.04f, 0.065574f,
 				1.0f, 0.0f, 0.0f,  // Pure red
-				peakNits, peakNits, 0.5f, false  // Reduced glow
+				peakNits, peakNits, 0.5f, false, true  // Reduced glow
 			});
 		}
 		
@@ -938,10 +1090,10 @@ void control::make_links(TPinballTable* table)
 			float peakNits = HDR::GetMaxDisplayNits();
 			HDRLightOverlay::AddLightConfig({
 				"lite200", 0,
-				0.39f, 0.95f,      // X, Y position (right exit ramp, below right paddle)
-				0.04f, 0.04f / 0.61f,
+				0.414273f, 0.925398f,      // X, Y position (right exit ramp, below right paddle)
+				0.04f, 0.065574f,
 				1.0f, 0.0f, 0.0f,  // Pure red
-				peakNits, peakNits, 0.5f, false  // Reduced glow
+				peakNits, peakNits, 0.5f, false, true  // Reduced glow
 			});
 		}
 		
@@ -969,13 +1121,13 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterBumper("bump1", control_bump1_tag.Component);
 				HDRLightOverlay::AddBumperConfig({
 					"bump1",
-					0.05f, 0.30f,
+					0.303826f, 0.284623f,
 					bumperW, bumperH,
 					{{colors[0][0], colors[0][1], colors[0][2]},
 					 {colors[1][0], colors[1][1], colors[1][2]},
 					 {colors[2][0], colors[2][1], colors[2][2]},
 					 {colors[3][0], colors[3][1], colors[3][2]}},
-					peakNits, 1.0f
+					peakNits, 1.0f, true
 				});
 			}
 			
@@ -984,13 +1136,13 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterBumper("bump2", control_bump2_tag.Component);
 				HDRLightOverlay::AddBumperConfig({
 					"bump2",
-					0.05f, 0.35f,
+					0.338015f, 0.200081f,
 					bumperW, bumperH,
 					{{colors[0][0], colors[0][1], colors[0][2]},
 					 {colors[1][0], colors[1][1], colors[1][2]},
 					 {colors[2][0], colors[2][1], colors[2][2]},
 					 {colors[3][0], colors[3][1], colors[3][2]}},
-					peakNits, 1.0f
+					peakNits, 1.0f, true
 				});
 			}
 			
@@ -999,13 +1151,13 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterBumper("bump3", control_bump3_tag.Component);
 				HDRLightOverlay::AddBumperConfig({
 					"bump3",
-					0.05f, 0.40f,
+					0.272301f, 0.218432f,
 					bumperW, bumperH,
 					{{colors[0][0], colors[0][1], colors[0][2]},
 					 {colors[1][0], colors[1][1], colors[1][2]},
 					 {colors[2][0], colors[2][1], colors[2][2]},
 					 {colors[3][0], colors[3][1], colors[3][2]}},
-					peakNits, 1.0f
+					peakNits, 1.0f, true
 				});
 			}
 			
@@ -1014,13 +1166,13 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterBumper("bump4", control_bump4_tag.Component);
 				HDRLightOverlay::AddBumperConfig({
 					"bump4",
-					0.05f, 0.45f,
+					0.168699f, 0.088914f,
 					bumperW, bumperH,
 					{{colors[0][0], colors[0][1], colors[0][2]},
 					 {colors[1][0], colors[1][1], colors[1][2]},
 					 {colors[2][0], colors[2][1], colors[2][2]},
 					 {colors[3][0], colors[3][1], colors[3][2]}},
-					peakNits, 1.0f
+					peakNits, 1.0f, true
 				});
 			}
 			
@@ -1030,13 +1182,13 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterBumper("bump5", control_bump5_tag.Component);
 				HDRLightOverlay::AddBumperConfig({
 					"bump5",
-					0.05f, 0.50f,
+					0.139542f, 0.532802f,
 					bumperW, bumperH,
 					{{colors[0][0], colors[0][1], colors[0][2]},
 					 {colors[1][0], colors[1][1], colors[1][2]},
 					 {colors[2][0], colors[2][1], colors[2][2]},
 					 {colors[3][0], colors[3][1], colors[3][2]}},
-					peakNits, 1.0f
+					peakNits, 1.0f, true
 				});
 			}
 			
@@ -1045,13 +1197,13 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterBumper("bump6", control_bump6_tag.Component);
 				HDRLightOverlay::AddBumperConfig({
 					"bump6",
-					0.05f, 0.55f,
+					0.083967f, 0.512456f,
 					bumperW, bumperH,
 					{{colors[0][0], colors[0][1], colors[0][2]},
 					 {colors[1][0], colors[1][1], colors[1][2]},
 					 {colors[2][0], colors[2][1], colors[2][2]},
 					 {colors[3][0], colors[3][1], colors[3][2]}},
-					peakNits, 1.0f
+					peakNits, 1.0f, true
 				});
 			}
 			
@@ -1060,19 +1212,310 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::RegisterBumper("bump7", control_bump7_tag.Component);
 				HDRLightOverlay::AddBumperConfig({
 					"bump7",
-					0.05f, 0.60f,
+					0.100321f, 0.570529f,
 					bumperW, bumperH,
 					{{colors[0][0], colors[0][1], colors[0][2]},
 					 {colors[1][0], colors[1][1], colors[1][2]},
 					 {colors[2][0], colors[2][1], colors[2][2]},
 					 {colors[3][0], colors[3][1], colors[3][2]}},
-					peakNits, 1.0f
+					peakNits, 1.0f, true
 				});
 			}
 		}
 		
-		// Load saved light positions (if any)
-		// Try common Android app data paths
+		// Add initial configurations for new light groups (unlocked for positioning)
+		
+		// Left chute target lights - 3 lights in left chute
+		if (control_lchute_tgt_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"lchute_tgt_lights", i,
+					0.02f, 0.02f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 1.0f, 0.0f,  // Yellow
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Goal lights - 3 lights for goal targets
+		if (control_goal_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"goal_lights", i,
+					0.02f, 0.08f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					0.0f, 1.0f, 0.0f,  // Green
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Hyperspace lights - 4 lights for hyperspace (game only has 4, not 5)
+		if (control_hyper_lights_tag.Component)
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"hyperspace_lights", i,
+					0.02f, 0.14f + i * 0.02f,  // Left column positions
+					0.04f, 0.065574f,
+					0.02f, 0.02f, 1.0f,  // Blue (same as outer circle)
+					peakNits, peakNits, 1.5f, true, false  // Unlocked, bigger glow, above ball
+				});
+			}
+		}
+		
+		// Bumper increment lights - 3 lights for bumper progress (game only has 3, not 4)
+		if (control_bmpr_inc_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"bmpr_inc_lights", i,
+					0.02f, 0.24f + i * 0.02f,  // Left column positions
+					0.025f, 0.025f,
+					1.0f, 0.5f, 0.0f,  // Orange
+					peakNits, peakNits, 0.8f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Solo target lights - 3 lights
+		if (control_bpr_solotgt_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"bpr_solotgt_lights", i,
+					0.02f, 0.32f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Ball sink arrow lights - 3 arrow lights
+		if (control_bsink_arrow_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"bsink_arrow_lights", i,
+					0.02f, 0.38f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 1.0f, 1.0f,  // White
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Bumper target lights - 3 lights (actual game only has 3, not 6)
+		if (control_bumber_target_lights_tag.Component)
+		{
+			// Top light - Blue (like outer circle)
+			HDRLightOverlay::AddLightConfig({
+				"bumper_target_lights", 0,
+				0.02f, 0.44f,  // Left column positions
+				0.025f, 0.025f,
+				0.02f, 0.02f, 1.0f,  // Blue (same as outer circle)
+				peakNits, peakNits, 1.2f, false, false  // Unlocked, increased glow
+			});
+			
+			// Second light - Orange (like fuel ramp)
+			HDRLightOverlay::AddLightConfig({
+				"bumper_target_lights", 1,
+				0.02f, 0.46f,  // Left column positions
+				0.025f, 0.025f,
+				1.0f, 0.3f, 0.0f,  // Orange (same as literoll180)
+				peakNits, peakNits, 1.2f, false, false  // Unlocked, increased glow
+			});
+			
+			// Third light - Purple (like fuel ramp)
+			HDRLightOverlay::AddLightConfig({
+				"bumper_target_lights", 2,
+				0.02f, 0.48f,  // Left column positions
+				0.025f, 0.025f,
+				0.8f, 0.0f, 1.0f,  // Purple (same as literoll182)
+				peakNits, peakNits, 1.2f, false, false  // Unlocked, increased glow
+			});
+		}
+		
+		// Right trek lights - 2 lights in right ramp
+		if (control_r_trek_lights_tag.Component)
+		{
+			for (int i = 0; i < 2; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"r_trek_lights", i,
+					0.02f, 0.56f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 0.7f, 0.1f,  // Yellow-orange
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Ramp bumper increment lights - 3 lights (game only has 3, not 4)
+		if (control_ramp_bmpr_inc_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"ramp_bmpr_inc_lights", i,
+					0.02f, 0.60f + i * 0.02f,  // Left column positions
+					0.025f, 0.025f,
+					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
+					peakNits, peakNits, 0.8f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Ramp target lights - 3 lights
+		if (control_ramp_tgt_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"ramp_tgt_lights", i,
+					0.02f, 0.68f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Top circle target lights - 3 lights in square (game only has 3, not 4)
+		if (control_top_circle_tgt_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"top_circle_tgt_lights", i,
+					0.02f, 0.74f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Top target lights - 4 lights (game only has 4, not 5)
+		if (control_top_target_lights_tag.Component)
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"top_target_lights", i,
+					0.02f, 0.82f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 1.0f, 0.0f,  // Yellow
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Worm hole lights - 3 lights
+		if (control_worm_hole_lights_tag.Component)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				HDRLightOverlay::AddLightConfig({
+					"worm_hole_lights", i,
+					0.02f, 0.92f + i * 0.02f,  // Left column positions
+					0.03f, 0.03f,
+					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
+					peakNits, peakNits, 1.0f, false, false  // Unlocked
+				});
+			}
+		}
+		
+		// Register additional light groups
+		// Left chute target lights
+		if (control_lchute_tgt_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("lchute_tgt_lights", control_lchute_tgt_lights_tag.Component);
+		}
+		
+		// Goal lights
+		if (control_goal_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("goal_lights", control_goal_lights_tag.Component);
+		}
+		
+		// Hyperspace lights
+		if (control_hyper_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("hyperspace_lights", control_hyper_lights_tag.Component);
+		}
+		
+		// Bumper increment lights
+		if (control_bmpr_inc_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("bmpr_inc_lights", control_bmpr_inc_lights_tag.Component);
+		}
+		
+		// Solo target lights
+		if (control_bpr_solotgt_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("bpr_solotgt_lights", control_bpr_solotgt_lights_tag.Component);
+		}
+		
+		// Ball sink arrow lights
+		if (control_bsink_arrow_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("bsink_arrow_lights", control_bsink_arrow_lights_tag.Component);
+		}
+		
+		// Bumper target lights
+		if (control_bumber_target_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("bumper_target_lights", control_bumber_target_lights_tag.Component);
+		}
+		
+		// Right trek lights
+		if (control_r_trek_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("r_trek_lights", control_r_trek_lights_tag.Component);
+		}
+		
+		// Ramp bumper increment lights
+		if (control_ramp_bmpr_inc_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("ramp_bmpr_inc_lights", control_ramp_bmpr_inc_lights_tag.Component);
+		}
+		
+		// Ramp target lights
+		if (control_ramp_tgt_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("ramp_tgt_lights", control_ramp_tgt_lights_tag.Component);
+		}
+		
+		// Top circle target lights
+		if (control_top_circle_tgt_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("top_circle_tgt_lights", control_top_circle_tgt_lights_tag.Component);
+		}
+		
+		// Top target lights
+		if (control_top_target_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("top_target_lights", control_top_target_lights_tag.Component);
+		}
+		
+		// Worm hole lights
+		if (control_worm_hole_lights_tag.Component)
+		{
+			HDRLightOverlay::RegisterLightGroup("worm_hole_lights", control_worm_hole_lights_tag.Component);
+		}
+		
+		// Load light positions from config file
 		HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions.cfg");
 	}
 }

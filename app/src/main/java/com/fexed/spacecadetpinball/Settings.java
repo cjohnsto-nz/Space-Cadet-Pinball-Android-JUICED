@@ -106,6 +106,13 @@ public class Settings extends AppCompatActivity {
             PrefsHelper.setMusic(b);
         });
 
+        boolean enhancedAudio = PrefsHelper.getEnhancedAudio();
+        mBinding.enhancedAudioSwitch.setChecked(enhancedAudio);
+        mBinding.enhancedAudioSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setEnhancedAudio(b);
+            Toast.makeText(this, "Restart app to apply enhanced audio", Toast.LENGTH_SHORT).show();
+        });
+
         // HDR Settings
         HDRHelper.HDRCapabilities hdrCaps = HDRHelper.queryHDRCapabilities(this);
         boolean hdrEnabled = PrefsHelper.getHDREnabled();

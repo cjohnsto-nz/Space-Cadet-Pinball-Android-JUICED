@@ -26,6 +26,7 @@ public class PrefsHelper {
     private static final String KEY_TRAIL_LIFETIME = "trail_lifetime";
     private static final String KEY_CAMERA_TRACKING = "camera_tracking";
     private static final String KEY_CAMERA_ZOOM = "camera_zoom";
+    private static final String KEY_ENHANCED_AUDIO = "enhanced_audio";
 
     public static SharedPreferences getPrefs() {
         return prefs;
@@ -197,5 +198,14 @@ public class PrefsHelper {
 
     public static void setCameraZoom(int value) {
         prefs.edit().putInt(KEY_CAMERA_ZOOM, value).apply();
+    }
+
+    // Enhanced audio (AI upscaled sounds)
+    public static boolean getEnhancedAudio() {
+        return prefs.getBoolean(KEY_ENHANCED_AUDIO, false);
+    }
+
+    public static void setEnhancedAudio(boolean value) {
+        prefs.edit().putBoolean(KEY_ENHANCED_AUDIO, value).apply();
     }
 }

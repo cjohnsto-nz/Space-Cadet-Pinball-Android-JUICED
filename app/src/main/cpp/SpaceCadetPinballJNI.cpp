@@ -5,6 +5,7 @@
 #include "../../../../SpaceCadetPinball/control.h"
 #include "../../../../SpaceCadetPinball/HDRConfig.h"
 #include "../../../../SpaceCadetPinball/pb.h"
+#include "../../../../SpaceCadetPinball/options.h"
 #include <jni.h>
 #include <android/log.h>
 
@@ -127,10 +128,14 @@ void SpaceCadetPinballJNI::gameReady() {
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_initNative(JNIEnv *env, jobject thiz,
-        jstring data_path) {
-winmain::BasePath = (char *) env->GetStringUTFChars(data_path, nullptr);
+        jstring data_path, jboolean enhanced_audio) {
+    winmain::BasePath = (char *) env->GetStringUTFChars(data_path, nullptr);
     env->GetJavaVM(&g_JavaVM);
+    // Set enhanced audio option before sounds load
+    options::Options.EnhancedAudio = enhanced_audio;
+    __android_log_print(ANDROID_LOG_INFO, "SpaceCadetPinballJNI", "initNative: EnhancedAudio set to %d", enhanced_audio ? 1 : 0);
 }
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_setVolume(JNIEnv *env, jobject thiz, jint vol) {
@@ -224,6 +229,22 @@ extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_getLightEditMode(JNIEnv *env, jobject thiz) {
     return HDRLightOverlay::GetEditMode();
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_shouldBlockTouch(JNIEnv *env, jobject thiz, 
+        jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
+    // Use viewport from HDRRenderer instead of passed values (more accurate)
+    int vx = HDRRenderer::GetViewportX();
+    int vy = HDRRenderer::GetViewportY();
+    int vw = HDRRenderer::GetViewportW();
+    int vh = HDRRenderer::GetViewportH();
+    if (vw > 0 && vh > 0) {
+        return HDRLightOverlay::ShouldBlockTouch(screenX, screenY, vx, vy, vw, vh);
+    } else {
+        return HDRLightOverlay::ShouldBlockTouch(screenX, screenY, viewportX, viewportY, viewportW, viewportH);
+    }
 }
 
 extern "C"
@@ -379,4 +400,10 @@ Java_com_fexed_spacecadetpinball_MainActivity_setPlungerLaunchPower(JNIEnv *env,
     // Set launch power based on drag percentage (0.0 to 1.0)
     // This will override the time-based charging system
     pinball::set_plunger_launch_power(power);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setEnhancedAudio(JNIEnv *env, jobject thiz, jboolean enabled) {
+    options::Options.EnhancedAudio = enabled;
 }
