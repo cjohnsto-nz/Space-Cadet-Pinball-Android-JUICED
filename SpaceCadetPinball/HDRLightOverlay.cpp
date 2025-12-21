@@ -42,6 +42,11 @@ GLuint HDRLightOverlay::s_overlayVBO = 0;
 GLuint HDRLightOverlay::s_trailProgram = 0;
 GLuint HDRLightOverlay::s_trailVAO = 0;
 GLuint HDRLightOverlay::s_trailVBO = 0;
+GLuint HDRLightOverlay::s_trailFBO = 0;
+GLuint HDRLightOverlay::s_trailTexture = 0;
+GLuint HDRLightOverlay::s_trailCompositeProgram = 0;
+int HDRLightOverlay::s_trailFBOWidth = 0;
+int HDRLightOverlay::s_trailFBOHeight = 0;
 static bool s_debugAllLightsOn = false;  // Debug mode - shows all lights regardless of state
 static bool s_editMode = false;  // Edit mode - allows dragging lights to reposition
 static int s_selectedLightIndex = -1;  // >= 0 for lights, < -1 for test lights
@@ -193,7 +198,8 @@ void main() {
 }
 )";
 
-// Trail fragment shader - smooth gradient with PQ encoding
+// Trail fragment shader - renders to texture with linear color (no PQ)
+// Uses GL_MAX blending so overlapping areas don't accumulate
 static const char* s_trailFragmentSrc = R"(#version 300 es
 precision highp float;
 
@@ -202,8 +208,41 @@ in float vEdge;
 out vec4 fragColor;
 
 uniform vec3 uTrailColor;
-uniform float uMaxNits;
 uniform float uIntensityNits;
+
+void main() {
+    // Soft edge falloff
+    float edgeFade = 1.0 - smoothstep(0.0, 1.0, vEdge);
+    float alpha = vAlpha * edgeFade;
+    
+    if (alpha < 0.01) discard;
+    
+    // Output linear HDR color with alpha for intensity
+    fragColor = vec4(uTrailColor * uIntensityNits / 10000.0, alpha);
+}
+)";
+
+// Trail composite shader - renders trail texture to screen with PQ encoding
+static const char* s_trailCompositeVertexSrc = R"(#version 300 es
+precision highp float;
+
+layout(location = 0) in vec2 aPos;
+
+out vec2 vTexCoord;
+
+void main() {
+    vTexCoord = aPos * 0.5 + 0.5;
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}
+)";
+
+static const char* s_trailCompositeFragmentSrc = R"(#version 300 es
+precision highp float;
+
+in vec2 vTexCoord;
+out vec4 fragColor;
+
+uniform sampler2D uTrailTexture;
 uniform float uMaxOpacity;
 
 // PQ constants
@@ -213,9 +252,8 @@ const float c1 = 0.8359375;
 const float c2 = 18.8515625;
 const float c3 = 18.6875;
 
-vec3 linearToPQ(vec3 linearNits) {
-    vec3 Y = linearNits / 10000.0;
-    Y = max(Y, vec3(0.0));
+vec3 linearToPQ(vec3 linearNormalized) {
+    vec3 Y = max(linearNormalized, vec3(0.0));
     vec3 Ym1 = pow(Y, vec3(m1));
     vec3 numerator = c1 + c2 * Ym1;
     vec3 denominator = 1.0 + c3 * Ym1;
@@ -223,15 +261,13 @@ vec3 linearToPQ(vec3 linearNits) {
 }
 
 void main() {
-    // Soft edge falloff
-    float edgeFade = 1.0 - smoothstep(0.0, 1.0, vEdge);
-    float alpha = vAlpha * edgeFade * uMaxOpacity;  // Use dynamic max opacity
+    vec4 trail = texture(uTrailTexture, vTexCoord);
     
-    if (alpha < 0.01) discard;
+    if (trail.a < 0.01) discard;
     
-    // HDR color
-    vec3 hdrColorNits = uTrailColor * uIntensityNits;
-    vec3 pqColor = linearToPQ(hdrColorNits);
+    // Apply max opacity and convert to PQ
+    float alpha = trail.a * uMaxOpacity;
+    vec3 pqColor = linearToPQ(trail.rgb);
     
     fragColor = vec4(pqColor, alpha);
 }
@@ -264,6 +300,34 @@ void HDRLightOverlay::Uninit() {
         glDeleteBuffers(1, &s_overlayVBO);
         s_overlayVBO = 0;
     }
+    
+    // Clean up trail resources
+    if (s_trailProgram) {
+        glDeleteProgram(s_trailProgram);
+        s_trailProgram = 0;
+    }
+    if (s_trailCompositeProgram) {
+        glDeleteProgram(s_trailCompositeProgram);
+        s_trailCompositeProgram = 0;
+    }
+    if (s_trailVAO) {
+        glDeleteVertexArrays(1, &s_trailVAO);
+        s_trailVAO = 0;
+    }
+    if (s_trailVBO) {
+        glDeleteBuffers(1, &s_trailVBO);
+        s_trailVBO = 0;
+    }
+    if (s_trailFBO) {
+        glDeleteFramebuffers(1, &s_trailFBO);
+        s_trailFBO = 0;
+    }
+    if (s_trailTexture) {
+        glDeleteTextures(1, &s_trailTexture);
+        s_trailTexture = 0;
+    }
+    s_trailFBOWidth = 0;
+    s_trailFBOHeight = 0;
     
     s_registeredGroups.clear();
     s_registeredLights.clear();
@@ -1313,6 +1377,44 @@ void HDRLightOverlay::CreateTrailShader() {
     
     glBindVertexArray(0);
     
+    // Create composite shader for rendering trail texture to screen
+    GLuint compVertShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(compVertShader, 1, &s_trailCompositeVertexSrc, nullptr);
+    glCompileShader(compVertShader);
+    
+    glGetShaderiv(compVertShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(compVertShader, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Trail composite vertex shader error: %s", infoLog);
+    }
+    
+    GLuint compFragShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(compFragShader, 1, &s_trailCompositeFragmentSrc, nullptr);
+    glCompileShader(compFragShader);
+    
+    glGetShaderiv(compFragShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(compFragShader, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Trail composite fragment shader error: %s", infoLog);
+    }
+    
+    s_trailCompositeProgram = glCreateProgram();
+    glAttachShader(s_trailCompositeProgram, compVertShader);
+    glAttachShader(s_trailCompositeProgram, compFragShader);
+    glLinkProgram(s_trailCompositeProgram);
+    
+    glGetProgramiv(s_trailCompositeProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(s_trailCompositeProgram, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Trail composite program link error: %s", infoLog);
+    }
+    
+    glDeleteShader(compVertShader);
+    glDeleteShader(compFragShader);
+    
     HDRLIGHT_LOG("Trail shader created successfully");
 }
 
@@ -1511,35 +1613,103 @@ void HDRLightOverlay::RenderTrailMesh(float maxNits) {
                      segmentRanges.size(), vertices.size() / 4, s_trailProgram);
     }
     
+    // Get current viewport size for FBO
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    int viewWidth = viewport[2];
+    int viewHeight = viewport[3];
+    
+    // Create or resize trail FBO if needed
+    if (s_trailFBO == 0 || s_trailFBOWidth != viewWidth || s_trailFBOHeight != viewHeight) {
+        // Clean up old resources
+        if (s_trailFBO != 0) {
+            glDeleteFramebuffers(1, &s_trailFBO);
+            glDeleteTextures(1, &s_trailTexture);
+        }
+        
+        // Create FBO
+        glGenFramebuffers(1, &s_trailFBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, s_trailFBO);
+        
+        // Create texture for trail rendering
+        glGenTextures(1, &s_trailTexture);
+        glBindTexture(GL_TEXTURE_2D, s_trailTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, viewWidth, viewHeight, 0, GL_RGBA, GL_HALF_FLOAT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_trailTexture, 0);
+        
+        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE) {
+            HDRLIGHT_LOG("Trail FBO incomplete: 0x%x", status);
+        }
+        
+        s_trailFBOWidth = viewWidth;
+        s_trailFBOHeight = viewHeight;
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        HDRLIGHT_LOG("Created trail FBO: %dx%d", viewWidth, viewHeight);
+    }
+    
     // Upload vertices
     glBindBuffer(GL_ARRAY_BUFFER, s_trailVBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), vertices.data());
     
-    // Use standard alpha blending
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // === PASS 1: Render trail to texture with GL_MAX blending ===
+    glBindFramebuffer(GL_FRAMEBUFFER, s_trailFBO);
+    glViewport(0, 0, s_trailFBOWidth, s_trailFBOHeight);
     
-    // Render
+    // Clear trail texture
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Use GL_MAX blending - overlapping areas take maximum, no accumulation
+    glBlendEquation(GL_MAX);
+    glBlendFunc(GL_ONE, GL_ONE);
+    
     glUseProgram(s_trailProgram);
     glBindVertexArray(s_trailVAO);
     
-    // Set uniforms
+    // Set uniforms for texture pass (no PQ encoding)
     GLint colorLoc = glGetUniformLocation(s_trailProgram, "uTrailColor");
     glUniform3f(colorLoc, 0.8f, 0.9f, 1.0f);
     
-    GLint maxNitsLoc = glGetUniformLocation(s_trailProgram, "uMaxNits");
-    glUniform1f(maxNitsLoc, maxNits);
-    
     GLint intensityLoc = glGetUniformLocation(s_trailProgram, "uIntensityNits");
     glUniform1f(intensityLoc, 400.0f);
-    
-    GLint opacityLoc = glGetUniformLocation(s_trailProgram, "uMaxOpacity");
-    glUniform1f(opacityLoc, s_trailOpacity);
     
     // Draw each segment separately
     for (const auto& range : segmentRanges) {
         glDrawArrays(GL_TRIANGLE_STRIP, (GLint)range.first, (GLsizei)range.second);
     }
     
+    glBindVertexArray(0);
+    
+    // === PASS 2: Composite trail texture to screen with PQ encoding ===
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    
+    // Restore standard alpha blending for compositing
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    glUseProgram(s_trailCompositeProgram);
+    
+    // Bind trail texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, s_trailTexture);
+    
+    GLint texLoc = glGetUniformLocation(s_trailCompositeProgram, "uTrailTexture");
+    glUniform1i(texLoc, 0);
+    
+    GLint opacityLoc = glGetUniformLocation(s_trailCompositeProgram, "uMaxOpacity");
+    glUniform1f(opacityLoc, s_trailOpacity);
+    
+    // Draw fullscreen quad using the overlay VAO
+    glBindVertexArray(s_overlayVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
     
     // Restore additive blending for other overlays

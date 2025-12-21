@@ -190,6 +190,13 @@ private:
     static GLuint s_trailVBO;
     static constexpr int MAX_TRAIL_VERTICES = 8192;
     
+    // Trail FBO for render-to-texture (fixes self-intersection)
+    static GLuint s_trailFBO;
+    static GLuint s_trailTexture;
+    static GLuint s_trailCompositeProgram;
+    static int s_trailFBOWidth;
+    static int s_trailFBOHeight;
+    
     static void CreateShaders();
     static void CreateQuad();
     static void CreateTrailShader();

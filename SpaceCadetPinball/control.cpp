@@ -828,7 +828,7 @@ void control::make_links(TPinballTable* table)
 					"literoll180", 0,
 					0.08f, 0.65f,
 					lightW, lightH,
-					1.0f, 0.3f, 0.0f,  // Amber
+					0.8f, 0.5f, 0.0f,  // Orange
 					peakNits, peakNits, 1.0f, false
 				});
 			}
