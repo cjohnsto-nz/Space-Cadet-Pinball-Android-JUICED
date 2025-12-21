@@ -25,6 +25,7 @@ public:
 	static void matrix_vector_multiply(mat4_row_major* mat, vector3* vec, vector3* dstVec);
 	static float z_distance(vector3* vec);
 	static void xform_to_2d(vector3* vec, int* dst);
+	static void xform_to_2d_float(vector3* vec, float* dst);  // Subpixel precision version
 	static void recenter(float centerX, float centerY);
 private:
 	static mat4_row_major matrix;

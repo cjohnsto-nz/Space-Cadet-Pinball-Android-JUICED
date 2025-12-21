@@ -55,6 +55,20 @@ void proj::xform_to_2d(vector3* vec, int* dst)
 	dst[1] = static_cast<int>(dstVec2.Y * projCoef + centery);
 }
 
+void proj::xform_to_2d_float(vector3* vec, float* dst)
+{
+	float projCoef;
+	vector3 dstVec2{};
+
+	matrix_vector_multiply(&matrix, vec, &dstVec2);
+	if (dstVec2.Z == 0.0f)
+		projCoef = 999999.88f;
+	else
+		projCoef = d_ / dstVec2.Z;
+	dst[0] = dstVec2.X * projCoef + centerx;
+	dst[1] = dstVec2.Y * projCoef + centery;
+}
+
 void proj::recenter(float centerX, float centerY)
 {
 	centerx = centerX;

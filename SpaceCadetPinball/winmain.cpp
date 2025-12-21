@@ -252,23 +252,24 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 					
 					if (activeBall) {
 						// Convert 3D ball position to 2D screen coordinates using proj
-						int pos2D[2];
-						proj::xform_to_2d(&activeBall->Position, pos2D);
+						// Use float version for subpixel precision (smoother trail)
+						float pos2D[2];
+						proj::xform_to_2d_float(&activeBall->Position, pos2D);
 						
 						// Get render screen dimensions
 						float screenWidth = static_cast<float>(render::vscreen->Width);
 						float screenHeight = static_cast<float>(render::vscreen->Height);
 						
-						// Normalize to 0-1 range
-						float normX = static_cast<float>(pos2D[0]) / screenWidth;
-						float normY = static_cast<float>(pos2D[1]) / screenHeight;
+						// Normalize to 0-1 range (preserving subpixel precision)
+						float normX = pos2D[0] / screenWidth;
+						float normY = pos2D[1] / screenHeight;
 						
 						// Log coordinates every second
 						static int logCounter = 0;
 						if (++logCounter >= 60) {
 							logCounter = 0;
 							__android_log_print(ANDROID_LOG_INFO, "DebugBall", 
-								"Ball 2D: (%d, %d) Screen: (%.0f x %.0f) Norm: (%.3f, %.3f)", 
+								"Ball 2D: (%.2f, %.2f) Screen: (%.0f x %.0f) Norm: (%.4f, %.4f)", 
 								pos2D[0], pos2D[1], screenWidth, screenHeight, normX, normY);
 						}
 						
