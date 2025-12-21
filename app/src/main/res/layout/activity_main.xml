@@ -234,6 +234,105 @@
             app:layout_constraintStart_toStartOf="@+id/settingsbtn"
             app:layout_constraintTop_toBottomOf="@+id/settingsbtn" />
 
+        <!-- Light Debug Panel -->
+        <LinearLayout
+            android:id="@+id/lightDebugPanel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="@android:color/transparent"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:elevation="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/lightDebugTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Light Debug"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/currentLightText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Current: None"
+                android:textColor="#FFFF00"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <Button
+                    android:id="@+id/prevLightBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Prev"
+                    android:textSize="10sp"
+                    android:minWidth="48dp"
+                    android:padding="4dp" />
+
+                <Button
+                    android:id="@+id/nextLightBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Next"
+                    android:textSize="10sp"
+                    android:minWidth="48dp"
+                    android:padding="4dp"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <Button
+                    android:id="@+id/toggleTableLightBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Table"
+                    android:textSize="10sp"
+                    android:minWidth="48dp"
+                    android:padding="4dp" />
+
+                <Button
+                    android:id="@+id/toggleHDRLightBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="HDR"
+                    android:textSize="10sp"
+                    android:minWidth="48dp"
+                    android:padding="4dp"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/closeLightDebugBtn"
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:text="Close"
+                android:textSize="10sp"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout

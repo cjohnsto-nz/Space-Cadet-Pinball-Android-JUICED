@@ -48,6 +48,12 @@ public class Settings extends AppCompatActivity {
 
     private native boolean saveLightPositionsNative(String filepath);
     private native int resetOutOfBoundsLightsNative();
+    private native void setLightDebugModeNative(boolean enabled);
+    private native void nextLightNative();
+    private native void previousLightNative();
+    private native void toggleTableLightNative();
+    private native void toggleHDRLightNative();
+    private native String getCurrentLightInfoNative();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -278,6 +284,35 @@ public class Settings extends AppCompatActivity {
             }
         });
 
+        // Light Debug Mode
+        mBinding.lightDebugSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            setLightDebugModeNative(b);
+            if (b) {
+                updateCurrentLightInfo();
+                Toast.makeText(this, "Light Debug Mode ON - use buttons to test lights", Toast.LENGTH_LONG).show();
+            } else {
+                mBinding.currentLightText.setText("Current: None");
+            }
+        });
+        
+        mBinding.prevLightBtn.setOnClickListener(v -> {
+            previousLightNative();
+            updateCurrentLightInfo();
+        });
+        
+        mBinding.nextLightBtn.setOnClickListener(v -> {
+            nextLightNative();
+            updateCurrentLightInfo();
+        });
+        
+        mBinding.toggleTableLightBtn.setOnClickListener(v -> {
+            toggleTableLightNative();
+        });
+        
+        mBinding.toggleHDRLightBtn.setOnClickListener(v -> {
+            toggleHDRLightNative();
+        });
+
         mBinding.inpttxtusername.setText(PrefsHelper.getUsername("Player 1"));
         mBinding.inpttxtusername.addTextChangedListener(new TextWatcher() {
             @Override
@@ -478,5 +513,14 @@ public class Settings extends AppCompatActivity {
         };
         RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
         queue.add(GETReleaseRequest);
+    }
+    
+    private void updateCurrentLightInfo() {
+        String lightInfo = getCurrentLightInfoNative();
+        if (lightInfo != null && !lightInfo.isEmpty()) {
+            mBinding.currentLightText.setText("Current: " + lightInfo);
+        } else {
+            mBinding.currentLightText.setText("Current: None");
+        }
     }
 }

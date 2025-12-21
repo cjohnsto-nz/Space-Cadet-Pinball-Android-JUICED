@@ -3,6 +3,10 @@
 
 #include <cmath>
 
+#ifdef __ANDROID__
+#include <jni.h>
+#endif
+
 #include "pb.h"
 #include "pinball.h"
 #include "TBlocker.h"
@@ -1249,8 +1253,8 @@ void control::make_links(TPinballTable* table)
 					"goal_lights", i,
 					0.02f, 0.08f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
-					0.0f, 1.0f, 0.0f,  // Green
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					0.2f, 0.3f, 0.5f,  // Light blue
+					peakNits, peakNits, 2.5f, false, false  // Large glow radius
 				});
 			}
 		}
@@ -1424,16 +1428,32 @@ void control::make_links(TPinballTable* table)
 		// Worm hole lights - 3 lights
 		if (control_worm_hole_lights_tag.Component)
 		{
-			for (int i = 0; i < 3; i++)
-			{
-				HDRLightOverlay::AddLightConfig({
-					"worm_hole_lights", i,
-					0.02f, 0.92f + i * 0.02f,  // Left column positions
-					0.03f, 0.03f,
-					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
-				});
-			}
+			// Light 0 - Red
+			HDRLightOverlay::AddLightConfig({
+				"worm_hole_lights", 0,
+				0.02f, 0.92f,  // Left column positions
+				0.03f, 0.03f,
+				1.0f, 0.0f, 0.0f,  // Red
+				peakNits, peakNits, 1.0f, false, false  // Unlocked
+			});
+			
+			// Light 1 - Green
+			HDRLightOverlay::AddLightConfig({
+				"worm_hole_lights", 1,
+				0.02f, 0.94f,  // Left column positions
+				0.03f, 0.03f,
+				0.0f, 1.0f, 0.0f,  // Green
+				peakNits, peakNits, 1.0f, false, false  // Unlocked
+			});
+			
+			// Light 2 - Yellow (unchanged)
+			HDRLightOverlay::AddLightConfig({
+				"worm_hole_lights", 2,
+				0.02f, 0.96f,  // Left column positions
+				0.03f, 0.03f,
+				1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
+				peakNits, peakNits, 1.0f, false, false  // Unlocked
+			});
 		}
 		
 		// Register additional light groups
@@ -5127,3 +5147,426 @@ void control::WaitingDeploymentController(int code, TPinballComponent* caller)
 		break;
 	}
 }
+
+// Light Debug Mode Implementation
+static bool g_lightDebugMode = false;
+static int g_currentLightIndex = 0;
+static std::vector<std::pair<std::string, int>> g_lightList;
+
+// Initialize the list of all available lights for debugging
+void InitializeLightDebugList() {
+    if (!g_lightList.empty()) return;
+    
+    // Add all light groups with their indices
+    // This should match the light groups defined in make_links and HDR configs
+    
+    // Skill shot lights - 6 lights in plunger lane
+    g_lightList.push_back({"skill_shot_lights", 0});
+    g_lightList.push_back({"skill_shot_lights", 1});
+    g_lightList.push_back({"skill_shot_lights", 2});
+    g_lightList.push_back({"skill_shot_lights", 3});
+    g_lightList.push_back({"skill_shot_lights", 4});
+    g_lightList.push_back({"skill_shot_lights", 5});
+    
+    // Middle circle - 9 lights (inner orange ring)
+    for (int i = 0; i < 9; i++) {
+        g_lightList.push_back({"middle_circle", i});
+    }
+    
+    // Outer circle - 18 lights (outer blue ring)
+    for (int i = 0; i < 18; i++) {
+        g_lightList.push_back({"outer_circle", i});
+    }
+    
+    // Left trek lights - 2 lights in left ramp
+    g_lightList.push_back({"l_trek_lights", 0});
+    g_lightList.push_back({"l_trek_lights", 1});
+    
+    // Right trek lights - 2 lights in right ramp
+    g_lightList.push_back({"r_trek_lights", 0});
+    g_lightList.push_back({"r_trek_lights", 1});
+    
+    // Left chute target lights - 3 lights
+    g_lightList.push_back({"lchute_tgt_lights", 0});
+    g_lightList.push_back({"lchute_tgt_lights", 1});
+    g_lightList.push_back({"lchute_tgt_lights", 2});
+    
+    // Goal lights - 3 lights
+    g_lightList.push_back({"goal_lights", 0});
+    g_lightList.push_back({"goal_lights", 1});
+    g_lightList.push_back({"goal_lights", 2});
+    
+    // Hyperspace lights - 4 lights
+    g_lightList.push_back({"hyperspace_lights", 0});
+    g_lightList.push_back({"hyperspace_lights", 1});
+    g_lightList.push_back({"hyperspace_lights", 2});
+    g_lightList.push_back({"hyperspace_lights", 3});
+    
+    // Bumper increment lights - 3 lights
+    g_lightList.push_back({"bmpr_inc_lights", 0});
+    g_lightList.push_back({"bmpr_inc_lights", 1});
+    g_lightList.push_back({"bmpr_inc_lights", 2});
+    
+    // Solo target lights - 3 lights
+    g_lightList.push_back({"bpr_solotgt_lights", 0});
+    g_lightList.push_back({"bpr_solotgt_lights", 1});
+    g_lightList.push_back({"bpr_solotgt_lights", 2});
+    
+    // Ball sink arrow lights - 3 lights
+    g_lightList.push_back({"bsink_arrow_lights", 0});
+    g_lightList.push_back({"bsink_arrow_lights", 1});
+    g_lightList.push_back({"bsink_arrow_lights", 2});
+    
+    // Bumper target lights - 3 lights
+    g_lightList.push_back({"bumper_target_lights", 0});
+    g_lightList.push_back({"bumper_target_lights", 1});
+    g_lightList.push_back({"bumper_target_lights", 2});
+    
+    // Ramp bumper increment lights - 3 lights
+    g_lightList.push_back({"ramp_bmpr_inc_lights", 0});
+    g_lightList.push_back({"ramp_bmpr_inc_lights", 1});
+    g_lightList.push_back({"ramp_bmpr_inc_lights", 2});
+    
+    // Ramp target lights - 3 lights
+    g_lightList.push_back({"ramp_tgt_lights", 0});
+    g_lightList.push_back({"ramp_tgt_lights", 1});
+    g_lightList.push_back({"ramp_tgt_lights", 2});
+    
+    // Top circle target lights - 3 lights
+    g_lightList.push_back({"top_circle_tgt_lights", 0});
+    g_lightList.push_back({"top_circle_tgt_lights", 1});
+    g_lightList.push_back({"top_circle_tgt_lights", 2});
+    
+    // Top target lights - 4 lights
+    g_lightList.push_back({"top_target_lights", 0});
+    g_lightList.push_back({"top_target_lights", 1});
+    g_lightList.push_back({"top_target_lights", 2});
+    g_lightList.push_back({"top_target_lights", 3});
+    
+    // Worm hole lights - 3 lights
+    g_lightList.push_back({"worm_hole_lights", 0});
+    g_lightList.push_back({"worm_hole_lights", 1});
+    g_lightList.push_back({"worm_hole_lights", 2});
+}
+
+// Per-frame enforcement of light debug mode - turns off all NON-selected/toggled lights
+void control_EnforceLightDebugMode() {
+    if (!g_lightDebugMode || g_lightList.empty()) return;
+    
+    auto& selectedLight = g_lightList[g_currentLightIndex];
+    std::string selectedGroup = selectedLight.first;
+    int selectedIndex = selectedLight.second;
+    
+    // Map group names to components
+    std::vector<std::pair<std::string, TPinballComponent*>> allGroups = {
+        {"skill_shot_lights", control_skill_shot_lights_tag.Component},
+        {"middle_circle", control_middle_circle_tag.Component},
+        {"outer_circle", control_outer_circle_tag.Component},
+        {"l_trek_lights", control_l_trek_lights_tag.Component},
+        {"r_trek_lights", control_r_trek_lights_tag.Component},
+        {"lchute_tgt_lights", control_lchute_tgt_lights_tag.Component},
+        {"goal_lights", control_goal_lights_tag.Component},
+        {"hyperspace_lights", control_hyper_lights_tag.Component},
+        {"bmpr_inc_lights", control_bmpr_inc_lights_tag.Component},
+        {"bpr_solotgt_lights", control_bpr_solotgt_lights_tag.Component},
+        {"bsink_arrow_lights", control_bsink_arrow_lights_tag.Component},
+        {"bumper_target_lights", control_bumber_target_lights_tag.Component},
+        {"ramp_bmpr_inc_lights", control_ramp_bmpr_inc_lights_tag.Component},
+        {"ramp_tgt_lights", control_ramp_tgt_lights_tag.Component},
+        {"top_circle_tgt_lights", control_top_circle_tgt_lights_tag.Component},
+        {"top_target_lights", control_top_target_lights_tag.Component},
+        {"worm_hole_lights", control_worm_hole_lights_tag.Component}
+    };
+    
+    for (auto& groupPair : allGroups) {
+        std::string groupName = groupPair.first;
+        TPinballComponent* comp = groupPair.second;
+        if (!comp) continue;
+        TLightGroup* group = dynamic_cast<TLightGroup*>(comp);
+        if (!group) continue;
+        
+        // Turn off lights in this group EXCEPT if they match the selected light
+        for (size_t i = 0; i < group->List.size(); i++) {
+            TLight* light = group->List[i];
+            if (!light) continue;
+            
+            // Skip if this is the currently selected light
+            if (groupName == selectedGroup && static_cast<int>(i) == selectedIndex) {
+                continue;  // Don't turn off the selected light
+            }
+            
+            light->Message(0, 0.0);  // Turn off non-selected lights
+        }
+    }
+}
+
+// Check if light debug mode is active
+bool control_IsLightDebugModeActive() {
+    return g_lightDebugMode;
+}
+
+// Flag to temporarily allow light toggle commands to bypass the block
+static bool g_lightDebugToggleAllowed = false;
+
+bool control_IsLightDebugToggleAllowed() {
+    return g_lightDebugToggleAllowed;
+}
+
+void control_SetLightDebugToggleAllowed(bool allowed) {
+    g_lightDebugToggleAllowed = allowed;
+}
+
+// Get current selected light info for HDR overlay enforcement
+void control_GetSelectedLightInfo(std::string& outGroupName, int& outLightIndex) {
+    if (!g_lightDebugMode || g_lightList.empty()) {
+        outGroupName = "";
+        outLightIndex = -1;
+        return;
+    }
+    auto& selectedLight = g_lightList[g_currentLightIndex];
+    outGroupName = selectedLight.first;
+    outLightIndex = selectedLight.second;
+}
+
+#ifdef __ANDROID__
+extern "C" {
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_setLightDebugModeNative(JNIEnv* env, jobject obj, jboolean enabled) {
+        g_lightDebugMode = enabled;
+        if (enabled) {
+            InitializeLightDebugList();
+            g_currentLightIndex = 0;
+        }
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_nextLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        g_currentLightIndex = (g_currentLightIndex + 1) % g_lightList.size();
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_previousLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        g_currentLightIndex = (g_currentLightIndex - 1 + g_lightList.size()) % g_lightList.size();
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_toggleTableLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string groupName = currentLight.first;
+        int lightIndex = currentLight.second;
+        
+        // Find the corresponding light component and toggle it
+        if (groupName == "lchute_tgt_lights" && control_lchute_tgt_lights_tag.Component) {
+            control_lchute_tgt_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "goal_lights" && control_goal_lights_tag.Component) {
+            control_goal_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "hyperspace_lights" && control_hyper_lights_tag.Component) {
+            control_hyper_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "bmpr_inc_lights" && control_bmpr_inc_lights_tag.Component) {
+            control_bmpr_inc_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "bpr_solotgt_lights" && control_bpr_solotgt_lights_tag.Component) {
+            control_bpr_solotgt_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "bsink_arrow_lights" && control_bsink_arrow_lights_tag.Component) {
+            control_bsink_arrow_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "bumper_target_lights" && control_bumber_target_lights_tag.Component) {
+            control_bumber_target_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "l_trek_lights" && control_l_trek_lights_tag.Component) {
+            control_l_trek_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "r_trek_lights" && control_r_trek_lights_tag.Component) {
+            control_r_trek_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "ramp_bmpr_inc_lights" && control_ramp_bmpr_inc_lights_tag.Component) {
+            control_ramp_bmpr_inc_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "ramp_tgt_lights" && control_ramp_tgt_lights_tag.Component) {
+            control_ramp_tgt_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "top_circle_tgt_lights" && control_top_circle_tgt_lights_tag.Component) {
+            control_top_circle_tgt_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "top_target_lights" && control_top_target_lights_tag.Component) {
+            control_top_target_lights_tag.Component->Message(1, 0.0);
+        } else if (groupName == "worm_hole_lights" && control_worm_hole_lights_tag.Component) {
+            control_worm_hole_lights_tag.Component->Message(1, 0.0);
+        }
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_toggleHDRLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string groupName = currentLight.first;
+        int lightIndex = currentLight.second;
+        
+        // Toggle the corresponding HDR light using HDRLightOverlay
+        HDRLightOverlay::ToggleDebugLight(groupName.c_str(), lightIndex);
+    }
+    
+    JNIEXPORT jstring JNICALL Java_com_fexed_spacecadetpinball_Settings_getCurrentLightInfoNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) {
+            return env->NewStringUTF("");
+        }
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string info = currentLight.first + "[" + std::to_string(currentLight.second) + "]";
+        return env->NewStringUTF(info.c_str());
+    }
+
+    // MainActivity versions of the same functions
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setLightDebugModeNative(JNIEnv* env, jobject obj, jboolean enabled) {
+        g_lightDebugMode = enabled;
+        if (enabled) {
+            InitializeLightDebugList();
+            g_currentLightIndex = 0;
+        } else {
+            // Clear debug toggled lights when exiting debug mode
+            HDRLightOverlay::ClearDebugToggledLights();
+        }
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_nextLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        g_currentLightIndex = (g_currentLightIndex + 1) % g_lightList.size();
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_previousLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        g_currentLightIndex = (g_currentLightIndex - 1 + g_lightList.size()) % g_lightList.size();
+    }
+    
+    // Track toggle state for table light debug
+    static bool g_tableLightDebugOn = false;
+    
+    // Helper to get TLightGroup by name
+    static TLightGroup* GetLightGroupByName(const std::string& groupName) {
+        if (groupName == "skill_shot_lights") return dynamic_cast<TLightGroup*>(control_skill_shot_lights_tag.Component);
+        if (groupName == "middle_circle") return dynamic_cast<TLightGroup*>(control_middle_circle_tag.Component);
+        if (groupName == "outer_circle") return dynamic_cast<TLightGroup*>(control_outer_circle_tag.Component);
+        if (groupName == "l_trek_lights") return dynamic_cast<TLightGroup*>(control_l_trek_lights_tag.Component);
+        if (groupName == "r_trek_lights") return dynamic_cast<TLightGroup*>(control_r_trek_lights_tag.Component);
+        if (groupName == "lchute_tgt_lights") return dynamic_cast<TLightGroup*>(control_lchute_tgt_lights_tag.Component);
+        if (groupName == "goal_lights") return dynamic_cast<TLightGroup*>(control_goal_lights_tag.Component);
+        if (groupName == "hyperspace_lights") return dynamic_cast<TLightGroup*>(control_hyper_lights_tag.Component);
+        if (groupName == "bmpr_inc_lights") return dynamic_cast<TLightGroup*>(control_bmpr_inc_lights_tag.Component);
+        if (groupName == "bpr_solotgt_lights") return dynamic_cast<TLightGroup*>(control_bpr_solotgt_lights_tag.Component);
+        if (groupName == "bsink_arrow_lights") return dynamic_cast<TLightGroup*>(control_bsink_arrow_lights_tag.Component);
+        if (groupName == "bumper_target_lights") return dynamic_cast<TLightGroup*>(control_bumber_target_lights_tag.Component);
+        if (groupName == "ramp_bmpr_inc_lights") return dynamic_cast<TLightGroup*>(control_ramp_bmpr_inc_lights_tag.Component);
+        if (groupName == "ramp_tgt_lights") return dynamic_cast<TLightGroup*>(control_ramp_tgt_lights_tag.Component);
+        if (groupName == "top_circle_tgt_lights") return dynamic_cast<TLightGroup*>(control_top_circle_tgt_lights_tag.Component);
+        if (groupName == "top_target_lights") return dynamic_cast<TLightGroup*>(control_top_target_lights_tag.Component);
+        if (groupName == "worm_hole_lights") return dynamic_cast<TLightGroup*>(control_worm_hole_lights_tag.Component);
+        return nullptr;
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_toggleTableLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string groupName = currentLight.first;
+        int lightIndex = currentLight.second;
+        
+        // Get the light group and toggle the specific light by index
+        TLightGroup* group = GetLightGroupByName(groupName);
+        if (group && lightIndex >= 0 && lightIndex < static_cast<int>(group->List.size())) {
+            TLight* light = group->List[lightIndex];
+            if (light) {
+                // Toggle: check current state and flip it
+                // Message(2, 0.0) returns BmpIndex1 (current on/off state)
+                int currentState = light->Message(2, 0.0);
+                // Temporarily allow the toggle command to bypass the block
+                control_SetLightDebugToggleAllowed(true);
+                // Message(0, 0.0) turns off, Message(1, 0.0) turns on
+                light->Message(currentState ? 0 : 1, 0.0);
+                control_SetLightDebugToggleAllowed(false);
+                g_tableLightDebugOn = !currentState;
+            }
+        }
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_toggleHDRLightNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string groupName = currentLight.first;
+        int lightIndex = currentLight.second;
+        
+        HDRLightOverlay::ToggleDebugLight(groupName.c_str(), lightIndex);
+    }
+    
+    JNIEXPORT jstring JNICALL Java_com_fexed_spacecadetpinball_MainActivity_getCurrentLightInfoNative(JNIEnv* env, jobject obj) {
+        if (!g_lightDebugMode || g_lightList.empty()) {
+            return env->NewStringUTF("");
+        }
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string info = currentLight.first + "[" + std::to_string(currentLight.second) + "]";
+        return env->NewStringUTF(info.c_str());
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_turnOffAllLightsNative(JNIEnv* env, jobject obj) {
+        // Turn off all light groups using Message(0, 0.0) which turns lights off
+        // Message code 0 sets BmpIndex1 = 0 on each light in the group
+        if (control_lchute_tgt_lights_tag.Component) control_lchute_tgt_lights_tag.Component->Message(0, 0.0);
+        if (control_goal_lights_tag.Component) control_goal_lights_tag.Component->Message(0, 0.0);
+        if (control_hyper_lights_tag.Component) control_hyper_lights_tag.Component->Message(0, 0.0);
+        if (control_bmpr_inc_lights_tag.Component) control_bmpr_inc_lights_tag.Component->Message(0, 0.0);
+        if (control_bpr_solotgt_lights_tag.Component) control_bpr_solotgt_lights_tag.Component->Message(0, 0.0);
+        if (control_bsink_arrow_lights_tag.Component) control_bsink_arrow_lights_tag.Component->Message(0, 0.0);
+        if (control_bumber_target_lights_tag.Component) control_bumber_target_lights_tag.Component->Message(0, 0.0);
+        if (control_l_trek_lights_tag.Component) control_l_trek_lights_tag.Component->Message(0, 0.0);
+        if (control_r_trek_lights_tag.Component) control_r_trek_lights_tag.Component->Message(0, 0.0);
+        if (control_ramp_bmpr_inc_lights_tag.Component) control_ramp_bmpr_inc_lights_tag.Component->Message(0, 0.0);
+        if (control_ramp_tgt_lights_tag.Component) control_ramp_tgt_lights_tag.Component->Message(0, 0.0);
+        if (control_top_circle_tgt_lights_tag.Component) control_top_circle_tgt_lights_tag.Component->Message(0, 0.0);
+        if (control_top_target_lights_tag.Component) control_top_target_lights_tag.Component->Message(0, 0.0);
+        if (control_worm_hole_lights_tag.Component) control_worm_hole_lights_tag.Component->Message(0, 0.0);
+        if (control_skill_shot_lights_tag.Component) control_skill_shot_lights_tag.Component->Message(0, 0.0);
+    }
+    
+    // Debug light repositioning - moves the currently selected HDR light to touch position
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_onDebugLightTouchDown(JNIEnv* env, jobject obj, jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        // Convert screen coordinates to normalized (0-1) coordinates
+        float normX = screenX / (float)viewportW;
+        float normY = screenY / (float)viewportH;
+        
+        // Get the currently selected light
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string groupName = currentLight.first;
+        int lightIndex = currentLight.second;
+        
+        // Find the config index for this light and update its position
+        const auto& configs = HDRLightOverlay::GetLightConfigs();
+        for (size_t i = 0; i < configs.size(); i++) {
+            if (strcmp(configs[i].GroupName, groupName.c_str()) == 0 && configs[i].LightIndex == lightIndex) {
+                HDRLightOverlay::UpdateLightPosition(static_cast<int>(i), normX, normY);
+                break;
+            }
+        }
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_onDebugLightTouchMove(JNIEnv* env, jobject obj, jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        // Convert screen coordinates to normalized (0-1) coordinates
+        float normX = screenX / (float)viewportW;
+        float normY = screenY / (float)viewportH;
+        
+        // Get the currently selected light
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string groupName = currentLight.first;
+        int lightIndex = currentLight.second;
+        
+        // Find the config index for this light and update its position
+        const auto& configs = HDRLightOverlay::GetLightConfigs();
+        for (size_t i = 0; i < configs.size(); i++) {
+            if (strcmp(configs[i].GroupName, groupName.c_str()) == 0 && configs[i].LightIndex == lightIndex) {
+                HDRLightOverlay::UpdateLightPosition(static_cast<int>(i), normX, normY);
+                break;
+            }
+        }
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_onDebugLightTouchUp(JNIEnv* env, jobject obj) {
+        // Nothing special needed on touch up - position is already updated
+    }
+}
+#endif // __ANDROID__

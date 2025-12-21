@@ -468,6 +468,94 @@
             app:layout_constraintStart_toStartOf="@+id/textViewLightEdit"
             app:layout_constraintTop_toBottomOf="@+id/saveLightsBtn" />
 
+        <TextView
+            android:id="@+id/textViewLightDebug"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Light Debug Mode"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/lightDebugSwitch"
+            app:layout_constraintStart_toStartOf="@+id/textViewTrailOpacity"
+            app:layout_constraintTop_toBottomOf="@+id/lightEditHint" />
+
+        <Switch
+            android:id="@+id/lightDebugSwitch"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintTop_toTopOf="@+id/textViewLightDebug"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewLightDebug" />
+
+        <TextView
+            android:id="@+id/currentLightText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Current: None"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintStart_toStartOf="@+id/textViewLightDebug"
+            app:layout_constraintTop_toBottomOf="@+id/lightDebugSwitch" />
+
+        <Button
+            android:id="@+id/prevLightBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginTop="8dp"
+            android:text="Previous"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@+id/textViewLightDebug"
+            app:layout_constraintTop_toBottomOf="@+id/currentLightText" />
+
+        <Button
+            android:id="@+id/nextLightBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Next"
+            android:textSize="12sp"
+            app:layout_constraintStart_toEndOf="@+id/prevLightBtn"
+            app:layout_constraintTop_toBottomOf="@+id/currentLightText" />
+
+        <Button
+            android:id="@+id/toggleTableLightBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Toggle Table"
+            android:textSize="12sp"
+            app:layout_constraintStart_toEndOf="@+id/nextLightBtn"
+            app:layout_constraintTop_toBottomOf="@+id/currentLightText" />
+
+        <Button
+            android:id="@+id/toggleHDRLightBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Toggle HDR"
+            android:textSize="12sp"
+            app:layout_constraintStart_toEndOf="@+id/toggleTableLightBtn"
+            app:layout_constraintTop_toBottomOf="@+id/currentLightText" />
+
+        <TextView
+            android:id="@+id/lightDebugHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Enable to manually test table lights and HDR lights in pairs"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/hdrNitsInput"
+            app:layout_constraintStart_toStartOf="@+id/textViewLightDebug"
+            app:layout_constraintTop_toBottomOf="@+id/prevLightBtn" />
+
         <View
             android:id="@+id/divider3"
             android:layout_width="match_parent"
@@ -477,7 +565,7 @@
             app:layout_constraintBottom_toTopOf="@+id/textView6"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/lightEditHint" />
+            app:layout_constraintTop_toBottomOf="@+id/lightDebugHint" />
 
         <TextView
             android:id="@+id/textView21"

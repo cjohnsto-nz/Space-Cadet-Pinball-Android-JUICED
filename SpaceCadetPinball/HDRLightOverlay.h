@@ -87,6 +87,11 @@ public:
     static bool SaveLightPositions(const char* filepath);
     static bool LoadLightPositions(const char* filepath);
     static void UpdateLightPosition(int configIndex, float x, float y);
+    
+    // Light debug mode - toggle a specific HDR light
+    static void ToggleDebugLight(const char* groupName, int lightIndex);
+    static void ClearDebugToggledLights();  // Clear all debug toggled lights (call when exiting debug mode)
+    
     static void UpdateLightSize(int configIndex, float w, float h);
     static int GetSelectedLightIndex();
     static int GetSelectedBumperIndex();
@@ -137,6 +142,7 @@ private:
         bool isOn;
         bool isFlashing;
         float currentIntensity;
+        float r, g, b;          // Current color (may differ from config if light changes color)
     };
     
     struct BumperState {
@@ -186,6 +192,14 @@ private:
     static float s_lastBallX, s_lastBallY;
     static float s_trailTime;  // accumulated time for trail aging
     static bool s_ballTeleported;  // flag set when ball teleports, cleared on next position update
+    
+    // Debug toggled lights - tracks which lights have been toggled on in debug mode
+    struct DebugToggledLight {
+        std::string groupName;
+        int lightIndex;
+        bool isOn;
+    };
+    static std::vector<DebugToggledLight> s_debugToggledLights;
     
     static bool s_initialized;
     static GLuint s_overlayProgram;

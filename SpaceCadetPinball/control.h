@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 class TLight;
 class TSound;
@@ -187,3 +188,10 @@ public:
 private:
 	static int extraball_light_flag;
 };
+
+// Light debug mode functions
+void control_EnforceLightDebugMode();
+bool control_IsLightDebugModeActive();
+void control_GetSelectedLightInfo(std::string& outGroupName, int& outLightIndex);
+bool control_IsLightDebugToggleAllowed();
+void control_SetLightDebugToggleAllowed(bool allowed);

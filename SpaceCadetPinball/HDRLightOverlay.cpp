@@ -5,6 +5,7 @@
 #include "TLight.h"
 #include "TBumper.h"
 #include "HDRConfig.h"
+#include "control.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -37,6 +38,7 @@ bool HDRLightOverlay::s_ballTeleported = false;
 float HDRLightOverlay::s_glowModifier = 1.0f;
 float HDRLightOverlay::s_trailOpacity = 0.85f;
 float HDRLightOverlay::s_trailLifetimeSetting = 3.5f;
+std::vector<HDRLightOverlay::DebugToggledLight> HDRLightOverlay::s_debugToggledLights;
 bool HDRLightOverlay::s_initialized = false;
 GLuint HDRLightOverlay::s_overlayProgram = 0;
 GLuint HDRLightOverlay::s_overlayProgramPQ = 0;
@@ -421,12 +423,49 @@ bool HDRLightOverlay::GetDebugAllLightsOn() {
     return s_debugAllLightsOn;
 }
 
+void HDRLightOverlay::ToggleDebugLight(const char* groupName, int lightIndex) {
+    // Toggle the debug state for this light
+    // Check if this light is already in the debug toggled list
+    for (auto& debugLight : s_debugToggledLights) {
+        if (debugLight.groupName == groupName && debugLight.lightIndex == lightIndex) {
+            // Toggle the existing entry
+            debugLight.isOn = !debugLight.isOn;
+            HDRLIGHT_LOG("Toggle debug light: %s[%d] -> %s", groupName, lightIndex, debugLight.isOn ? "on" : "off");
+            return;
+        }
+    }
+    
+    // Not found, add a new entry (starts as ON since we're toggling from off)
+    DebugToggledLight newLight;
+    newLight.groupName = groupName;
+    newLight.lightIndex = lightIndex;
+    newLight.isOn = true;
+    s_debugToggledLights.push_back(newLight);
+    HDRLIGHT_LOG("Toggle debug light: %s[%d] -> on (new)", groupName, lightIndex);
+}
+
+void HDRLightOverlay::ClearDebugToggledLights() {
+    s_debugToggledLights.clear();
+    HDRLIGHT_LOG("Cleared all debug toggled lights");
+}
+
 void HDRLightOverlay::UpdateLightStates() {
     s_lightStates.clear();
     
     static int frameCount = 0;
     frameCount++;
     bool shouldLog = (frameCount % 60 == 0);  // Log once per second at 60fps
+    
+    // Enforce light debug mode - turn off all table lights every frame
+    if (control_IsLightDebugModeActive()) {
+        control_EnforceLightDebugMode();
+    }
+    
+    // Get selected light info for HDR enforcement
+    std::string selectedGroupName;
+    int selectedLightIndex = -1;
+    control_GetSelectedLightInfo(selectedGroupName, selectedLightIndex);
+    bool debugModeActive = control_IsLightDebugModeActive();
     
     if (shouldLog) {
         HDRLIGHT_LOG("UpdateLightStates: %zu configs, %zu groups, %zu bumper configs, %zu bumpers registered", 
@@ -475,13 +514,49 @@ void HDRLightOverlay::UpdateLightStates() {
         state.isOn = (light->BmpIndex1 == 1);
         state.isFlashing = (light->FlasherActive != 0);
         
+        // Set default color from config
+        state.r = config.R;
+        state.g = config.G;
+        state.b = config.B;
+        
+        // Dynamic color support for lights that change color based on BmpIndex2
+        // bsink_arrow_lights: changes color based on wormhole destination (BmpIndex2 = 0, 1, 2)
+        if (strcmp(config.GroupName, "bsink_arrow_lights") == 0) {
+            int colorIndex = light->BmpIndex2;
+            if (colorIndex < 0) colorIndex = 0;
+            if (colorIndex > 2) colorIndex = 2;
+            // Colors match wormhole destinations: Green, Red, Yellow
+            static const float bsinkColors[3][3] = {
+                {0.0f, 1.0f, 0.0f},  // 0 = Green
+                {1.0f, 0.0f, 0.0f},  // 1 = Red
+                {1.0f, 1.0f, 0.0f}   // 2 = Yellow
+            };
+            state.r = bsinkColors[colorIndex][0];
+            state.g = bsinkColors[colorIndex][1];
+            state.b = bsinkColors[colorIndex][2];
+        }
+        
         // Check if the light group is in rotation animation mode (Message 26/27)
         // During rotation, FlasherFlag2 indicates which light is "lit"
         bool isRotating = group && (group->MessageField2 == 26 || group->MessageField2 == 27);
         bool rotationLit = (light->FlasherFlag2 != 0);
         
         // Calculate current intensity
-        if (s_debugAllLightsOn || s_editMode) {
+        if (debugModeActive) {
+            // Light debug mode - only show the selected light's HDR overlay
+            bool isSelectedLight = (strcmp(config.GroupName, selectedGroupName.c_str()) == 0 && 
+                                   config.LightIndex == selectedLightIndex);
+            // Check if this light has been toggled on via ToggleDebugLight
+            bool isDebugToggled = false;
+            for (const auto& debugLight : s_debugToggledLights) {
+                if (strcmp(debugLight.groupName.c_str(), config.GroupName) == 0 && 
+                    debugLight.lightIndex == config.LightIndex) {
+                    isDebugToggled = debugLight.isOn;
+                    break;
+                }
+            }
+            state.currentIntensity = isDebugToggled ? config.IntensityOn : 0.0f;
+        } else if (s_debugAllLightsOn || s_editMode) {
             // Debug mode or edit mode - all lights at full intensity for visibility
             state.currentIntensity = config.IntensityOn;
         } else if (isRotating) {
@@ -498,11 +573,11 @@ void HDRLightOverlay::UpdateLightStates() {
         }
         
         if (shouldLog) {
-            HDRLIGHT_LOG("  Light %s[%d]: on=%d, flashing=%d, flashIdx=%d, intensity=%.0f, debug=%d", 
+            HDRLIGHT_LOG("  Light %s[%d]: on=%d, flashing=%d, flashIdx=%d, intensity=%.0f, debug=%d, bmpIdx2=%d", 
                          config.GroupName, config.LightIndex, 
                          state.isOn, state.isFlashing, 
                          state.isFlashing ? light->Flasher.BmpIndex : -1,
-                         state.currentIntensity, s_debugAllLightsOn);
+                         state.currentIntensity, s_debugAllLightsOn, light->BmpIndex2);
         }
         
         // Only add if light is actually on (or debug mode)
@@ -685,9 +760,9 @@ void HDRLightOverlay::RenderSingleLight(const LightState& state, int texWidth, i
     GLint rectLoc = glGetUniformLocation(s_overlayProgram, "uLightRect");
     glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
     
-    // Set color uniform (linear RGB) - boost saturation
+    // Set color uniform (linear RGB) - use dynamic color from state
     GLint colorLoc = glGetUniformLocation(s_overlayProgram, "uLightColor");
-    glUniform3f(colorLoc, config->R, config->G, config->B);
+    glUniform3f(colorLoc, state.r, state.g, state.b);
     
     // Set intensity (convert nits to linear multiplier relative to SDR white)
     GLint intensityLoc = glGetUniformLocation(s_overlayProgram, "uIntensity");
@@ -843,9 +918,9 @@ void HDRLightOverlay::RenderSingleLightPQ(const LightState& state, float maxNits
     GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
     glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
     
-    // Set color uniform (linear RGB, saturated)
+    // Set color uniform (linear RGB, saturated) - use dynamic color from state
     GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
-    glUniform3f(colorLoc, config->R, config->G, config->B);
+    glUniform3f(colorLoc, state.r, state.g, state.b);
     
     // Set intensity in nits directly
     GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");

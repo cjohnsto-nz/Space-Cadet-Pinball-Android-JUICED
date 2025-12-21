@@ -27,6 +27,15 @@ int TLight::Message(int code, float value)
 {
 	int bmpIndex;
 
+	// In light debug mode, block all turn-on and animation commands except for explicitly allowed
+	// This prevents game animations from turning on non-selected lights
+	// Codes: 1=turn on, 4=start flash, 7=flash with timeout, 8/9=flash flags
+	if (control_IsLightDebugModeActive() && (code == 1 || code == 4 || code == 7 || code == 8 || code == 9)) {
+		if (!control_IsLightDebugToggleAllowed()) {
+			return 0;  // Block the command
+		}
+	}
+
 	switch (code)
 	{
 	case 1024:

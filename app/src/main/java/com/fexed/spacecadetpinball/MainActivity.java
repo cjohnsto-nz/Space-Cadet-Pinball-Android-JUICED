@@ -344,10 +344,15 @@ public class MainActivity extends SDLActivity {
         
         mBinding.settingsbtn.setOnLongClickListener(view -> {
             exeHaptic();
-            triggerDemoMode();
-            Toast.makeText(this, "Demo Mode", Toast.LENGTH_SHORT).show();
+            if (isLightDebugPanelVisible()) {
+                hideLightDebugPanel();
+            } else {
+                showLightDebugPanel();
+            }
             return true;
         });
+
+        setupLightDebugPanel();
 
         firebaseAnalytics = FirebaseAnalytics.getInstance(this);
         firebaseAnalytics.logEvent(FirebaseAnalytics.Event.APP_OPEN, null);
@@ -992,9 +997,60 @@ public class MainActivity extends SDLActivity {
     private long lastHapticTime = 0L; // Track last haptic time for rate limiting
     private Vibrator plungerVibrator;
 
+    // Track if we're dragging in debug mode
+    private boolean isDraggingDebugLight = false;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (event == null) return false;
+        
+        // When light debug panel is visible, check if touch is on the panel or on the game area
+        if (isLightDebugPanelVisible()) {
+            float x = event.getX();
+            float y = event.getY();
+            
+            // Check if touch is within the debug panel bounds
+            int[] panelLocation = new int[2];
+            mBinding.lightDebugPanel.getLocationOnScreen(panelLocation);
+            int panelLeft = panelLocation[0];
+            int panelTop = panelLocation[1];
+            int panelRight = panelLeft + mBinding.lightDebugPanel.getWidth();
+            int panelBottom = panelTop + mBinding.lightDebugPanel.getHeight();
+            
+            boolean touchOnPanel = (x >= panelLeft && x <= panelRight && y >= panelTop && y <= panelBottom);
+            
+            if (touchOnPanel) {
+                // Let Android UI handle panel touches
+                return super.dispatchTouchEvent(event);
+            }
+            
+            // Touch is outside panel - use it to reposition the selected HDR light
+            int viewportW = getWindow().getDecorView().getWidth();
+            int viewportH = getWindow().getDecorView().getHeight();
+            
+            switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                // Start dragging the selected debug light
+                isDraggingDebugLight = true;
+                onDebugLightTouchDown(x, y, 0, 0, viewportW, viewportH);
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                if (isDraggingDebugLight) {
+                    onDebugLightTouchMove(x, y, 0, 0, viewportW, viewportH);
+                    return true;
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                if (isDraggingDebugLight) {
+                    onDebugLightTouchUp();
+                    isDraggingDebugLight = false;
+                    return true;
+                }
+                break;
+            }
+            return true;
+        }
         
         try {
             // Handle light editing touches
@@ -1037,7 +1093,6 @@ public class MainActivity extends SDLActivity {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error in dispatchTouchEvent", e);
-            return false;
         }
         return super.dispatchTouchEvent(event);
     }
@@ -1055,6 +1110,11 @@ public class MainActivity extends SDLActivity {
     private native void onLightTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     private native void onLightTouchMove(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
     private native void onLightTouchUp();
+
+    // Debug light repositioning native methods (for debug mode without editor)
+    private native void onDebugLightTouchDown(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
+    private native void onDebugLightTouchMove(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH);
+    private native void onDebugLightTouchUp();
     private native boolean saveLightPositions(String filepath);
     private native boolean loadLightPositions(String filepath);
     private native int getSelectedLightIndex();
@@ -1073,4 +1133,65 @@ public class MainActivity extends SDLActivity {
 
     // Enhanced audio native method
     private native void setEnhancedAudio(boolean enabled);
+
+    // Light debug mode native methods
+    private native void setLightDebugModeNative(boolean enabled);
+    private native void nextLightNative();
+    private native void previousLightNative();
+    private native void toggleTableLightNative();
+    private native void toggleHDRLightNative();
+    private native String getCurrentLightInfoNative();
+    private native void turnOffAllLightsNative();
+
+    private void updateLightDebugInfo() {
+        String lightInfo = getCurrentLightInfoNative();
+        if (lightInfo != null && !lightInfo.isEmpty()) {
+            mBinding.currentLightText.setText("Current: " + lightInfo);
+        } else {
+            mBinding.currentLightText.setText("Current: None");
+        }
+    }
+
+    private void setupLightDebugPanel() {
+        mBinding.prevLightBtn.setOnClickListener(v -> {
+            previousLightNative();
+            updateLightDebugInfo();
+        });
+
+        mBinding.nextLightBtn.setOnClickListener(v -> {
+            nextLightNative();
+            updateLightDebugInfo();
+        });
+
+        mBinding.toggleTableLightBtn.setOnClickListener(v -> {
+            toggleTableLightNative();
+        });
+
+        mBinding.toggleHDRLightBtn.setOnClickListener(v -> {
+            toggleHDRLightNative();
+        });
+
+        mBinding.closeLightDebugBtn.setOnClickListener(v -> {
+            hideLightDebugPanel();
+        });
+    }
+
+    public void showLightDebugPanel() {
+        mBinding.lightDebugPanel.setVisibility(View.VISIBLE);
+        mBinding.lightDebugPanel.bringToFront();
+        setLightDebugModeNative(true);
+        turnOffAllLightsNative();
+        updateLightDebugInfo();
+        Toast.makeText(this, "Light Debug Mode ON", Toast.LENGTH_SHORT).show();
+    }
+
+    public void hideLightDebugPanel() {
+        mBinding.lightDebugPanel.setVisibility(View.GONE);
+        setLightDebugModeNative(false);
+        Toast.makeText(this, "Light Debug Mode OFF", Toast.LENGTH_SHORT).show();
+    }
+
+    public boolean isLightDebugPanelVisible() {
+        return mBinding != null && mBinding.lightDebugPanel.getVisibility() == View.VISIBLE;
+    }
 }
