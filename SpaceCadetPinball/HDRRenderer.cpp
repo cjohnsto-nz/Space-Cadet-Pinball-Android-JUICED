@@ -184,15 +184,15 @@ void main() {
     texCoord.x -= (center.x - 0.5);
     texCoord.y -= (center.y - 0.5);
     
-    // Show black for out-of-bounds
+    // Show black for out-of-bounds and scoreboard area (past 0.61)
     vec4 hdrColor;
-    if (texCoord.x < 0.0 || texCoord.x > 1.0 || texCoord.y < 0.0 || texCoord.y > 1.0) {
+    if (texCoord.x < 0.0 || texCoord.x > 0.61 || texCoord.y < 0.0 || texCoord.y > 1.0) {
         hdrColor = vec4(0.0, 0.0, 0.0, 1.0);
     } else {
         hdrColor = texture(uHDRTexture, texCoord);
     }
     
-    // DEBUG: Draw vertical lines - using corrected transform
+    /* DEBUG: Draw vertical lines - using corrected transform
     // Main texture: texCoord = (screenPos - 0.5) / zoom + 1.0 - center
     // Inverse: screenPos = (texPos - 1.0 + center) * zoom + 0.5
     
@@ -248,6 +248,7 @@ void main() {
     if (abs(gl_FragCoord.y - cyanScreenY) < 2.0) {
         hdrColor = vec4(0.0, 1.0, 1.0, 1.0);
     }
+    */
     
     // Gentle gamma lift to darken midtones slightly
     vec3 darkenedColor = pow(hdrColor.rgb, vec3(1.15));
@@ -604,11 +605,15 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     float tableCenterY = 0.5f;
     
     // Bias target 25% toward table center
-    float biasedTargetX = targetX * 0.75f + tableCenterX * 0.25f;
-    float biasedTargetY = targetY * 0.75f + tableCenterY * 0.25f;
+    // float biasedTargetX = targetX * 0.75f + tableCenterX * 0.25f;
+    // float biasedTargetY = targetY * 0.75f + tableCenterY * 0.25f;
+    // 50% toward table center
+    float biasedTargetX = targetX * 0.5f + tableCenterX * 0.5f;
+    float biasedTargetY = targetY * 0.5f + tableCenterY * 0.5f;
     
     // Smooth the camera position (lerp toward biased target)
-    float smoothFactor = 0.08f;  // Lower = smoother/slower
+    // float smoothFactor = 0.08f;  // Lower = smoother/slower
+    float smoothFactor = 0.03f;
     smoothedCameraX += (biasedTargetX - smoothedCameraX) * smoothFactor;
     smoothedCameraY += (biasedTargetY - smoothedCameraY) * smoothFactor;
     
