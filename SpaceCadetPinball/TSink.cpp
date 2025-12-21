@@ -8,6 +8,7 @@
 #include "TPinballTable.h"
 #include "TBall.h"
 #include "timer.h"
+#include "HDRLightOverlay.h"
 
 TSink::TSink(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
@@ -104,4 +105,7 @@ void TSink::TimerExpired(int timerId, void* caller)
 	if (sink->SoundIndex3)
 		loader::play_sound(sink->SoundIndex3);
 	sink->Timer = 0;
+	
+	// Notify trail system that ball teleported
+	HDRLightOverlay::NotifyBallTeleported();
 }

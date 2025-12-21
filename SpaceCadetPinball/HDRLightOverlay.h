@@ -93,6 +93,7 @@ public:
     
     // Debug ball position tracking
     static void SetDebugBallPosition(float x, float y);  // Set current ball position (normalized 0-1)
+    static void NotifyBallTeleported();  // Call when ball teleports (enters/exits sink, respawns, etc.)
     static void EnableDebugBall(bool enabled);  // Toggle debug ball visibility
     static float GetBallX() { return s_debugBallX; }
     static float GetBallY() { return s_debugBallY; }
@@ -177,6 +178,7 @@ private:
     static constexpr float TRAIL_LIFETIME = 3.5f;  // seconds before trail fades completely
     static float s_lastBallX, s_lastBallY;
     static float s_trailTime;  // accumulated time for trail aging
+    static bool s_ballTeleported;  // flag set when ball teleports, cleared on next position update
     
     static bool s_initialized;
     static GLuint s_overlayProgram;

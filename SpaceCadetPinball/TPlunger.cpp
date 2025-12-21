@@ -10,6 +10,7 @@
 #include "TBall.h"
 #include "timer.h"
 #include "TPinballTable.h"
+#include "HDRLightOverlay.h"
 #ifdef __ANDROID__
 #include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 #endif
@@ -93,6 +94,8 @@ int TPlunger::Message(int code, float value)
 			PinballTable->BallInSink = 0;
 			pb::tilt_no_more();
 			control::handler(code, this);
+			// Notify trail system that ball spawned/teleported
+			HDRLightOverlay::NotifyBallTeleported();
 			return 0;
 		}
 	case 1016:

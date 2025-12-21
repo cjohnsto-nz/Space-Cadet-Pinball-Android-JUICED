@@ -31,6 +31,7 @@ std::vector<HDRLightOverlay::TrailPoint> HDRLightOverlay::s_ballTrail;
 float HDRLightOverlay::s_lastBallX = 0.0f;
 float HDRLightOverlay::s_lastBallY = 0.0f;
 float HDRLightOverlay::s_trailTime = 0.0f;
+bool HDRLightOverlay::s_ballTeleported = false;
 float HDRLightOverlay::s_glowModifier = 1.0f;
 float HDRLightOverlay::s_trailOpacity = 0.85f;
 float HDRLightOverlay::s_trailLifetimeSetting = 3.5f;
@@ -982,6 +983,18 @@ void HDRLightOverlay::SetDebugBallPosition(float x, float y) {
     float vx = (x - s_lastBallX) / dt;
     float vy = (y - s_lastBallY) / dt;
     
+    // If teleported, reset velocity to zero and insert break marker
+    if (s_ballTeleported) {
+        vx = 0.0f;
+        vy = 0.0f;
+        // Insert a break marker (negative timestamp signals break)
+        if (!s_ballTrail.empty()) {
+            TrailPoint breakMarker = {0, 0, 0, 0, -1.0f};
+            s_ballTrail.insert(s_ballTrail.begin(), breakMarker);
+        }
+        s_ballTeleported = false;
+    }
+    
     // Increment trail time
     s_trailTime += dt;
     
@@ -1000,10 +1013,14 @@ void HDRLightOverlay::SetDebugBallPosition(float x, float y) {
         s_ballTrail.pop_back();
     }
     
-    s_lastBallX = s_debugBallX;
-    s_lastBallY = s_debugBallY;
+    s_lastBallX = x;
+    s_lastBallY = y;
     s_debugBallX = x;
     s_debugBallY = y;
+}
+
+void HDRLightOverlay::NotifyBallTeleported() {
+    s_ballTeleported = true;
 }
 
 void HDRLightOverlay::EnableDebugBall(bool enabled) {
@@ -1437,6 +1454,15 @@ void HDRLightOverlay::RenderTrailMesh(float maxNits) {
     for (size_t i = 0; i < s_ballTrail.size(); i++) {
         const TrailPoint& p = s_ballTrail[i];
         
+        // Check for break marker (negative timestamp from NotifyBallTeleported)
+        if (p.timestamp < 0) {
+            // Insert a break marker into validPoints
+            if (!validPoints.empty()) {
+                validPoints.push_back({0, 0, -1.0f, 0, 0});
+            }
+            continue;
+        }
+        
         // Calculate age-based fade
         float age = s_trailTime - p.timestamp;
         float fade = 1.0f - (age / s_trailLifetimeSetting);
@@ -1454,7 +1480,7 @@ void HDRLightOverlay::RenderTrailMesh(float maxNits) {
         float ballDist = sqrtf(ballDx * ballDx + ballDy * ballDy);
         if (ballDist < 0.012f) continue;
         
-        // Check for teleportation - compare to LAST added valid point
+        // Check for teleportation by distance - compare to LAST added valid point
         // If distance is too large, insert a break marker before this point
         if (!validPoints.empty() && validPoints.back().fade >= 0) {
             float segDx = p.x - validPoints.back().x;

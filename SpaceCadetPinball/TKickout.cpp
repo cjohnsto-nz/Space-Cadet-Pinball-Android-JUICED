@@ -10,6 +10,7 @@
 #include "timer.h"
 #include "TPinballTable.h"
 #include "TTableLayer.h"
+#include "HDRLightOverlay.h"
 #ifdef __ANDROID__
 #include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 #endif
@@ -167,6 +168,9 @@ void TKickout::TimerExpired(int timerId, void* caller)
 			kick->ActiveFlag = 0;
 			kick->Ball = nullptr;
 			loader::play_sound(kick->HardHitSoundId);
+
+			// Notify trail system that ball teleported
+			HDRLightOverlay::NotifyBallTeleported();
 
 #ifdef __ANDROID__
 			// Trigger haptic feedback for ball launch/eject
