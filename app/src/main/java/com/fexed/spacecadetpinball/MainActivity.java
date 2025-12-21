@@ -144,48 +144,116 @@ public class MainActivity extends SDLActivity {
             return false;
         });
 
-        // The Vibrator instance
+        // The Vibrator instances
         Vibrator vibrator2 = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        plungerVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
         mBinding.plunger.setOnTouchListener((v1, event) -> {
+            if (v1 == null || event == null) return false;
             v1.performClick();
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_SPACE);
-                
-                exeHaptic();
-                // Start vibration
-
-                long[] timings = new long[30];
-                int[] amplitudes = new int[30];
-
-                // Fill the timings with 100ms intervals
-                for (int i = 0; i < timings.length; i++) {
-                    timings[i] = 100;
-                }
-
-                // Fill the amplitudes with increasing intensity
-                for (int i = 0; i < amplitudes.length; i++) {
-                    amplitudes[i] = (i * 255) / 29; 
-                }
-                if (Build.VERSION.SDK_INT >= 29) {
-                    // Create the vibration effect
-                    VibrationEffect effect = VibrationEffect.createWaveform(timings, amplitudes, -1); // -1 means do not repeat
-
-                    // Vibrate with the effect
-                    if (vibrator2 != null && vibrator2.hasVibrator()) {
-                        vibrator2.vibrate(effect);
+            
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    // Start drag-based plunger control
+                    isDraggingPlunger = true;
+                    plungerStartY = event.getY();
+                    plungerCurrentY = plungerStartY;
+                    lastHapticPosition = -1f; // Reset haptic position for new drag
+                    Log.d(TAG, "Plunger ACTION_DOWN: startY=" + plungerStartY);
+                    SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_SPACE);
+                    // Removed exeClick() to eliminate unwanted vibration
+                    return true;
+                    
+                case MotionEvent.ACTION_MOVE:
+                    if (isDraggingPlunger) {
+                        plungerCurrentY = event.getY();
+                        float dragDistance = plungerCurrentY - plungerStartY;
+                        
+                        // Calculate drag percentage (0 to 1, where 1 is max drag)
+                        float dragPercentage = Math.max(0, Math.min(1, dragDistance / plungerMaxDragDistance));
+                        
+                        Log.d(TAG, "Plunger ACTION_MOVE: currentY=" + plungerCurrentY + 
+                              ", dragDistance=" + dragDistance + 
+                              ", dragPercentage=" + dragPercentage);
+                        
+                        // Update plunger position visually (optional - could add visual feedback)
+                        // For now, we'll just provide proportional haptic feedback
+                        
+                        // Provide haptic feedback at 5% power level steps
+                        if (plungerVibrator != null && plungerVibrator.hasVibrator()) {
+                            // Calculate which 5% step we're at (0-20 steps)
+                            int currentStep = (int)(dragPercentage / 0.05f);
+                            int lastStep = (int)(lastHapticPosition / 0.05f);
+                            
+                            // Only trigger haptic when crossing a 5% threshold
+                            if (currentStep != lastStep && dragPercentage > 0.01f) {
+                                // Use proper haptic effects based on power level
+                                VibrationEffect effect;
+                                if (dragPercentage < 0.33f) {
+                                    // Light haptic for low power (0-33%)
+                                    effect = VibrationEffect.createPredefined(EFFECT_TICK);
+                                } else if (dragPercentage < 0.67f) {
+                                    // Medium haptic for moderate power (33-67%)
+                                    effect = VibrationEffect.createPredefined(EFFECT_CLICK);
+                                } else {
+                                    // Strong haptic for high power (67-100%)
+                                    effect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+                                }
+                                plungerVibrator.vibrate(effect);
+                                lastHapticPosition = dragPercentage;
+                            }
+                        }
+                        
+                        Log.d(TAG, "Calling updatePlungerPosition(" + dragPercentage + ")");
+                        updatePlungerPosition(dragPercentage);
+                        
+                        return true;
                     }
-                }
-                return true; // Indicate that the touch event has been handled
-            }
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_SPACE);
-                // Stop vibration
-                if (vibrator2 != null) {
-                    vibrator2.cancel();
-                }
-                exeClickH();
-                
+                    break;
+                    
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (isDraggingPlunger) {
+                        isDraggingPlunger = false;
+                        
+                        float finalDragDistance = plungerCurrentY - plungerStartY;
+                        float dragPercentage = Math.max(0, Math.min(1, finalDragDistance / plungerMaxDragDistance));
+                        
+                        Log.d(TAG, "Plunger ACTION_UP: finalDragDistance=" + finalDragDistance + 
+                              ", dragPercentage=" + dragPercentage);
+                        
+                        // Launch with force proportional to drag distance
+                        if (dragPercentage > 0.1f) { // Minimum 10% drag to launch
+                            // Provide final launch haptic feedback using proper haptic effects
+                            if (plungerVibrator != null && plungerVibrator.hasVibrator()) {
+                                VibrationEffect effect;
+                                if (dragPercentage < 0.5f) {
+                                    // Light launch
+                                    effect = VibrationEffect.createPredefined(EFFECT_CLICK);
+                                } else {
+                                    // Strong launch (50-100%)
+                                    effect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+                                }
+                                plungerVibrator.vibrate(effect);
+                            }
+                            
+                            Log.d(TAG, "Calling setPlungerLaunchPower(" + dragPercentage + ")");
+                            setPlungerLaunchPower(dragPercentage);
+                        } else {
+                            Log.d(TAG, "Drag too small, not launching (dragPercentage=" + dragPercentage + ")");
+                        }
+                        
+                        SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_SPACE);
+                        exeClickH();
+                        
+                        // Stop any ongoing vibration
+                        if (plungerVibrator != null) {
+                            plungerVibrator.cancel();
+                        }
+                        
+                        return true;
+                    }
+                    break;
             }
             return false;
         });
@@ -883,18 +951,29 @@ public class MainActivity extends SDLActivity {
     // Track if we're currently dragging a light
     private boolean isDraggingLight = false;
 
-    // Override dispatchTouchEvent to intercept touches for light editing
-    // Only consume touches when actually dragging a light
+    // Plunger drag state
+    private boolean isDraggingPlunger = false;
+    private float plungerStartY = 0f;
+    private float plungerCurrentY = 0f;
+    private float plungerMaxDragDistance = 400.0f; // Maximum drag distance in pixels (increased for better control)
+    private float lastHapticPosition = -1f; // Track last position for haptic feedback
+    private long lastHapticTime = 0L; // Track last haptic time for rate limiting
+    private Vibrator plungerVibrator;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        if (lightEditModeEnabled) {
-            int viewportW = getWindow().getDecorView().getWidth();
-            int viewportH = getWindow().getDecorView().getHeight();
+        if (event == null) return false;
+        
+        try {
+            // Handle light editing touches
+            if (lightEditModeEnabled) {
+                int viewportW = getWindow().getDecorView().getWidth();
+                int viewportH = getWindow().getDecorView().getHeight();
 
-            float x = event.getX();
-            float y = event.getY();
+                float x = event.getX();
+                float y = event.getY();
 
-            switch (event.getAction()) {
+                switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     // Check if touch is near a light or bumper - native code will set selection
                     onLightTouchDown(x, y, 0, 0, viewportW, viewportH);
@@ -918,7 +997,11 @@ public class MainActivity extends SDLActivity {
                         return true;
                     }
                     break;
+                }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Error in dispatchTouchEvent", e);
+            return false;
         }
         return super.dispatchTouchEvent(event);
     }
@@ -946,4 +1029,8 @@ public class MainActivity extends SDLActivity {
     private native void setTrailOpacity(float opacity);
     private native void setTrailLifetime(float seconds);
     private native void setCameraTracking(boolean enabled, float zoom);
+
+    // Plunger control native methods
+    private native void updatePlungerPosition(float position);
+    private native void setPlungerLaunchPower(float power);
 }

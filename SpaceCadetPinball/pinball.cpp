@@ -1,8 +1,16 @@
 #include "pch.h"
 #include "pinball.h"
 #include "winmain.h"
+#include "pb.h"
+#include "TPinballTable.h"
+#include "TPlunger.h"
+#include "render.h"
 
-std::map<uint32_t, LPCSTR> rc_strings
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
+std::unordered_map<uint32_t, std::string> pinball::rc_strings =
 {
 	{0, "Replay Awarded"},
 	{1, "Ball Locked"},
@@ -206,13 +214,13 @@ std::map<uint32_t, LPCSTR> rc_strings
 
 int LoadStringAlt(uint32_t uID, LPSTR lpBuffer, int cchBufferMax)
 {
-	auto str = rc_strings.find(uID);
-	if (str == rc_strings.end())
+	auto str = pinball::rc_strings.find(uID);
+	if (str == pinball::rc_strings.end())
 	{		
 		return 0;
 	}
 
-	strncpy(lpBuffer, str->second, cchBufferMax);
+	strncpy(lpBuffer, str->second.c_str(), cchBufferMax);
 	return 1;
 }
 
@@ -236,9 +244,9 @@ char* pinball::get_rc_string(int uID, int a2)
 
 void pinball::set_rc_string(int uID, LPCSTR str)
 {
-	auto it = rc_strings.find(uID);
-	rc_strings.erase(it);
-	rc_strings.insert(std::pair<uint32_t, LPCSTR>(uID, str));
+	auto it = pinball::rc_strings.find(uID);
+	pinball::rc_strings.erase(it);
+	pinball::rc_strings.insert(std::pair<uint32_t, LPCSTR>(uID, str));
 }
 
 int pinball::get_rc_int(int uID, int* dst)
@@ -254,4 +262,116 @@ int pinball::get_rc_int(int uID, int* dst)
 std::string pinball::make_path_name(const std::string& fileName)
 {
 	return winmain::BasePath + fileName;
+}
+
+// Plunger control functions for drag-based system
+static float g_plungerPosition = 0.0f; // Current visual position (0.0 to 1.0)
+static float g_plungerLaunchPower = 0.0f; // Launch power (0.0 to 1.0)
+static bool g_useDragControl = false; // Whether to use drag-based control
+static bool g_plungerTimerActive = false; // Whether the visual timer should be active
+
+void pinball::set_plunger_position(float position)
+{
+    g_plungerPosition = std::max(0.0f, std::min(1.0f, position));
+    g_useDragControl = true;
+    __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "set_plunger_position: position=%f, g_plungerPosition=%f", position, g_plungerPosition);
+    
+    // Update visual position directly
+    update_plunger_visual(g_plungerPosition);
+}
+
+void pinball::set_plunger_launch_power(float power)
+{
+    // Apply non-linear power curve to the launch power
+    float curvedPower = apply_power_curve(power);
+    g_plungerLaunchPower = std::max(0.0f, std::min(1.0f, curvedPower));
+    g_useDragControl = true;
+    __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "set_plunger_launch_power: rawPower=%f, curvedPower=%f, g_plungerLaunchPower=%f", power, curvedPower, g_plungerLaunchPower);
+}
+
+// Getter functions for the game logic to use
+float get_plunger_position()
+{
+	return g_plungerPosition;
+}
+
+float get_plunger_launch_power()
+{
+	return g_plungerLaunchPower;
+}
+
+bool is_using_drag_control()
+{
+	return g_useDragControl;
+}
+
+void reset_drag_control()
+{
+	g_useDragControl = false;
+	g_plungerPosition = 0.0f;
+	g_plungerLaunchPower = 0.0f;
+}
+
+float pinball::apply_power_curve(float position)
+{
+	// Apply a power curve that scales sharply from 80-100% drag with full max power
+	// Using a piecewise function: gentle up to 80%, then sharp scaling to 100%
+	float power;
+	
+	if (position <= 0.8f) {
+		// Gentle scaling up to 80% drag: power = position^3 * 0.5
+		power = position * position * position * 0.5f;
+	} else {
+		// Sharp scaling from 80-100%: map 0.8-1.0 to 0.256-1.0
+		float sharpRange = (position - 0.8f) / 0.2f; // 0.0 to 1.0
+		power = 0.256f + (sharpRange * sharpRange * 0.744f); // Quadratic scaling
+	}
+	
+	__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Sharp power curve: position=%f -> power=%f", position, power);
+	return power;
+}
+
+void pinball::update_plunger_visual(float position)
+{
+	__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "update_plunger_visual called with position=%f", position);
+	
+	// Find the plunger object and update its visual position directly
+	if (pb::MainTable && pb::MainTable->Plunger)
+	{
+		auto plunger = pb::MainTable->Plunger;
+		
+		// Apply non-linear power curve for launch power, but use linear for visual position
+		float powerForLaunch = apply_power_curve(position);
+		float boostValue = powerForLaunch * static_cast<float>(plunger->MaxPullback);
+		plunger->Boost = boostValue;
+		
+		__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Updated plunger Boost to %f (position=%f, power=%f, MaxPullback=%d)", 
+			boostValue, position, powerForLaunch, plunger->MaxPullback);
+		
+		// Update visual plunger position using LINEAR position (not curved power) for smooth animation
+		if (plunger->ListBitmap && !plunger->ListBitmap->empty())
+		{
+			int index = static_cast<int>(floor(
+				static_cast<float>(plunger->ListBitmap->size() - 1) * position));
+			
+			auto bmp = plunger->ListBitmap->at(index);
+			auto zMap = plunger->ListZMap->at(index);
+			render::sprite_set(
+				plunger->RenderSprite,
+				bmp,
+				zMap,
+				bmp->XPosition - plunger->PinballTable->XOffset,
+				bmp->YPosition - plunger->PinballTable->YOffset);
+				
+			__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Updated plunger sprite to index %d (linear position)", index);
+		}
+		else
+		{
+			__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Plunger ListBitmap not available");
+		}
+	}
+	else
+	{
+		__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Plunger not available for visual update");
+	}
 }

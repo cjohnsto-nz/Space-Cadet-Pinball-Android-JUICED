@@ -11,9 +11,16 @@
 #include "timer.h"
 #include "TPinballTable.h"
 #include "HDRLightOverlay.h"
+#include "pinball.h"
 #ifdef __ANDROID__
 #include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 #endif
+
+// Forward declarations for drag-based plunger control functions
+float get_plunger_position();
+float get_plunger_launch_power();
+bool is_using_drag_control();
+void reset_drag_control();
 
 TPlunger::TPlunger(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
@@ -52,12 +59,13 @@ void TPlunger::Collision(TBall* ball, vector2* nextPosition, vector2* direction,
 		// Plunger released and hit ball - full intensity
 		SpaceCadetPinballJNI::triggerHapticFeedback(1.0f);
 	}
-	else if (Boost > 0.1f)
-	{
-		// Pullback - intensity based on how far pulled
-		float intensity = Boost / static_cast<float>(MaxPullback);
-		SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
-	}
+	// DISABLED: Pullback haptics now handled in Java with proper rate limiting
+	// else if (Boost > 0.1f)
+	// {
+	// 	// Pullback - intensity based on how far pulled
+	// 	float intensity = Boost / static_cast<float>(MaxPullback);
+	// 	SpaceCadetPinballJNI::triggerHapticFeedback(intensity);
+	// }
 	else if (SpaceCadetPinballJNI::isBallInPlunger())
 	{
 		// Ball bouncing on plunger (spawn sequence only) - use ball speed for intensity
@@ -107,7 +115,16 @@ int TPlunger::Message(int code, float value)
 		return 0;
 	case 1017:
 		Threshold = 0.0;
-		Boost = static_cast<float>(MaxPullback);
+		// Use drag-based launch power if available, otherwise use max pullback
+		if (is_using_drag_control())
+		{
+			float launchPower = get_plunger_launch_power();
+			Boost = launchPower * static_cast<float>(MaxPullback);
+		}
+		else
+		{
+			Boost = static_cast<float>(MaxPullback);
+		}
 		timer::set(0.2f, this, PlungerReleasedTimer);
 		break;
 	case 1005:
@@ -156,16 +173,40 @@ void TPlunger::BallFeedTimer(int timerId, void* caller)
 void TPlunger::PullbackTimer(int timerId, void* caller)
 {
 	auto plunger = static_cast<TPlunger*>(caller);
-	plunger->Boost += static_cast<float>(plunger->PullbackIncrement);
-	if (plunger->Boost <= static_cast<float>(plunger->MaxPullback))
+	
+	// Check if drag-based control is active
+	if (is_using_drag_control())
 	{
-		plunger->PullbackTimer_ = timer::set(plunger->Unknown4F, plunger, PullbackTimer);
+		// Use drag-based position instead of time-based charging
+		float dragPosition = get_plunger_position();
+		plunger->Boost = dragPosition * static_cast<float>(plunger->MaxPullback);
+		
+		// Continue timer to update visual position while dragging
+		if (dragPosition > 0.01f) // Only continue if actually dragging
+		{
+			plunger->PullbackTimer_ = timer::set(plunger->Unknown4F, plunger, PullbackTimer);
+		}
+		else
+		{
+			plunger->PullbackTimer_ = 0;
+		}
 	}
 	else
 	{
-		plunger->PullbackTimer_ = 0;
-		plunger->Boost = static_cast<float>(plunger->MaxPullback);
+		// Original time-based charging logic
+		plunger->Boost += static_cast<float>(plunger->PullbackIncrement);
+		if (plunger->Boost <= static_cast<float>(plunger->MaxPullback))
+		{
+			plunger->PullbackTimer_ = timer::set(plunger->Unknown4F, plunger, PullbackTimer);
+		}
+		else
+		{
+			plunger->PullbackTimer_ = 0;
+			plunger->Boost = static_cast<float>(plunger->MaxPullback);
+		}
 	}
+	
+	// Update visual plunger position
 	int index = static_cast<int>(floor(
 		static_cast<float>(plunger->ListBitmap->size() - 1) *
 		(plunger->Boost / static_cast<float>(plunger->MaxPullback))));
@@ -184,4 +225,10 @@ void TPlunger::PlungerReleasedTimer(int timerId, void* caller)
 	auto plunger = static_cast<TPlunger*>(caller);
 	plunger->Threshold = 1000000000.0;
 	plunger->Boost = 0.0;
+	
+	// Reset drag control after launch
+	if (is_using_drag_control())
+	{
+		reset_drag_control();
+	}
 }
