@@ -30,8 +30,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
-
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
@@ -621,20 +621,20 @@ public class MainActivity extends SDLActivity {
         @Override
         public void onStringPresented(String str, int type) {
             final String fstr = str.replace("\n", " ");
-            if (type == 1) runOnUiThread(() -> mBinding.missiontxt.setText(fstr));
-            else runOnUiThread(() -> mBinding.infotxt.setText(fstr));
+            if (type == 1) runOnUiThread(() -> setTextWithBackground(mBinding.missiontxt, fstr));
+            else runOnUiThread(() -> setTextWithBackground(mBinding.infotxt, fstr));
         }
 
         @Override
         public void onClearText(int type) {
-            if (type == 1) runOnUiThread(() -> mBinding.missiontxt.setText(""));
-            else runOnUiThread(() -> mBinding.infotxt.setText(""));
+            if (type == 1) runOnUiThread(() -> setTextWithBackground(mBinding.missiontxt, ""));
+            else runOnUiThread(() -> setTextWithBackground(mBinding.infotxt, ""));
         }
 
         @Override
         public void onScorePosted(int score) {
             String str = "SCORE: " + score;
-            runOnUiThread(() -> mBinding.txtscore.setText(str));
+            runOnUiThread(() -> setTextWithBackground(mBinding.txtscore, str));
         }
 
         @Override
@@ -642,7 +642,7 @@ public class MainActivity extends SDLActivity {
             ballCount = count;
             if (!PrefsHelper.getRemainingBalls()) {
                 String str = getString(R.string.balls, count);
-                runOnUiThread(() -> mBinding.ballstxt.setText(str));
+                runOnUiThread(() -> setTextWithBackground(mBinding.ballstxt, str));
             }
         }
 
@@ -663,7 +663,7 @@ public class MainActivity extends SDLActivity {
             remainingBalls = balls;
             if (PrefsHelper.getRemainingBalls()) {
                 String str = getString(R.string.remainingballs, balls);
-                runOnUiThread(() -> mBinding.ballstxt.setText(str));
+                runOnUiThread(() -> setTextWithBackground(mBinding.ballstxt, str));
             }
         }
 
@@ -700,10 +700,10 @@ public class MainActivity extends SDLActivity {
     private void setBallsText() {
         if (!PrefsHelper.getRemainingBalls()) {
             String str = getString(R.string.balls, ballCount);
-            mBinding.ballstxt.setText(str);
+            setTextWithBackground(mBinding.ballstxt, str);
         } else {
             String str = getString(R.string.remainingballs, remainingBalls);
-            mBinding.ballstxt.setText(str);
+            setTextWithBackground(mBinding.ballstxt, str);
         }
     }
 
@@ -821,6 +821,16 @@ public class MainActivity extends SDLActivity {
                 "SDL2",
                 "SpaceCadetPinball"
         };
+    }
+
+    private void setTextWithBackground(TextView textView, String text) {
+        textView.setText(text);
+        // Hide background if text is empty or only whitespace
+        if (text == null || text.trim().isEmpty()) {
+            textView.setBackground(null);
+        } else {
+            textView.setBackgroundResource(R.drawable.text_background);
+        }
     }
 
     private void putTranslations() {
