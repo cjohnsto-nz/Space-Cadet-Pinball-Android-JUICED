@@ -6,9 +6,12 @@
 #include "TBumper.h"
 #include "HDRConfig.h"
 #include "control.h"
+#include "pb.h"
+#include "TPinballTable.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <chrono>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -39,6 +42,12 @@ bool HDRLightOverlay::s_ballTeleported = false;
 float HDRLightOverlay::s_glowModifier = 1.0f;
 float HDRLightOverlay::s_trailOpacity = 0.85f;
 float HDRLightOverlay::s_trailLifetimeSetting = 3.5f;
+// Warm-up effect for startup animation
+static bool s_wasInStartupAnimation = false;
+static float s_warmupProgress = 0.0f;  // 0.0 to 1.0
+static float s_warmupDuration = 4.0f;  // seconds to reach full glow
+static float s_warmupMinGlow = 0.1f;   // starting glow multiplier (fraction of user setting)
+static float s_userGlowSetting = 1.0f; // User's configured glow modifier from options
 std::vector<HDRLightOverlay::DebugToggledLight> HDRLightOverlay::s_debugToggledLights;
 bool HDRLightOverlay::s_initialized = false;
 GLuint HDRLightOverlay::s_overlayProgram = 0;
@@ -457,6 +466,43 @@ void HDRLightOverlay::UpdateLightStates() {
     frameCount++;
     bool shouldLog = (frameCount % 60 == 0);  // Log once per second at 60fps
     
+    // Check if we're in startup animation (message 28 on table's main LightGroup)
+    bool inStartupAnimation = false;
+    if (pb::MainTable && pb::MainTable->LightGroup) {
+        int tableLightGroupMsg = pb::MainTable->LightGroup->MessageField2;
+        inStartupAnimation = (tableLightGroupMsg == 28);
+    }
+    
+    // Warm-up effect: gradually increase glow during startup animation
+    static auto lastFrameTime = std::chrono::steady_clock::now();
+    auto currentTime = std::chrono::steady_clock::now();
+    float deltaTime = std::chrono::duration<float>(currentTime - lastFrameTime).count();
+    lastFrameTime = currentTime;
+    
+    if (inStartupAnimation) {
+        if (!s_wasInStartupAnimation) {
+            // Just started - reset warm-up progress
+            s_warmupProgress = 0.0f;
+            HDRLIGHT_LOG("Startup animation started - beginning warm-up effect (user glow=%.2f)", s_userGlowSetting);
+        }
+        // Advance warm-up progress
+        s_warmupProgress += deltaTime / s_warmupDuration;
+        if (s_warmupProgress > 1.0f) s_warmupProgress = 1.0f;
+        
+        // Apply exponential curve to glow modifier, scaled to user's setting
+        // Starts at (minGlow * userSetting) and grows to userSetting
+        float t = s_warmupProgress;
+        float expFactor = s_warmupMinGlow * expf(t * logf(1.0f / s_warmupMinGlow));
+        s_glowModifier = expFactor * s_userGlowSetting;
+    } else {
+        if (s_wasInStartupAnimation) {
+            // Animation just ended - restore to user's configured glow setting
+            s_glowModifier = s_userGlowSetting;
+            HDRLIGHT_LOG("Startup animation ended - glow restored to user setting %.2f", s_userGlowSetting);
+        }
+    }
+    s_wasInStartupAnimation = inStartupAnimation;
+    
     // Enforce light debug mode - turn off all table lights every frame
     if (control_IsLightDebugModeActive()) {
         control_EnforceLightDebugMode();
@@ -469,9 +515,9 @@ void HDRLightOverlay::UpdateLightStates() {
     bool debugModeActive = control_IsLightDebugModeActive();
     
     if (shouldLog) {
-        HDRLIGHT_LOG("UpdateLightStates: %zu configs, %zu groups, %zu bumper configs, %zu bumpers registered", 
+        HDRLIGHT_LOG("UpdateLightStates: %zu configs, %zu groups, warmup=%.2f, glowMod=%.3f", 
                      s_lightConfigs.size(), s_registeredGroups.size(),
-                     s_bumperConfigs.size(), s_registeredBumpers.size());
+                     s_warmupProgress, s_glowModifier);
     }
     
     for (const auto& config : s_lightConfigs) {
@@ -537,10 +583,32 @@ void HDRLightOverlay::UpdateLightStates() {
             state.b = bsinkColors[colorIndex][2];
         }
         
-        // Check if the light group is in rotation animation mode (Message 26/27)
-        // During rotation, FlasherFlag2 indicates which light is "lit"
-        bool isRotating = group && (group->MessageField2 == 26 || group->MessageField2 == 27);
-        bool rotationLit = (light->FlasherFlag2 != 0);
+        // Check if the light group is in animation mode
+        // Message 26/27: rotation animation - FlasherFlag2 indicates which light is "lit"
+        // Message 28: startup random flash - FlasherFlag2 indicates which light is "lit"
+        // Message 29: game over random on/off - FlasherFlag2 indicates which light is "lit"
+        // Also check the table's main LightGroup since startup/gameover animations use that
+        bool isAnimating = false;
+        if (group && (group->MessageField2 == 26 || group->MessageField2 == 27 || 
+                      group->MessageField2 == 28 || group->MessageField2 == 29)) {
+            isAnimating = true;
+        }
+        // Check table's main LightGroup for global animations (startup, game over)
+        if (pb::MainTable && pb::MainTable->LightGroup) {
+            int tableLightGroupMsg = pb::MainTable->LightGroup->MessageField2;
+            if (tableLightGroupMsg == 28 || tableLightGroupMsg == 29) {
+                isAnimating = true;
+            }
+        }
+        // FlasherFlag2 = light is showing "on" state during animation (Message 9)
+        // FlasherFlag1 = light is showing "off" state during animation (Message 8)
+        // Timer1 != 0 means the light has an active animation timeout
+        // During startup animation, lights randomly get Message(9) which sets FlasherFlag2=1
+        // and schedules a timeout. When timeout fires, FlasherFlag2 is reset to 0.
+        // We detect animation-lit state by checking FlasherFlag2 OR having an active Timer1
+        // while FlasherFlag1 is not set (not in explicit "off" animation state)
+        bool animationLit = (light->FlasherFlag2 != 0) || 
+                           (light->Timer1 != 0 && light->FlasherFlag1 == 0);
         
         // Calculate current intensity
         if (debugModeActive) {
@@ -560,9 +628,9 @@ void HDRLightOverlay::UpdateLightStates() {
         } else if (s_debugAllLightsOn || s_editMode) {
             // Debug mode or edit mode - all lights at full intensity for visibility
             state.currentIntensity = config.IntensityOn;
-        } else if (isRotating) {
-            // Rotation animation - use FlasherFlag2 to determine which light is lit
-            state.currentIntensity = rotationLit ? config.IntensityOn : 0.0f;
+        } else if (isAnimating) {
+            // Animation mode - use FlasherFlag2 to determine which light is lit
+            state.currentIntensity = animationLit ? config.IntensityOn : 0.0f;
         } else if (state.isFlashing) {
             // Flashing - use flash intensity when lit
             state.currentIntensity = (light->Flasher.BmpIndex == 1) ? 
@@ -574,11 +642,13 @@ void HDRLightOverlay::UpdateLightStates() {
         }
         
         if (shouldLog) {
-            HDRLIGHT_LOG("  Light %s[%d]: on=%d, flashing=%d, flashIdx=%d, intensity=%.0f, debug=%d, bmpIdx2=%d", 
+            int tableLightGroupMsg = (pb::MainTable && pb::MainTable->LightGroup) ? 
+                                     pb::MainTable->LightGroup->MessageField2 : -1;
+            HDRLIGHT_LOG("  Light %s[%d]: on=%d, flashing=%d, intensity=%.0f, anim=%d, animLit=%d, flag1=%d, flag2=%d, timer1=%d, tableMsg=%d", 
                          config.GroupName, config.LightIndex, 
                          state.isOn, state.isFlashing, 
-                         state.isFlashing ? light->Flasher.BmpIndex : -1,
-                         state.currentIntensity, s_debugAllLightsOn, light->BmpIndex2);
+                         state.currentIntensity, isAnimating, animationLit,
+                         light->FlasherFlag1, light->FlasherFlag2, light->Timer1, tableLightGroupMsg);
         }
         
         // Only add if light is actually on (or debug mode)
@@ -1146,7 +1216,8 @@ void HDRLightOverlay::EnableDebugBall(bool enabled) {
 }
 
 void HDRLightOverlay::SetGlowModifier(float modifier) {
-    s_glowModifier = modifier;
+    s_userGlowSetting = modifier;  // Store user's setting
+    s_glowModifier = modifier;     // Apply immediately
     HDRLIGHT_LOG("Glow modifier set to %.2f", modifier);
 }
 

@@ -1228,6 +1228,7 @@ public class MainActivity extends SDLActivity {
         mBinding.toggleTableLightBtn.setOnClickListener(v -> toggleTableLightNative());
         mBinding.toggleHDRLightBtn.setOnClickListener(v -> toggleHDRLightNative());
         mBinding.closeLightDebugBtn.setOnClickListener(v -> hideLightDebugPanel());
+        mBinding.swapSideBtn.setOnClickListener(v -> swapDebugPanelSide());
         mBinding.createPresetBtn.setOnClickListener(v -> showCreatePresetDialog());
         mBinding.applyPresetBtn.setOnClickListener(v -> showApplyPresetDialog());
         mBinding.clearPresetBtn.setOnClickListener(v -> { clearPresetFromCurrentLightNative(); updateLightDebugInfo(); });
@@ -1331,12 +1332,18 @@ public class MainActivity extends SDLActivity {
 
     private void showApplyPresetDialog() {
         int count = getPresetCountNative();
-        if (count == 0) { Toast.makeText(this, "No presets", Toast.LENGTH_SHORT).show(); return; }
+        if (count == 0) { 
+            Toast.makeText(this, "No presets", Toast.LENGTH_SHORT).show(); 
+            return; 
+        }
         String[] names = new String[count];
         for (int i = 0; i < count; i++) names[i] = getPresetNameNative(i);
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setTitle("Apply Preset");
-        builder.setItems(names, (d, w) -> { applyPresetToCurrentLightNative(names[w]); updateLightDebugInfo(); });
+        builder.setItems(names, (d, w) -> { 
+            applyPresetToCurrentLightNative(names[w]); 
+            updateLightDebugInfo(); 
+        });
         builder.setNegativeButton("Cancel", (d, w) -> d.cancel());
         builder.show();
     }
@@ -1344,6 +1351,11 @@ public class MainActivity extends SDLActivity {
     public void showLightDebugPanel() {
         mBinding.lightDebugPanel.setVisibility(View.VISIBLE);
         mBinding.lightDebugPanel.bringToFront();
+        // Hide UI text elements
+        mBinding.missiontxt.setVisibility(View.INVISIBLE);
+        mBinding.ballstxt.setVisibility(View.INVISIBLE);
+        mBinding.infotxt.setVisibility(View.INVISIBLE);
+        mBinding.txtscore.setVisibility(View.INVISIBLE);
         setLightDebugModeNative(true);
         turnOffAllLightsNative();
         loadPresetsNative(getFilesDir().getAbsolutePath() + "/light_presets.cfg");
@@ -1353,8 +1365,37 @@ public class MainActivity extends SDLActivity {
 
     public void hideLightDebugPanel() {
         mBinding.lightDebugPanel.setVisibility(View.GONE);
+        // Show UI text elements again
+        mBinding.missiontxt.setVisibility(View.VISIBLE);
+        mBinding.ballstxt.setVisibility(View.VISIBLE);
+        mBinding.infotxt.setVisibility(View.VISIBLE);
+        mBinding.txtscore.setVisibility(View.VISIBLE);
         setLightDebugModeNative(false);
         Toast.makeText(this, "Light Debug OFF", Toast.LENGTH_SHORT).show();
+    }
+
+    // Track which side the debug panel is on
+    private boolean debugPanelOnRight = false;
+
+    private void swapDebugPanelSide() {
+        debugPanelOnRight = !debugPanelOnRight;
+        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams params = 
+            (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) mBinding.lightDebugPanel.getLayoutParams();
+        
+        if (debugPanelOnRight) {
+            // Move to right side
+            params.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET;
+            params.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            params.setMarginStart(0);
+            params.setMarginEnd(8);
+        } else {
+            // Move to left side
+            params.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET;
+            params.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            params.setMarginEnd(0);
+            params.setMarginStart(8);
+        }
+        mBinding.lightDebugPanel.setLayoutParams(params);
     }
 
     public boolean isLightDebugPanelVisible() {
