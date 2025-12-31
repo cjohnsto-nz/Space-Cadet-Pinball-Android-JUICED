@@ -6244,11 +6244,11 @@ extern "C" {
     // ============== Live Property Editing JNI Functions ==============
     
     JNIEXPORT jfloatArray JNICALL Java_com_fexed_spacecadetpinball_MainActivity_getCurrentLightPropertiesNative(JNIEnv* env, jobject obj) {
-        // Returns: [r, g, b, width, height, intensityOn, intensityFlash, glowRadius, aboveBall]
-        jfloatArray result = env->NewFloatArray(9);
+        // Returns: [r, g, b, width, height, intensityOn, intensityFlash, glowRadius, aboveBall, x, y, locked]
+        jfloatArray result = env->NewFloatArray(12);
         if (!g_lightDebugMode || g_lightList.empty()) {
-            float zeros[9] = {0};
-            env->SetFloatArrayRegion(result, 0, 9, zeros);
+            float zeros[12] = {0};
+            env->SetFloatArrayRegion(result, 0, 12, zeros);
             return result;
         }
         
@@ -6256,20 +6256,22 @@ extern "C" {
         const auto& configs = HDRLightOverlay::GetLightConfigs();
         for (const auto& config : configs) {
             if (config.GroupName == currentLight.first && config.LightIndex == currentLight.second) {
-                float props[9] = {
+                float props[12] = {
                     config.R, config.G, config.B,
                     config.Width, config.Height,
                     config.IntensityOn, config.IntensityFlash,
                     config.GlowRadius,
-                    config.AboveBall ? 1.0f : 0.0f
+                    config.AboveBall ? 1.0f : 0.0f,
+                    config.X, config.Y,
+                    config.Locked ? 1.0f : 0.0f
                 };
-                env->SetFloatArrayRegion(result, 0, 9, props);
+                env->SetFloatArrayRegion(result, 0, 12, props);
                 return result;
             }
         }
         
-        float zeros[9] = {0};
-        env->SetFloatArrayRegion(result, 0, 9, zeros);
+        float zeros[12] = {0};
+        env->SetFloatArrayRegion(result, 0, 12, zeros);
         return result;
     }
     
@@ -6305,6 +6307,20 @@ extern "C" {
         
         auto& currentLight = g_lightList[g_currentLightIndex];
         HDRLightOverlay::UpdateLightGlow(currentLight.first.c_str(), currentLight.second, glowRadius);
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_nudgeCurrentLightNative(JNIEnv* env, jobject obj, jfloat dx, jfloat dy) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        HDRLightOverlay::NudgeLight(currentLight.first.c_str(), currentLight.second, dx, dy);
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setCurrentLightLockedNative(JNIEnv* env, jobject obj, jboolean locked) {
+        if (!g_lightDebugMode || g_lightList.empty()) return;
+        
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        HDRLightOverlay::UpdateLightLocked(currentLight.first.c_str(), currentLight.second, locked);
     }
 }
 #endif // __ANDROID__

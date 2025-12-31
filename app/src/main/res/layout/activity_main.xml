@@ -501,6 +501,100 @@
                     android:textSize="9sp" />
             </LinearLayout>
 
+            <!-- Position Display -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pos: "
+                    android:textColor="#AAAAAA"
+                    android:textSize="10sp" />
+                <TextView
+                    android:id="@+id/valuePosX"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="X:0.0000"
+                    android:textColor="#00FF00"
+                    android:textSize="10sp" />
+                <TextView
+                    android:id="@+id/valuePosY"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" Y:0.0000"
+                    android:textColor="#00FF00"
+                    android:textSize="10sp" />
+                <CheckBox
+                    android:id="@+id/checkLocked"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Locked"
+                    android:textColor="#FF6666"
+                    android:textSize="10sp"
+                    android:layout_marginStart="8dp"
+                    android:buttonTint="#FF6666" />
+            </LinearLayout>
+
+            <!-- Nudge Buttons -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nudge:"
+                android:textColor="#AAAAAA"
+                android:textSize="10sp"
+                android:layout_marginTop="4dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <Button
+                    android:id="@+id/nudgeLeftBtn"
+                    android:layout_width="36dp"
+                    android:layout_height="28dp"
+                    android:text="◀"
+                    android:textSize="10sp"
+                    android:padding="0dp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <Button
+                        android:id="@+id/nudgeUpBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="28dp"
+                        android:text="▲"
+                        android:textSize="10sp"
+                        android:padding="0dp" />
+
+                    <Button
+                        android:id="@+id/nudgeDownBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="28dp"
+                        android:text="▼"
+                        android:textSize="10sp"
+                        android:padding="0dp" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/nudgeRightBtn"
+                    android:layout_width="36dp"
+                    android:layout_height="28dp"
+                    android:text="▶"
+                    android:textSize="10sp"
+                    android:padding="0dp" />
+
+            </LinearLayout>
+
             <!-- Preset Section -->
             <TextView
                 android:id="@+id/presetLabel"
@@ -556,13 +650,23 @@
 
             </LinearLayout>
 
+            <!-- Save Light Button -->
+            <Button
+                android:id="@+id/saveLightBtn"
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:text="Save This Light"
+                android:textSize="10sp"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#228B22" />
+
             <Button
                 android:id="@+id/closeLightDebugBtn"
                 android:layout_width="match_parent"
                 android:layout_height="32dp"
                 android:text="Close"
                 android:textSize="10sp"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="4dp" />
 
         </LinearLayout>
 

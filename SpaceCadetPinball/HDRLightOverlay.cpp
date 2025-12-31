@@ -1346,14 +1346,16 @@ bool HDRLightOverlay::SaveLightPositions(const char* filepath) {
         return false;
     }
     
-    fprintf(f, "# HDR Light Positions\n");
-    fprintf(f, "# Format: group,index,x,y,w,h,r,g,b,locked\n\n");
+    fprintf(f, "# HDR Light Positions v2\n");
+    fprintf(f, "# Format: group,index,x,y,w,h,r,g,b,locked,intensityOn,intensityFlash,glowRadius,presetName\n\n");
     
     for (const auto& config : s_lightConfigs) {
-        fprintf(f, "%s,%d,%.6f,%.6f,%.6f,%.6f,%.3f,%.3f,%.3f,%d\n",
+        fprintf(f, "%s,%d,%.6f,%.6f,%.6f,%.6f,%.3f,%.3f,%.3f,%d,%.1f,%.1f,%.3f,%s\n",
                 config.GroupName, config.LightIndex,
                 config.X, config.Y, config.Width, config.Height,
-                config.R, config.G, config.B, config.Locked ? 1 : 0);
+                config.R, config.G, config.B, config.Locked ? 1 : 0,
+                config.IntensityOn, config.IntensityFlash, config.GlowRadius,
+                config.PresetName.empty() ? "" : config.PresetName.c_str());
     }
     
     fprintf(f, "\n# Bumpers\n");
@@ -1391,10 +1393,21 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
         char group[64];
         int index, locked;
         float x, y, w, h, r, g, b;
+        float intensityOn = 600.0f, intensityFlash = 1000.0f, glowRadius = 0.5f;
+        char presetName[64] = "";
         
-        if (sscanf(line, "%63[^,],%d,%f,%f,%f,%f,%f,%f,%f,%d",
-                   group, &index, &x, &y, &w, &h, &r, &g, &b, &locked) == 10) {
-            
+        // Try new v2 format first (with intensity, glow, preset)
+        int parsed = sscanf(line, "%63[^,],%d,%f,%f,%f,%f,%f,%f,%f,%d,%f,%f,%f,%63[^\n]",
+                   group, &index, &x, &y, &w, &h, &r, &g, &b, &locked,
+                   &intensityOn, &intensityFlash, &glowRadius, presetName);
+        
+        // Fall back to old format if v2 parsing didn't get all fields
+        if (parsed < 10) {
+            parsed = sscanf(line, "%63[^,],%d,%f,%f,%f,%f,%f,%f,%f,%d",
+                       group, &index, &x, &y, &w, &h, &r, &g, &b, &locked);
+        }
+        
+        if (parsed >= 10) {
             if (strcmp(group, "test") == 0) {
                 // Update test light
                 if (index < (int)s_testLights.size()) {
@@ -1422,13 +1435,20 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
                 // Find matching light config and update
                 for (auto& config : s_lightConfigs) {
                     if (strcmp(config.GroupName, group) == 0 && config.LightIndex == index) {
-                        HDRLIGHT_LOG("Loading %s[%d]: pos (%.6f, %.6f) -> (%.6f, %.6f)", 
-                                     group, index, config.X, config.Y, x, y);
+                        HDRLIGHT_LOG("Loading %s[%d]: pos (%.6f, %.6f) -> (%.6f, %.6f) preset=%s", 
+                                     group, index, config.X, config.Y, x, y, presetName);
                         config.X = x;
                         config.Y = y;
                         config.Width = w;
                         config.Height = h;
+                        config.R = r;
+                        config.G = g;
+                        config.B = b;
                         config.Locked = (locked != 0);
+                        config.IntensityOn = intensityOn;
+                        config.IntensityFlash = intensityFlash;
+                        config.GlowRadius = glowRadius;
+                        config.PresetName = presetName;
                         break;
                     }
                 }
@@ -1685,6 +1705,28 @@ void HDRLightOverlay::UpdateLightGlow(const char* groupName, int lightIndex, flo
             return;
         }
     }
+}
+
+void HDRLightOverlay::UpdateLightLocked(const char* groupName, int lightIndex, bool locked) {
+    for (auto& config : s_lightConfigs) {
+        if (strcmp(config.GroupName, groupName) == 0 && config.LightIndex == lightIndex) {
+            config.Locked = locked;
+            HDRLIGHT_LOG("Updated locked for %s[%d]: %s", groupName, lightIndex, locked ? "true" : "false");
+            return;
+        }
+    }
+}
+
+void HDRLightOverlay::NudgeLight(const char* groupName, int lightIndex, float dx, float dy) {
+    for (auto& config : s_lightConfigs) {
+        if (strcmp(config.GroupName, groupName) == 0 && config.LightIndex == lightIndex) {
+            config.X += dx;
+            config.Y += dy;
+            HDRLIGHT_LOG("Nudged %s[%d] by (%.4f, %.4f) to (%.4f, %.4f)", groupName, lightIndex, dx, dy, config.X, config.Y);
+            return;
+        }
+    }
+    HDRLIGHT_LOG("NudgeLight: light %s[%d] not found in configs", groupName, lightIndex);
 }
 
 int HDRLightOverlay::ResetOutOfBoundsLights() {

@@ -108,6 +108,8 @@ public:
     static void UpdateLightColor(const char* groupName, int lightIndex, float r, float g, float b);
     static void UpdateLightIntensity(const char* groupName, int lightIndex, float intensityOn, float intensityFlash);
     static void UpdateLightGlow(const char* groupName, int lightIndex, float glowRadius);
+    static void UpdateLightLocked(const char* groupName, int lightIndex, bool locked);
+    static void NudgeLight(const char* groupName, int lightIndex, float dx, float dy);
     static int GetSelectedLightIndex();
     static int GetSelectedBumperIndex();
     static bool HasSelection();  // Returns true if any light or bumper is selected

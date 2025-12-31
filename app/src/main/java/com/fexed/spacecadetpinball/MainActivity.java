@@ -1171,9 +1171,14 @@ public class MainActivity extends SDLActivity {
     private native void setCurrentLightSizeNative(float width, float height);
     private native void setCurrentLightIntensityNative(float intensityOn, float intensityFlash);
     private native void setCurrentLightGlowNative(float glowRadius);
+    private native void nudgeCurrentLightNative(float dx, float dy);
+    private native void setCurrentLightLockedNative(boolean locked);
 
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;
+
+    // Nudge amount (in normalized coordinates)
+    private static final float NUDGE_AMOUNT = 0.001f;
 
     private void updateLightDebugInfo() {
         String lightInfo = getCurrentLightInfoNative();
@@ -1182,45 +1187,35 @@ public class MainActivity extends SDLActivity {
         } else {
             mBinding.currentLightText.setText("Current: None");
         }
-        
-        // Update preset display
         String presetName = getCurrentLightPresetNative();
         if (presetName != null && !presetName.isEmpty()) {
             mBinding.currentPresetText.setText(presetName);
         } else {
             mBinding.currentPresetText.setText("(none)");
         }
-        
-        // Update sliders with current light properties
         updateSlidersFromLight();
     }
-    
+
     private void updateSlidersFromLight() {
         isUpdatingSliders = true;
         try {
             float[] props = getCurrentLightPropertiesNative();
-            if (props != null && props.length >= 9) {
-                // props: [r, g, b, width, height, intensityOn, intensityFlash, glowRadius, aboveBall]
+            if (props != null && props.length >= 12) {
                 mBinding.sliderR.setProgress((int)(props[0] * 100));
                 mBinding.valueR.setText(String.format("%.1f", props[0]));
-                
                 mBinding.sliderG.setProgress((int)(props[1] * 100));
                 mBinding.valueG.setText(String.format("%.1f", props[1]));
-                
                 mBinding.sliderB.setProgress((int)(props[2] * 100));
                 mBinding.valueB.setText(String.format("%.1f", props[2]));
-                
-                // Size: use width, scale 0-0.1 to 0-100
                 mBinding.sliderSize.setProgress((int)(props[3] * 1000));
                 mBinding.valueSize.setText(String.format("%.3f", props[3]));
-                
-                // Intensity: 0-2000 nits
                 mBinding.sliderIntensity.setProgress((int)props[5]);
                 mBinding.valueIntensity.setText(String.format("%.0f", props[5]));
-                
-                // Glow: 0-3.0
                 mBinding.sliderGlow.setProgress((int)(props[7] * 100));
                 mBinding.valueGlow.setText(String.format("%.1f", props[7]));
+                mBinding.valuePosX.setText(String.format("X:%.4f", props[9]));
+                mBinding.valuePosY.setText(String.format(" Y:%.4f", props[10]));
+                mBinding.checkLocked.setChecked(props[11] > 0.5f);
             }
         } finally {
             isUpdatingSliders = false;
@@ -1228,177 +1223,121 @@ public class MainActivity extends SDLActivity {
     }
 
     private void setupLightDebugPanel() {
-        mBinding.prevLightBtn.setOnClickListener(v -> {
-            previousLightNative();
-            updateLightDebugInfo();
+        mBinding.prevLightBtn.setOnClickListener(v -> { previousLightNative(); updateLightDebugInfo(); });
+        mBinding.nextLightBtn.setOnClickListener(v -> { nextLightNative(); updateLightDebugInfo(); });
+        mBinding.toggleTableLightBtn.setOnClickListener(v -> toggleTableLightNative());
+        mBinding.toggleHDRLightBtn.setOnClickListener(v -> toggleHDRLightNative());
+        mBinding.closeLightDebugBtn.setOnClickListener(v -> hideLightDebugPanel());
+        mBinding.createPresetBtn.setOnClickListener(v -> showCreatePresetDialog());
+        mBinding.applyPresetBtn.setOnClickListener(v -> showApplyPresetDialog());
+        mBinding.clearPresetBtn.setOnClickListener(v -> { clearPresetFromCurrentLightNative(); updateLightDebugInfo(); });
+        mBinding.nudgeUpBtn.setOnClickListener(v -> { nudgeCurrentLightNative(0, -NUDGE_AMOUNT); updateSlidersFromLight(); });
+        mBinding.nudgeDownBtn.setOnClickListener(v -> { nudgeCurrentLightNative(0, NUDGE_AMOUNT); updateSlidersFromLight(); });
+        mBinding.nudgeLeftBtn.setOnClickListener(v -> { nudgeCurrentLightNative(-NUDGE_AMOUNT, 0); updateSlidersFromLight(); });
+        mBinding.nudgeRightBtn.setOnClickListener(v -> { nudgeCurrentLightNative(NUDGE_AMOUNT, 0); updateSlidersFromLight(); });
+        mBinding.checkLocked.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (!isUpdatingSliders) {
+                setCurrentLightLockedNative(isChecked);
+            }
         });
-
-        mBinding.nextLightBtn.setOnClickListener(v -> {
-            nextLightNative();
-            updateLightDebugInfo();
+        mBinding.saveLightBtn.setOnClickListener(v -> {
+            String path = getFilesDir().getAbsolutePath() + "/light_positions.cfg";
+            if (saveLightPositions(path)) {
+                Toast.makeText(this, "Light saved to config", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Failed to save", Toast.LENGTH_SHORT).show();
+            }
         });
-
-        mBinding.toggleTableLightBtn.setOnClickListener(v -> {
-            toggleTableLightNative();
-        });
-
-        mBinding.toggleHDRLightBtn.setOnClickListener(v -> {
-            toggleHDRLightNative();
-        });
-
-        mBinding.closeLightDebugBtn.setOnClickListener(v -> {
-            hideLightDebugPanel();
-        });
-        
-        // Preset buttons
-        mBinding.createPresetBtn.setOnClickListener(v -> {
-            showCreatePresetDialog();
-        });
-        mBinding.applyPresetBtn.setOnClickListener(v -> {
-            showApplyPresetDialog();
-        });
-
-        mBinding.clearPresetBtn.setOnClickListener(v -> {
-            clearPresetFromCurrentLightNative();
-            updateLightDebugInfo();
-            Toast.makeText(this, "Preset cleared", Toast.LENGTH_SHORT).show();
-        });
-
-        // Setup property sliders
         setupPropertySliders();
     }
 
     private void setupPropertySliders() {
-        // R slider
         mBinding.sliderR.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                if (isUpdatingSliders || !fromUser) return;
-                float r = progress / 100.0f;
-                mBinding.valueR.setText(String.format("%.1f", r));
-                float g = mBinding.sliderG.getProgress() / 100.0f;
-                float b = mBinding.sliderB.getProgress() / 100.0f;
-                setCurrentLightColorNative(r, g, b);
+            public void onProgressChanged(android.widget.SeekBar sb, int p, boolean u) {
+                if (isUpdatingSliders || !u) return;
+                float r = p / 100.0f; mBinding.valueR.setText(String.format("%.1f", r));
+                setCurrentLightColorNative(r, mBinding.sliderG.getProgress()/100f, mBinding.sliderB.getProgress()/100f);
             }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            public void onStartTrackingTouch(android.widget.SeekBar sb) {}
+            public void onStopTrackingTouch(android.widget.SeekBar sb) {}
         });
-
-        // G slider
         mBinding.sliderG.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                if (isUpdatingSliders || !fromUser) return;
-                float g = progress / 100.0f;
-                mBinding.valueG.setText(String.format("%.1f", g));
-                float r = mBinding.sliderR.getProgress() / 100.0f;
-                float b = mBinding.sliderB.getProgress() / 100.0f;
-                setCurrentLightColorNative(r, g, b);
+            public void onProgressChanged(android.widget.SeekBar sb, int p, boolean u) {
+                if (isUpdatingSliders || !u) return;
+                float g = p / 100.0f; mBinding.valueG.setText(String.format("%.1f", g));
+                setCurrentLightColorNative(mBinding.sliderR.getProgress()/100f, g, mBinding.sliderB.getProgress()/100f);
             }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            public void onStartTrackingTouch(android.widget.SeekBar sb) {}
+            public void onStopTrackingTouch(android.widget.SeekBar sb) {}
         });
-
-        // B slider
         mBinding.sliderB.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                if (isUpdatingSliders || !fromUser) return;
-                float b = progress / 100.0f;
-                mBinding.valueB.setText(String.format("%.1f", b));
-                float r = mBinding.sliderR.getProgress() / 100.0f;
-                float g = mBinding.sliderG.getProgress() / 100.0f;
-                setCurrentLightColorNative(r, g, b);
+            public void onProgressChanged(android.widget.SeekBar sb, int p, boolean u) {
+                if (isUpdatingSliders || !u) return;
+                float b = p / 100.0f; mBinding.valueB.setText(String.format("%.1f", b));
+                setCurrentLightColorNative(mBinding.sliderR.getProgress()/100f, mBinding.sliderG.getProgress()/100f, b);
             }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            public void onStartTrackingTouch(android.widget.SeekBar sb) {}
+            public void onStopTrackingTouch(android.widget.SeekBar sb) {}
         });
-
-        // Size slider
         mBinding.sliderSize.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                if (isUpdatingSliders || !fromUser) return;
-                float size = progress / 1000.0f;
-                mBinding.valueSize.setText(String.format("%.3f", size));
-                setCurrentLightSizeNative(size, size);
+            public void onProgressChanged(android.widget.SeekBar sb, int p, boolean u) {
+                if (isUpdatingSliders || !u) return;
+                float sz = p / 1000.0f; mBinding.valueSize.setText(String.format("%.3f", sz));
+                setCurrentLightSizeNative(sz, sz);
             }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            public void onStartTrackingTouch(android.widget.SeekBar sb) {}
+            public void onStopTrackingTouch(android.widget.SeekBar sb) {}
         });
-
-        // Intensity slider
         mBinding.sliderIntensity.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                if (isUpdatingSliders || !fromUser) return;
-                float intensity = (float)progress;
-                mBinding.valueIntensity.setText(String.format("%.0f", intensity));
-                setCurrentLightIntensityNative(intensity, intensity * 1.5f);
+            public void onProgressChanged(android.widget.SeekBar sb, int p, boolean u) {
+                if (isUpdatingSliders || !u) return;
+                mBinding.valueIntensity.setText(String.format("%d", p));
+                setCurrentLightIntensityNative(p, p * 1.5f);
             }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            public void onStartTrackingTouch(android.widget.SeekBar sb) {}
+            public void onStopTrackingTouch(android.widget.SeekBar sb) {}
         });
-
-        // Glow slider
         mBinding.sliderGlow.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
-                if (isUpdatingSliders || !fromUser) return;
-                float glow = progress / 100.0f;
-                mBinding.valueGlow.setText(String.format("%.1f", glow));
+            public void onProgressChanged(android.widget.SeekBar sb, int p, boolean u) {
+                if (isUpdatingSliders || !u) return;
+                float glow = p / 100.0f; mBinding.valueGlow.setText(String.format("%.1f", glow));
                 setCurrentLightGlowNative(glow);
             }
-            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+            public void onStartTrackingTouch(android.widget.SeekBar sb) {}
+            public void onStopTrackingTouch(android.widget.SeekBar sb) {}
         });
     }
 
     private void showCreatePresetDialog() {
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-        builder.setTitle("Create Preset from Current Light");
-        // ... (rest of the code remains the same)
+        builder.setTitle("Create Preset");
         final android.widget.EditText input = new android.widget.EditText(this);
-        input.setHint("Enter preset name");
+        input.setHint("Preset name");
         input.setTextColor(Color.WHITE);
         input.setHintTextColor(Color.GRAY);
         builder.setView(input);
-        
-        builder.setPositiveButton("Create", (dialog, which) -> {
+        builder.setPositiveButton("Create", (d, w) -> {
             String name = input.getText().toString().trim();
             if (!name.isEmpty()) {
                 createPresetFromCurrentLightNative(name);
-                String path = getFilesDir().getAbsolutePath() + "/light_presets.cfg";
-                savePresetsNative(path);
-                Toast.makeText(this, "Preset '" + name + "' created", Toast.LENGTH_SHORT).show();
+                savePresetsNative(getFilesDir().getAbsolutePath() + "/light_presets.cfg");
+                Toast.makeText(this, "Preset created", Toast.LENGTH_SHORT).show();
                 updateLightDebugInfo();
             }
         });
-        
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.setNegativeButton("Cancel", (d, w) -> d.cancel());
         builder.show();
     }
-    
+
     private void showApplyPresetDialog() {
-        int presetCount = getPresetCountNative();
-        if (presetCount == 0) {
-            Toast.makeText(this, "No presets available. Create one first.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        String[] presetNames = new String[presetCount];
-        for (int i = 0; i < presetCount; i++) {
-            presetNames[i] = getPresetNameNative(i);
-        }
-        
+        int count = getPresetCountNative();
+        if (count == 0) { Toast.makeText(this, "No presets", Toast.LENGTH_SHORT).show(); return; }
+        String[] names = new String[count];
+        for (int i = 0; i < count; i++) names[i] = getPresetNameNative(i);
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-        builder.setTitle("Apply Preset to Current Light");
-        builder.setItems(presetNames, (dialog, which) -> {
-            applyPresetToCurrentLightNative(presetNames[which]);
-            Toast.makeText(this, "Applied preset '" + presetNames[which] + "'", Toast.LENGTH_SHORT).show();
-            updateLightDebugInfo();
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.setTitle("Apply Preset");
+        builder.setItems(names, (d, w) -> { applyPresetToCurrentLightNative(names[w]); updateLightDebugInfo(); });
+        builder.setNegativeButton("Cancel", (d, w) -> d.cancel());
         builder.show();
     }
 
@@ -1407,17 +1346,15 @@ public class MainActivity extends SDLActivity {
         mBinding.lightDebugPanel.bringToFront();
         setLightDebugModeNative(true);
         turnOffAllLightsNative();
-        // Load presets on panel open
-        String path = getFilesDir().getAbsolutePath() + "/light_presets.cfg";
-        loadPresetsNative(path);
+        loadPresetsNative(getFilesDir().getAbsolutePath() + "/light_presets.cfg");
         updateLightDebugInfo();
-        Toast.makeText(this, "Light Debug Mode ON", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Light Debug ON", Toast.LENGTH_SHORT).show();
     }
 
     public void hideLightDebugPanel() {
         mBinding.lightDebugPanel.setVisibility(View.GONE);
         setLightDebugModeNative(false);
-        Toast.makeText(this, "Light Debug Mode OFF", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Light Debug OFF", Toast.LENGTH_SHORT).show();
     }
 
     public boolean isLightDebugPanelVisible() {
