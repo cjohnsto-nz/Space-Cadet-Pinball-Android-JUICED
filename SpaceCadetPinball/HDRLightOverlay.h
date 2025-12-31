@@ -150,6 +150,14 @@ public:
     static float GetTrailOpacity() { return s_trailOpacity; }
     static void SetTrailLifetime(float seconds);  // in seconds
     static float GetTrailLifetime() { return s_trailLifetimeSetting; }
+    
+    // Particle system - spawn HDR particles at a position
+    static void SpawnBumperParticles(float x, float y, float r, float g, float b, float intensity);
+    static void UpdateParticles(float deltaTime);
+    static bool HasActiveParticles();
+    
+    // Get bumper config position by bumper pointer (returns false if not found)
+    static bool GetBumperPosition(TBumper* bumper, float& outX, float& outY, float& outR, float& outG, float& outB);
 
 private:
     struct RegisteredGroup {
@@ -232,6 +240,21 @@ private:
         bool isOn;
     };
     static std::vector<DebugToggledLight> s_debugToggledLights;
+    
+    // HDR Particle system
+    struct Particle {
+        float x, y;           // Position (normalized 0-1)
+        float vx, vy;         // Velocity
+        float r, g, b;        // Color
+        float intensity;      // HDR intensity in nits
+        float size;           // Size (normalized)
+        float life;           // Remaining life (0-1)
+        float maxLife;        // Initial life for fade calculation
+    };
+    static std::vector<Particle> s_particles;
+    static constexpr int MAX_PARTICLES = 500;
+    static constexpr float PARTICLE_LIFETIME = 1.0f;  // seconds
+    static constexpr int PARTICLES_PER_BURST = 25;    // particles per bumper hit
     
     static bool s_initialized;
     static GLuint s_overlayProgram;

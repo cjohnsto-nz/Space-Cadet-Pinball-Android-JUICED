@@ -54,6 +54,7 @@ public class Settings extends AppCompatActivity {
     private native void toggleTableLightNative();
     private native void toggleHDRLightNative();
     private native String getCurrentLightInfoNative();
+    private native void setParticlesEnabledNative(boolean enabled);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -183,6 +184,14 @@ public class Settings extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // Particles toggle
+        boolean particlesEnabled = PrefsHelper.getParticlesEnabled();
+        mBinding.particlesSwitch.setChecked(particlesEnabled);
+        mBinding.particlesSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setParticlesEnabled(b);
+            setParticlesEnabledNative(b);
         });
 
         // Light editor toggle

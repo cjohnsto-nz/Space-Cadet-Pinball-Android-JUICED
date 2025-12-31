@@ -86,7 +86,11 @@ void options::init()
 	GetInput("Bottom Table Bump key", Options.Key.BottomTableBump);
 
 	Options.Sounds = get_int("Sounds", true);
+	// Music may be set from Java before init() runs, preserve that value
+	bool javaMusicEnabled = Options.Music;
 	Options.Music = get_int("Music", false);
+	if (javaMusicEnabled)
+		Options.Music = true;
 	Options.FullScreen = get_int("FullScreen", false);
 	Options.Players = get_int("Players", 1);
 	Options.UniformScaling = get_int("Uniform scaling", true);
@@ -102,6 +106,12 @@ void options::init()
 	Options.SoundVolume = Clamp(get_int("Sound Volume", DefVolume), MinVolume, MaxVolume);
 	Options.MusicVolume = Clamp(get_int("Music Volume", DefVolume), MinVolume, MaxVolume);
 	Options.HDREnabled = get_int("HDR Enabled", true);
+	// ParticlesEnabled may be set from Java before init() runs, preserve that value
+	// Only read from native storage if it hasn't been explicitly disabled
+	bool javaParticlesEnabled = Options.ParticlesEnabled;
+	Options.ParticlesEnabled = get_int("Particles Enabled", true);
+	if (!javaParticlesEnabled)
+		Options.ParticlesEnabled = false;
 	// EnhancedAudio may be set from Java before init() runs, preserve that value
 	// Only read from native storage if not already set (default is false)
 	if (!Options.EnhancedAudio)
@@ -139,6 +149,7 @@ void options::uninit()
 	set_int("Sound Volume", Options.SoundVolume);
 	set_int("Music Volume", Options.MusicVolume);
 	set_int("HDR Enabled", Options.HDREnabled);
+	set_int("Particles Enabled", Options.ParticlesEnabled);
 	set_int("Enhanced Audio", Options.EnhancedAudio);
 }
 

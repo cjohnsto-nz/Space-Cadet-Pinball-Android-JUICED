@@ -49,6 +49,7 @@ static float s_warmupDuration = 4.0f;  // seconds to reach full glow
 static float s_warmupMinGlow = 0.1f;   // starting glow multiplier (fraction of user setting)
 static float s_userGlowSetting = 1.0f; // User's configured glow modifier from options
 std::vector<HDRLightOverlay::DebugToggledLight> HDRLightOverlay::s_debugToggledLights;
+std::vector<HDRLightOverlay::Particle> HDRLightOverlay::s_particles;
 bool HDRLightOverlay::s_initialized = false;
 GLuint HDRLightOverlay::s_overlayProgram = 0;
 GLuint HDRLightOverlay::s_overlayProgramPQ = 0;
@@ -603,12 +604,15 @@ void HDRLightOverlay::UpdateLightStates() {
         // FlasherFlag2 = light is showing "on" state during animation (Message 9)
         // FlasherFlag1 = light is showing "off" state during animation (Message 8)
         // Timer1 != 0 means the light has an active animation timeout
-        // During startup animation, lights randomly get Message(9) which sets FlasherFlag2=1
-        // and schedules a timeout. When timeout fires, FlasherFlag2 is reset to 0.
-        // We detect animation-lit state by checking FlasherFlag2 OR having an active Timer1
-        // while FlasherFlag1 is not set (not in explicit "off" animation state)
+        // During startup animation (msg 28), lights randomly get Message(9) which sets FlasherFlag2=1
+        // During game over animation (msg 29), lights get Message(18) which sets BmpIndex1 directly
+        // We detect animation-lit state by checking FlasherFlag2 OR BmpIndex1 (for game over)
+        int tableLightGroupMsg2 = (pb::MainTable && pb::MainTable->LightGroup) ? 
+                                  pb::MainTable->LightGroup->MessageField2 : 0;
+        bool isGameOverAnim = (tableLightGroupMsg2 == 29);
         bool animationLit = (light->FlasherFlag2 != 0) || 
-                           (light->Timer1 != 0 && light->FlasherFlag1 == 0);
+                           (light->Timer1 != 0 && light->FlasherFlag1 == 0) ||
+                           (isGameOverAnim && light->BmpIndex1 != 0);
         
         // Calculate current intensity
         if (debugModeActive) {
@@ -717,10 +721,17 @@ void HDRLightOverlay::UpdateLightStates() {
     if (shouldLog && !s_bumperStates.empty()) {
         HDRLIGHT_LOG("  Active bumpers: %zu", s_bumperStates.size());
     }
+    
+    // Update particles using the same deltaTime we calculated for warm-up
+    UpdateParticles(deltaTime);
+    
+    if (shouldLog && !s_particles.empty()) {
+        HDRLIGHT_LOG("  Active particles: %zu", s_particles.size());
+    }
 }
 
 bool HDRLightOverlay::HasActiveLights() {
-    return !s_lightStates.empty() || !s_testLights.empty() || !s_bumperStates.empty();
+    return !s_lightStates.empty() || !s_testLights.empty() || !s_bumperStates.empty() || !s_particles.empty();
 }
 
 void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
@@ -962,6 +973,30 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
         
         GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
         glUniform1f(glowLoc, 0.1f);  // Minimal glow - almost solid circle
+        
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+    
+    // Render particles with PQ encoding
+    for (const auto& p : s_particles) {
+        float alpha = p.life / p.maxLife;  // Fade out over lifetime
+        float currentIntensity = p.intensity * alpha;
+        float currentSize = p.size * (0.5f + 0.5f * alpha);  // Shrink slightly as it fades
+        
+        GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
+        glUniform4f(rectLoc, p.x, p.y, currentSize, currentSize);
+        
+        GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
+        glUniform3f(colorLoc, p.r, p.g, p.b);
+        
+        GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
+        glUniform1f(intensityLoc, currentIntensity);
+        
+        GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
+        glUniform1f(maxNitsLoc, maxNits);
+        
+        GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
+        glUniform1f(glowLoc, 2.0f * s_glowModifier);  // Enhanced glow for particles
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -1229,6 +1264,95 @@ void HDRLightOverlay::SetTrailOpacity(float opacity) {
 void HDRLightOverlay::SetTrailLifetime(float seconds) {
     s_trailLifetimeSetting = seconds;
     HDRLIGHT_LOG("Trail lifetime set to %.2f seconds", seconds);
+}
+
+void HDRLightOverlay::SpawnBumperParticles(float x, float y, float r, float g, float b, float intensity) {
+    // Spawn a burst of particles at the given position
+    for (int i = 0; i < PARTICLES_PER_BURST && s_particles.size() < MAX_PARTICLES; i++) {
+        Particle p;
+        p.x = x;
+        p.y = y;
+        
+        // Random velocity in all directions (radial burst)
+        float angle = (rand() / (float)RAND_MAX) * 2.0f * 3.14159f;
+        float speed = 0.1f + (rand() / (float)RAND_MAX) * 0.2f;  // Random speed
+        p.vx = cosf(angle) * speed;
+        p.vy = sinf(angle) * speed;
+        
+        // Add slight upward bias (particles tend to fly up)
+        p.vy -= 0.05f;
+        
+        // Color with slight variation
+        float colorVar = 0.9f + (rand() / (float)RAND_MAX) * 0.2f;
+        p.r = r * colorVar;
+        p.g = g * colorVar;
+        p.b = b * colorVar;
+        
+        p.intensity = intensity;
+        p.size = 0.005f;  // Fixed size
+        p.maxLife = PARTICLE_LIFETIME * (0.7f + (rand() / (float)RAND_MAX) * 0.6f);  // Varied lifetime
+        p.life = p.maxLife;
+        
+        s_particles.push_back(p);
+    }
+    HDRLIGHT_LOG("Spawned %d particles at (%.3f, %.3f), total particles: %zu", 
+                 PARTICLES_PER_BURST, x, y, s_particles.size());
+}
+
+void HDRLightOverlay::UpdateParticles(float deltaTime) {
+    // Update all particles and remove dead ones
+    for (auto it = s_particles.begin(); it != s_particles.end(); ) {
+        Particle& p = *it;
+        
+        // Update position
+        p.x += p.vx * deltaTime;
+        p.y += p.vy * deltaTime;
+        
+        // Apply gravity (slight downward acceleration)
+        p.vy += 0.3f * deltaTime;
+        
+        // Apply drag
+        p.vx *= (1.0f - 2.0f * deltaTime);
+        p.vy *= (1.0f - 2.0f * deltaTime);
+        
+        // Update life
+        p.life -= deltaTime;
+        
+        // Remove dead particles
+        if (p.life <= 0.0f) {
+            it = s_particles.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+bool HDRLightOverlay::HasActiveParticles() {
+    return !s_particles.empty();
+}
+
+bool HDRLightOverlay::GetBumperPosition(TBumper* bumper, float& outX, float& outY, float& outR, float& outG, float& outB) {
+    // Find the bumper in registered bumpers and get its config position
+    for (const auto& reg : s_registeredBumpers) {
+        if (reg.bumper == bumper) {
+            // Found the registered bumper, now find its config
+            for (const auto& config : s_bumperConfigs) {
+                if (strcmp(config.BumperName, reg.name) == 0) {
+                    outX = config.X;
+                    outY = config.Y;
+                    // Get color based on bumper's current upgrade level
+                    int level = bumper->BmpIndex;
+                    if (level < 0) level = 0;
+                    if (level > 3) level = 3;
+                    outR = config.Colors[level][0];
+                    outG = config.Colors[level][1];
+                    outB = config.Colors[level][2];
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 bool HDRLightOverlay::ShouldBlockTouch(float screenX, float screenY, int viewportX, int viewportY, int viewportW, int viewportH) {

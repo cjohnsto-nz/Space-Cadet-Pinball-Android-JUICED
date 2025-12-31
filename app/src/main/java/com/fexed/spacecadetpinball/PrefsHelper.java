@@ -27,6 +27,7 @@ public class PrefsHelper {
     private static final String KEY_CAMERA_TRACKING = "camera_tracking";
     private static final String KEY_CAMERA_ZOOM = "camera_zoom";
     private static final String KEY_ENHANCED_AUDIO = "enhanced_audio";
+    private static final String KEY_PARTICLES_ENABLED = "particles_enabled";
 
     public static SharedPreferences getPrefs() {
         return prefs;
@@ -207,5 +208,14 @@ public class PrefsHelper {
 
     public static void setEnhancedAudio(boolean value) {
         prefs.edit().putBoolean(KEY_ENHANCED_AUDIO, value).apply();
+    }
+
+    // Particles enabled (bumper collision particles)
+    public static boolean getParticlesEnabled() {
+        return prefs.getBoolean(KEY_PARTICLES_ENABLED, true);
+    }
+
+    public static void setParticlesEnabled(boolean value) {
+        prefs.edit().putBoolean(KEY_PARTICLES_ENABLED, value).apply();
     }
 }

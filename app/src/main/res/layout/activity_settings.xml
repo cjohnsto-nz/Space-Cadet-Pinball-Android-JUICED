@@ -272,6 +272,16 @@
             app:layout_constraintStart_toStartOf="@+id/glowIntensityBar"
             app:layout_constraintTop_toBottomOf="@+id/glowIntensityBar" />
 
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/particlesSwitch"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Bumper Particles"
+            app:layout_constraintEnd_toEndOf="@+id/glowIntensityBar"
+            app:layout_constraintStart_toStartOf="@+id/textViewGlowIntensity"
+            app:layout_constraintTop_toBottomOf="@+id/glowIntensityHint" />
+
         <TextView
             android:id="@+id/textViewTrailOpacity"
             android:layout_width="0dp"
@@ -282,7 +292,7 @@
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@+id/trailOpacityValue"
             app:layout_constraintStart_toStartOf="@+id/textViewGlowIntensity"
-            app:layout_constraintTop_toBottomOf="@+id/glowIntensityHint" />
+            app:layout_constraintTop_toBottomOf="@+id/particlesSwitch" />
 
         <TextView
             android:id="@+id/trailOpacityValue"
@@ -773,7 +783,7 @@
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/lightEditHint" />
+            app:layout_constraintTop_toBottomOf="@+id/lightDebugHint" />
 
         <Switch
             android:id="@+id/tiltbtns"

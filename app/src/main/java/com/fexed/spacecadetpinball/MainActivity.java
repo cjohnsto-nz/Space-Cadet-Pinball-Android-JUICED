@@ -90,16 +90,16 @@ public class MainActivity extends SDLActivity {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
-        // try {
-        //     AssetFileDescriptor afd = getAssets().openFd("PINBALL.mp3");
-        //     player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-        //     player.prepare();
-        //     player.setLooping(true);
-        //     player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
-        //     if (PrefsHelper.getMusic()) player.start();
-        // } catch (IOException ignored) {
-        //     player = null;
-        // }
+        try {
+            AssetFileDescriptor afd = getAssets().openFd("808generative.mp3");
+            player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            player.prepare();
+            player.setLooping(true);
+            player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
+            if (PrefsHelper.getMusic()) player.start();
+        } catch (IOException ignored) {
+            player = null;
+        }
 
         mBinding = ActivityMainBinding.inflate(getLayoutInflater(), mLayout, false);
 
@@ -370,6 +370,12 @@ public class MainActivity extends SDLActivity {
             AssetManager assetManager = getAssets();
             copyAssetFolder(assetManager, "enhanced", enhancedDir);
         }
+        // Always check and copy music file (may be added after initial install)
+        File musicFile = new File(filesDir, "808generative.mp3");
+        if (!musicFile.exists()) {
+            AssetManager assetManager = getAssets();
+            copyAssetFile(assetManager, "808generative.mp3", musicFile);
+        }
     }
     
     private void copyAssetFolder(AssetManager assetManager, String assetPath, File targetDir) {
@@ -473,6 +479,16 @@ public class MainActivity extends SDLActivity {
         float cameraZoom = cameraZoomPercent / 100.0f;
         setCameraTracking(cameraTrackingEnabled, cameraZoom);
         Log.i(TAG, "Camera tracking: enabled=" + cameraTrackingEnabled + ", zoom=" + cameraZoom + "x");
+        
+        // Apply saved particles enabled setting
+        boolean particlesEnabled = PrefsHelper.getParticlesEnabled();
+        setParticlesEnabled(particlesEnabled);
+        Log.i(TAG, "Particles enabled: " + particlesEnabled);
+        
+        // Apply saved music enabled setting
+        boolean musicEnabled = PrefsHelper.getMusic();
+        setMusicEnabled(musicEnabled);
+        Log.i(TAG, "Music enabled: " + musicEnabled);
     }
 
     private final SensorEventListener accelerometerListener = new SensorEventListener() {
@@ -1114,6 +1130,8 @@ public class MainActivity extends SDLActivity {
                                            boolean scrgb, boolean fp16, float maxNits, float minNits);
     private native boolean isHDRActive();
     private native void setHDREnabled(boolean enabled);
+    private native void setParticlesEnabled(boolean enabled);
+    private native void setMusicEnabled(boolean enabled);
 
     // Light editor native methods
     private native void setLightEditMode(boolean enabled);

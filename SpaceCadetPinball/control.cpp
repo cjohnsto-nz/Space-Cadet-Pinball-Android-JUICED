@@ -7,6 +7,7 @@
 #include <jni.h>
 #endif
 
+#include "options.h"
 #include "pb.h"
 #include "pinball.h"
 #include "TBlocker.h"
@@ -5864,6 +5865,10 @@ extern "C" {
         auto& currentLight = g_lightList[g_currentLightIndex];
         std::string info = currentLight.first + "[" + std::to_string(currentLight.second) + "]";
         return env->NewStringUTF(info.c_str());
+    }
+    
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_setParticlesEnabledNative(JNIEnv* env, jobject obj, jboolean enabled) {
+        options::Options.ParticlesEnabled = enabled;
     }
 
     // MainActivity versions of the same functions

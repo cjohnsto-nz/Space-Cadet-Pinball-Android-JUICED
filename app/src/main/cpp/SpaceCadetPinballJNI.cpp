@@ -215,6 +215,18 @@ Java_com_fexed_spacecadetpinball_MainActivity_setHDREnabled(JNIEnv *env, jobject
     HDR::SetHDREnabled(enabled);
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setParticlesEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+    options::Options.ParticlesEnabled = enabled;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setMusicEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+    options::Options.Music = enabled;
+}
+
 // Light editor JNI functions
 #include "../../../../SpaceCadetPinball/HDRLightOverlay.h"
 #include "../../../../SpaceCadetPinball/HDRRenderer.h"

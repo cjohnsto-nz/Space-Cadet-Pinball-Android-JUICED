@@ -4,9 +4,12 @@
 
 #include "control.h"
 #include "loader.h"
+#include "options.h"
 #include "render.h"
 #include "timer.h"
 #include "TPinballTable.h"
+#include "HDRLightOverlay.h"
+#include "HDRConfig.h"
 
 TBumper::TBumper(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
@@ -149,4 +152,15 @@ void TBumper::Fire()
 		bmp->YPosition - PinballTable->YOffset);
 	Timer = timer::set(TimerTime, this, TimerExpired);
 	Threshold = 1000000000.0;
+	
+	// Spawn HDR particles at bumper position if HDR and particles are enabled
+	if (HDR::IsHDRActive() && options::Options.ParticlesEnabled) {
+		float x, y, r, g, b;
+		// Get position and color from HDR bumper config (same as bumper light overlay)
+		if (HDRLightOverlay::GetBumperPosition(this, x, y, r, g, b)) {
+			// Use peak display brightness for maximum HDR impact
+			float peakNits = HDR::GetMaxDisplayNits();
+			HDRLightOverlay::SpawnBumperParticles(x, y, r, g, b, peakNits);
+		}
+	}
 }

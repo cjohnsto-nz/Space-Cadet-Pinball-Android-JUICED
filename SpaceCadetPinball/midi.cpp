@@ -53,22 +53,13 @@ int midi::music_init(int volume)
 	SetVolume(volume);
 	active_track = nullptr;
 
-	if (pb::FullTiltMode)
-	{
-		track1 = load_track("TABA1");
-		track2 = load_track("TABA2");
-		track3 = load_track("TABA3");
-	}
-	else
-	{
-		// 3DPB has only one music track. PINBALL2.MID is a bitmap font, in the same format as PB_MSGFT.bin
-		track1 = load_track("PINBALL");
-	}
-
-	if (!track2)
-		track2 = track1;
-	if (!track3)
-		track3 = track1;
+	// Load MP3 music from assets instead of MIDI files
+	track1 = load_flac_from_assets("808generative.mp3");
+	
+	// Set all tracks to the same FLAC file
+	track2 = track1;
+	track3 = track1;
+	
 	return track1 != nullptr;
 }
 
@@ -89,6 +80,22 @@ void midi::SetVolume(int volume)
 {
 	Volume = volume;
 	Mix_VolumeMusic(volume);
+}
+
+Mix_Music* midi::load_flac_from_assets(const std::string& fileName)
+{
+	// Use the same base path as other game files
+	auto filePath = pinball::make_path_name(fileName);
+	
+	Mix_Music* audio = Mix_LoadMUS(filePath.c_str());
+	if (audio)
+	{
+		LoadedTracks.push_back(audio);
+		return audio;
+	}
+	
+	SDL_Log("Failed to load FLAC music from %s: %s", filePath.c_str(), Mix_GetError());
+	return nullptr;
 }
 
 Mix_Music* midi::load_track(std::string fileName)
