@@ -1078,6 +1078,7 @@ void HDRLightOverlay::UpdateLightSize(int configIndex, float w, float h) {
     if (configIndex >= 0 && configIndex < (int)s_lightConfigs.size()) {
         s_lightConfigs[configIndex].Width = w;
         s_lightConfigs[configIndex].Height = h;
+        s_lightConfigs[configIndex].PresetName.clear();  // Clear preset when manually editing
     }
 }
 
@@ -1468,7 +1469,24 @@ void HDRLightOverlay::AddPreset(const HDRLightPreset& preset) {
     for (auto& existing : s_presets) {
         if (existing.Name == preset.Name) {
             existing = preset;  // Update existing
-            HDRLIGHT_LOG("Updated existing preset: %s", preset.Name.c_str());
+            
+            // Propagate changes to all lights using this preset
+            int updatedCount = 0;
+            for (auto& config : s_lightConfigs) {
+                if (config.PresetName == preset.Name) {
+                    config.Width = preset.Width;
+                    config.Height = preset.Height;
+                    config.R = preset.R;
+                    config.G = preset.G;
+                    config.B = preset.B;
+                    config.IntensityOn = preset.IntensityOn;
+                    config.IntensityFlash = preset.IntensityFlash;
+                    config.GlowRadius = preset.GlowRadius;
+                    config.AboveBall = preset.AboveBall;
+                    updatedCount++;
+                }
+            }
+            HDRLIGHT_LOG("Updated existing preset: %s (propagated to %d lights)", preset.Name.c_str(), updatedCount);
             return;
         }
     }

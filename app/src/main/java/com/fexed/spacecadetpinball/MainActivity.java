@@ -1178,7 +1178,7 @@ public class MainActivity extends SDLActivity {
     private boolean isUpdatingSliders = false;
 
     // Nudge amount (in normalized coordinates)
-    private static final float NUDGE_AMOUNT = 0.001f;
+    private static final float NUDGE_AMOUNT = 0.0005f;
 
     private void updateLightDebugInfo() {
         String lightInfo = getCurrentLightInfoNative();
