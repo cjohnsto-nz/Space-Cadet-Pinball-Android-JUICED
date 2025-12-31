@@ -26,6 +26,10 @@ public class BeatMapPlayer {
         void onBassIntensity(float intensity);
     }
     
+    public interface PositionProvider {
+        long getPositionMs();
+    }
+    
     private static class BeatPoint {
         int timestampMs;
         float intensity;
@@ -41,6 +45,7 @@ public class BeatMapPlayer {
     private int currentIndex = 0;
     
     private MediaPlayer mediaPlayer;
+    private PositionProvider positionProvider;
     private BassIntensityListener listener;
     private Handler handler;
     private boolean isPlaying = false;
@@ -113,6 +118,13 @@ public class BeatMapPlayer {
     }
     
     /**
+     * Set a custom position provider (e.g., for Oboe).
+     */
+    public void setPositionProvider(PositionProvider provider) {
+        this.positionProvider = provider;
+    }
+    
+    /**
      * Set the listener for bass intensity updates.
      */
     public void setListener(BassIntensityListener listener) {
@@ -145,8 +157,8 @@ public class BeatMapPlayer {
      * Start playing back the beat map in sync with the media player.
      */
     public void start() {
-        if (beats.isEmpty() || mediaPlayer == null) {
-            Log.w(TAG, "Cannot start: no beats loaded or no media player set");
+        if (beats.isEmpty() || (mediaPlayer == null && positionProvider == null)) {
+            Log.w(TAG, "Cannot start: no beats loaded or no position source set");
             return;
         }
         
@@ -178,7 +190,7 @@ public class BeatMapPlayer {
      * Resume playback.
      */
     public void resume() {
-        if (!beats.isEmpty() && mediaPlayer != null) {
+        if (!beats.isEmpty() && (mediaPlayer != null || positionProvider != null)) {
             isPlaying = true;
             handler.post(updateRunnable);
         }
@@ -187,12 +199,20 @@ public class BeatMapPlayer {
     private final Runnable updateRunnable = new Runnable() {
         @Override
         public void run() {
-            if (!isPlaying || mediaPlayer == null || beats.isEmpty()) {
+            if (!isPlaying || beats.isEmpty()) {
                 return;
             }
             
             try {
-                int currentPositionMs = mediaPlayer.getCurrentPosition();
+                // Get position from provider or MediaPlayer
+                int currentPositionMs;
+                if (positionProvider != null) {
+                    currentPositionMs = (int) positionProvider.getPositionMs();
+                } else if (mediaPlayer != null) {
+                    currentPositionMs = mediaPlayer.getCurrentPosition();
+                } else {
+                    return;
+                }
                 
                 // Find the beat point closest to current position
                 // Binary search for efficiency

@@ -9,6 +9,7 @@
 #include "TBall.h"
 #include "timer.h"
 #include "HDRLightOverlay.h"
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 
 TSink::TSink(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
@@ -89,6 +90,7 @@ void TSink::Collision(TBall* ball, vector2* nextPosition, vector2* direction, fl
 		render::sprite_set_bitmap(ball->RenderSprite, nullptr);
 		loader::play_sound(SoundIndex4);
 		control::handler(63, this);
+		SpaceCadetPinballJNI::setBallCaptured(true);
 	}
 }
 
@@ -108,4 +110,7 @@ void TSink::TimerExpired(int timerId, void* caller)
 	
 	// Notify trail system that ball teleported
 	HDRLightOverlay::NotifyBallTeleported();
+	
+	// Ball is back in play - disable high-pass filter
+	SpaceCadetPinballJNI::setBallCaptured(false);
 }

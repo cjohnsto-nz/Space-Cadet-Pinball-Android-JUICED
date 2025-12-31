@@ -9,6 +9,7 @@
 #include "timer.h"
 #include "TPinballTable.h"
 #include "TTableLayer.h"
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 
 THole::THole(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, false)
 {
@@ -90,6 +91,9 @@ void THole::Collision(TBall* ball, vector2* nextPosition, vector2* direction, fl
 			loader::play_sound(HardHitSoundId);
 			control::handler(57, this);
 		}
+		
+		// Ball captured in hole - enable high-pass filter
+		SpaceCadetPinballJNI::setBallCaptured(true);
 	}
 }
 
@@ -117,6 +121,9 @@ int THole::FieldEffect(TBall* ball, vector2* vecDst)
 				ball->Speed = 0.0;
 				loader::play_sound(SoftHitSoundId);
 				control::handler(58, this);
+				
+				// Ball exited hole - disable high-pass filter
+				SpaceCadetPinballJNI::setBallCaptured(false);
 			}
 		}
 		result = 0;

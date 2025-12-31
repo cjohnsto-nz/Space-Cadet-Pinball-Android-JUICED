@@ -23,7 +23,7 @@ except ImportError:
     sys.exit(1)
 
 
-def midi_to_beatmap(midi_path, output_path, decay_ms=100):
+def midi_to_beatmap(midi_path, output_path, decay_ms=100, offset_ms=0):
     """
     Convert a MIDI file to a beat map JSON.
     
@@ -31,6 +31,7 @@ def midi_to_beatmap(midi_path, output_path, decay_ms=100):
         midi_path: Path to input MIDI file
         output_path: Path to output JSON file
         decay_ms: How long (ms) for the intensity to decay after a note-on
+        offset_ms: Time offset to apply to all timestamps (negative = earlier)
     """
     print(f"Loading MIDI: {midi_path}")
     mid = mido.MidiFile(midi_path)
@@ -56,6 +57,8 @@ def midi_to_beatmap(midi_path, output_path, decay_ms=100):
             if msg.type == 'note_on' and msg.velocity > 0:
                 # Convert ticks to milliseconds
                 time_ms = int(mido.tick2second(abs_time, mid.ticks_per_beat, tempo) * 1000)
+                # Apply offset
+                time_ms = max(0, time_ms + offset_ms)
                 # Normalize velocity (0-127) to intensity (0.0-1.0)
                 intensity = msg.velocity / 127.0
                 note_events.append((time_ms, intensity))
@@ -132,20 +135,28 @@ def main():
         print("Usage: python midi_to_beatmap.py <input.mid> <output.json>")
         print("Example: python midi_to_beatmap.py bass.mid 808generative_beats.json")
         print("\nOptions:")
-        print("  --decay <ms>  Decay time in milliseconds (default: 150)")
+        print("  --decay <ms>   Decay time in milliseconds (default: 150)")
+        print("  --offset <ms>  Time offset in milliseconds (default: 0, negative = earlier)")
         sys.exit(1)
     
     midi_path = sys.argv[1]
     output_path = sys.argv[2]
     
     # Parse optional decay argument
-    decay_ms = 150
+    decay_ms = 200
     if '--decay' in sys.argv:
         idx = sys.argv.index('--decay')
         if idx + 1 < len(sys.argv):
             decay_ms = int(sys.argv[idx + 1])
     
-    midi_to_beatmap(midi_path, output_path, decay_ms)
+    # Parse optional offset argument
+    offset_ms = 0
+    if '--offset' in sys.argv:
+        idx = sys.argv.index('--offset')
+        if idx + 1 < len(sys.argv):
+            offset_ms = int(sys.argv[idx + 1])
+    
+    midi_to_beatmap(midi_path, output_path, decay_ms, offset_ms)
 
 
 if __name__ == "__main__":

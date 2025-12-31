@@ -44,4 +44,8 @@ public class JNIEntryPoint {
     static void triggerHapticFeedback(float intensity) {
         StateHelper.INSTANCE.triggerHapticFeedback(intensity);
     }
+
+    static void setBallCaptured(boolean captured) {
+        StateHelper.INSTANCE.setBallCaptured(captured);
+    }
 }

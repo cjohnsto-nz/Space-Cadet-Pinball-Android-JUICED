@@ -13,6 +13,7 @@ static JavaVM* g_JavaVM = nullptr;
 static jclass clazz = nullptr;
 static JNIEnv *env = nullptr;
 static bool s_ballInPlunger = false;
+static bool s_ballCaptured = false;
 
 void SpaceCadetPinballJNI::show_error_dialog(std::string title, std::string message) {
     __android_log_print(ANDROID_LOG_ERROR, "SpaceCadetPinballJNI", "Error: %s, %s", title.c_str(), message.c_str());
@@ -167,6 +168,27 @@ void SpaceCadetPinballJNI::triggerHapticFeedback(float intensity) {
     if (mid == nullptr) return;
 
     jniEnv->CallStaticVoidMethod(jniClass, mid, intensity);
+}
+
+void SpaceCadetPinballJNI::setBallCaptured(bool captured) {
+    s_ballCaptured = captured;
+    
+    JNIEnv* jniEnv = nullptr;
+    if (g_JavaVM == nullptr) return;
+    g_JavaVM->GetEnv((void **) &jniEnv, JNI_VERSION_1_6);
+    if (jniEnv == nullptr) return;
+
+    jclass jniClass = jniEnv->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (jniClass == nullptr) return;
+    
+    jmethodID mid = jniEnv->GetStaticMethodID(jniClass, "setBallCaptured", "(Z)V");
+    if (mid == nullptr) return;
+
+    jniEnv->CallStaticVoidMethod(jniClass, mid, captured);
+}
+
+bool SpaceCadetPinballJNI::isBallCaptured() {
+    return s_ballCaptured;
 }
 
 // HDR Support Functions
@@ -418,4 +440,110 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_setEnhancedAudio(JNIEnv *env, jobject thiz, jboolean enabled) {
     options::Options.EnhancedAudio = enabled;
+}
+
+// Oboe Music Player JNI functions
+#include "OboeMusicPlayer.h"
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_initOboeMusicPlayer(JNIEnv *env, jobject thiz) {
+    initOboeMusicPlayer();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_destroyOboeMusicPlayer(JNIEnv *env, jobject thiz) {
+    destroyOboeMusicPlayer();
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromFile(JNIEnv *env, jobject thiz, jstring path) {
+    if (g_musicPlayer == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(path, nullptr);
+    bool result = g_musicPlayer->loadFromFile(pathStr);
+    env->ReleaseStringUTFChars(path, pathStr);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath) {
+    if (g_musicPlayer == nullptr) return false;
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (mgr == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(assetPath, nullptr);
+    bool result = g_musicPlayer->loadFromAssets(mgr, pathStr);
+    env->ReleaseStringUTFChars(assetPath, pathStr);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_startMusic(JNIEnv *env, jobject thiz) {
+    if (g_musicPlayer == nullptr) return false;
+    return g_musicPlayer->start();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_stopMusic(JNIEnv *env, jobject thiz) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->stop();
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_pauseMusic(JNIEnv *env, jobject thiz) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->pause();
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_resumeMusic(JNIEnv *env, jobject thiz) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->resume();
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setMusicVolume(JNIEnv *env, jobject thiz, jfloat volume) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->setVolume(volume);
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setMusicLowPassEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->setLowPassEnabled(enabled);
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setMusicLowPassCutoff(JNIEnv *env, jobject thiz, jfloat freq) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->setLowPassCutoff(freq);
+    }
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getMusicPositionMs(JNIEnv *env, jobject thiz) {
+    if (g_musicPlayer == nullptr) return 0;
+    return g_musicPlayer->getPositionMs();
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_isMusicPlaying(JNIEnv *env, jobject thiz) {
+    if (g_musicPlayer == nullptr) return false;
+    return g_musicPlayer->isPlaying();
 }

@@ -94,6 +94,8 @@ int TPlunger::Message(int code, float value)
 	case 1015:
 		{
 			SpaceCadetPinballJNI::setBallInPlunger(true);
+			// Ball back in play - disable low-pass filter
+			SpaceCadetPinballJNI::setBallCaptured(false);
 			auto ball = PinballTable->BallList.at(0);
 			ball->Message(1024, 0.0);
 			ball->Position.X = PinballTable->PlungerPositionX;

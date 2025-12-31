@@ -91,18 +91,20 @@ public class MainActivity extends SDLActivity {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
-        try {
-            AssetFileDescriptor afd = getAssets().openFd("808generative.mp3");
-            player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-            player.prepare();
-            player.setLooping(true);
-            player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
-            if (PrefsHelper.getMusic()) player.start();
+        // Initialize Oboe music player for real-time audio effects
+        initOboeMusicPlayer();
+        if (loadMusicFromAssets(getAssets(), "808generative.wav")) {
+            setMusicVolume(PrefsHelper.getVolume() / 100.0f);
+            if (PrefsHelper.getMusic()) {
+                startMusic();
+            }
+            Log.i(TAG, "Oboe music player initialized with WAV file");
             
             // Initialize beat map player for bass-reactive HDR glow
             beatMapPlayer = new BeatMapPlayer();
             if (beatMapPlayer.loadFromAssets(this, "808generative_beats.json")) {
-                beatMapPlayer.setMediaPlayer(player);
+                // Use Oboe position instead of MediaPlayer
+                beatMapPlayer.setPositionProvider(() -> getMusicPositionMs());
                 beatMapPlayer.setBaseGlowModifier(PrefsHelper.getHDRGlowIntensity() / 100.0f);
                 beatMapPlayer.setGlowRange(1.0f); // Glow can double on bass hits
                 // No smoothing - use exact MIDI timing for instant attack
@@ -117,10 +119,10 @@ public class MainActivity extends SDLActivity {
             } else {
                 Log.w(TAG, "No beat map found, HDR glow will not react to music");
             }
-        } catch (IOException ignored) {
-            player = null;
+        } else {
+            Log.e(TAG, "Failed to load music from assets");
         }
-
+        
         mBinding = ActivityMainBinding.inflate(getLayoutInflater(), mLayout, false);
 
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -308,13 +310,13 @@ public class MainActivity extends SDLActivity {
             if (isPlaying) {
                 isPlaying = false;
                 pauseNativeThread();
-                if (player != null) player.pause();
+                pauseMusic(); // Oboe
                 if (beatMapPlayer != null) beatMapPlayer.pause();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.play));
             } else {
                 isPlaying = true;
                 resumeNativeThread();
-                if (player != null) player.start();
+                resumeMusic(); // Oboe
                 if (beatMapPlayer != null) beatMapPlayer.resume();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
 
@@ -815,14 +817,20 @@ public class MainActivity extends SDLActivity {
         public void onHapticFeedback(float intensity) {
             runOnUiThread(() -> triggerCollisionHaptic(intensity));
         }
+
+        @Override
+        public void onBallCapturedChanged(boolean captured) {
+            // Enable low-pass filter when ball is captured (in hole/sink) for muffled effect
+            setMusicLowPassEnabled(captured);
+        }
     };
 
     @Override
     protected void onResume() {
         super.onResume();
         StateHelper.INSTANCE.addListener(mStateListener);
-        if (player != null && PrefsHelper.getMusic()) {
-            player.start();
+        if (PrefsHelper.getMusic()) {
+            resumeMusic(); // Oboe
             if (beatMapPlayer != null && PrefsHelper.getBeatReactiveGlow()) {
                 beatMapPlayer.resume();
             }
@@ -831,7 +839,7 @@ public class MainActivity extends SDLActivity {
         if (!isPlaying) pauseNativeThread();
         if (isGameReady) {
             setVolume(PrefsHelper.getVolume());
-            if (player != null) player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
+            setMusicVolume(PrefsHelper.getVolume() / 100.0f); // Oboe
         }
         PrefsHelper.setCheatsUsed(checkCheatsUsed());
         setTiltButtons();
@@ -957,7 +965,7 @@ public class MainActivity extends SDLActivity {
     protected void onPause() {
         super.onPause();
         StateHelper.INSTANCE.removeListener(mStateListener);
-        if (player != null) player.pause();
+        pauseMusic(); // Oboe
         if (beatMapPlayer != null) beatMapPlayer.pause();
 //        sensorManager.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.unregisterListener(accelerometerListener);
@@ -1184,22 +1192,19 @@ public class MainActivity extends SDLActivity {
     private native void setTrailOpacity(float opacity);
     private native void setTrailLifetime(float seconds);
     private native void setCameraTracking(boolean enabled, float zoom);
+    private native void toggleTableLightNative();
+    private native void toggleHDRLightNative();
+    private native String getCurrentLightInfoNative();
+    private native void turnOffAllLightsNative();
 
     // Plunger control native methods
     private native void updatePlungerPosition(float position);
     private native void setPlungerLaunchPower(float power);
 
-    // Enhanced audio native method
-    private native void setEnhancedAudio(boolean enabled);
-
     // Light debug mode native methods
     private native void setLightDebugModeNative(boolean enabled);
     private native void nextLightNative();
     private native void previousLightNative();
-    private native void toggleTableLightNative();
-    private native void toggleHDRLightNative();
-    private native String getCurrentLightInfoNative();
-    private native void turnOffAllLightsNative();
 
     // Preset management native methods
     private native int getPresetCountNative();
@@ -1220,12 +1225,31 @@ public class MainActivity extends SDLActivity {
     private native void nudgeCurrentLightNative(float dx, float dy);
     private native void setCurrentLightLockedNative(boolean locked);
 
+    // Enhanced audio native method
+    private native void setEnhancedAudio(boolean enabled);
+
+    // Oboe music player native methods
+    private native void initOboeMusicPlayer();
+    private native void destroyOboeMusicPlayer();
+    private native boolean loadMusicFromFile(String path);
+    private native boolean loadMusicFromAssets(android.content.res.AssetManager assetManager, String assetPath);
+    private native boolean startMusic();
+    private native void stopMusic();
+    private native void pauseMusic();
+    private native void resumeMusic();
+    private native void setMusicVolume(float volume);
+    private native void setMusicLowPassEnabled(boolean enabled);
+    private native void setMusicLowPassCutoff(float freq);
+    private native long getMusicPositionMs();
+    private native boolean isMusicPlaying();
+
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;
 
     // Nudge amount (in normalized coordinates)
     private static final float NUDGE_AMOUNT = 0.0005f;
 
+    // ... (rest of the code remains the same)
     private void updateLightDebugInfo() {
         String lightInfo = getCurrentLightInfoNative();
         if (lightInfo != null && !lightInfo.isEmpty()) {

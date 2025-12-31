@@ -1,12 +1,14 @@
 #include "pch.h"
 #include "TDrain.h"
 
-
 #include "control.h"
 #include "loader.h"
 #include "TBall.h"
 #include "timer.h"
 #include "TPinballTable.h"
+#ifdef __ANDROID__
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
+#endif
 
 TDrain::TDrain(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
@@ -34,6 +36,11 @@ void TDrain::Collision(TBall* ball, vector2* nextPosition, vector2* direction, f
 	PinballTable->BallInSink = 1;
 	Timer = timer::set(TimerTime, this, TimerCallback);
 	control::handler(63, this);
+	
+#ifdef __ANDROID__
+	// Ball drained - enable low-pass filter for muffled effect
+	SpaceCadetPinballJNI::setBallCaptured(true);
+#endif
 }
 
 void TDrain::TimerCallback(int timerId, void* caller)

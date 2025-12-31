@@ -38,6 +38,10 @@ public:
 
     static void triggerHapticFeedback(float intensity);
 
+    // Ball captured state (for audio filter effects)
+    static void setBallCaptured(bool captured);
+    static bool isBallCaptured();
+
     // HDR support
     static bool queryHDRSupport();
     static float getMaxDisplayLuminance();

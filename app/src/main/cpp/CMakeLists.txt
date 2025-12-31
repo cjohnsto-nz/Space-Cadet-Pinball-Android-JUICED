@@ -1,7 +1,16 @@
 cmake_minimum_required(VERSION 3.10.2)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 project(SpaceCadetPinball)
+
+# Fetch Oboe for real-time audio processing
+include(FetchContent)
+FetchContent_Declare(
+    oboe
+    GIT_REPOSITORY https://github.com/google/oboe.git
+    GIT_TAG 1.8.0
+)
+FetchContent_MakeAvailable(oboe)
 
 set(SOURCE_FILES
         ../../../../SpaceCadetPinball/control.cpp
@@ -129,6 +138,8 @@ set(SOURCE_FILES
         ../../../../SpaceCadetPinball/HDRRenderer.h
         ../../../../SpaceCadetPinball/HDRLightOverlay.cpp
         ../../../../SpaceCadetPinball/HDRLightOverlay.h
+        OboeMusicPlayer.cpp
+        OboeMusicPlayer.h
         SpaceCadetPinballJNI.cpp
         SpaceCadetPinballJNI.h)
 
@@ -143,5 +154,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/SDL_mixer)
 find_library(log-lib log)
 find_library(gles3-lib GLESv3)
 find_library(egl-lib EGL)
+find_library(android-lib android)
 
-target_link_libraries(SpaceCadetPinball SDL2 SDL2_mixer ${log-lib} ${gles3-lib} ${egl-lib})
+target_link_libraries(SpaceCadetPinball SDL2 SDL2_mixer oboe ${log-lib} ${gles3-lib} ${egl-lib} ${android-lib})
