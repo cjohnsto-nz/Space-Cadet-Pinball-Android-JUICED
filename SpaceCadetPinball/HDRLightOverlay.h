@@ -7,6 +7,17 @@
 #include <GLES3/gl3.h>
 #endif
 
+// HDR Light preset - reusable style settings for lights
+struct HDRLightPreset {
+    std::string Name;           // Unique preset name (e.g., "yellow_arrow", "red_target")
+    float Width, Height;        // Size of the light overlay (0-1 normalized)
+    float R, G, B;              // Color (linear, can be > 1.0 for HDR)
+    float IntensityOn;          // Intensity when light is on (in nits, e.g., 600)
+    float IntensityFlash;       // Intensity when flashing (in nits, e.g., 1000)
+    float GlowRadius;           // Radius of glow effect (0-1)
+    bool AboveBall;             // True if light is above ball (not occluded), false if below (can be occluded)
+};
+
 // HDR Light overlay configuration
 struct HDRLightConfig {
     const char* GroupName;      // Name of the light group (e.g., "skill_shot_lights")
@@ -19,6 +30,7 @@ struct HDRLightConfig {
     float GlowRadius;           // Radius of glow effect (0-1)
     bool AboveBall;             // True if light is above ball (not occluded), false if below (can be occluded)
     bool Locked;                // True if light position is locked and cannot be edited
+    std::string PresetName;     // Name of preset to use (empty = use inline values)
 };
 
 class TLightGroup;
@@ -93,11 +105,28 @@ public:
     static void ClearDebugToggledLights();  // Clear all debug toggled lights (call when exiting debug mode)
     
     static void UpdateLightSize(int configIndex, float w, float h);
+    static void UpdateLightColor(const char* groupName, int lightIndex, float r, float g, float b);
+    static void UpdateLightIntensity(const char* groupName, int lightIndex, float intensityOn, float intensityFlash);
+    static void UpdateLightGlow(const char* groupName, int lightIndex, float glowRadius);
     static int GetSelectedLightIndex();
     static int GetSelectedBumperIndex();
     static bool HasSelection();  // Returns true if any light or bumper is selected
     static const std::vector<HDRLightConfig>& GetLightConfigs();
     static int ResetOutOfBoundsLights();  // Returns count of lights reset
+    
+    // Preset management
+    static void AddPreset(const HDRLightPreset& preset);
+    static void UpdatePreset(const std::string& name, const HDRLightPreset& preset);
+    static void DeletePreset(const std::string& name);
+    static const HDRLightPreset* GetPreset(const std::string& name);
+    static const std::vector<HDRLightPreset>& GetAllPresets();
+    static void AssignPresetToLight(int configIndex, const std::string& presetName);
+    static void ClearPresetFromLight(int configIndex);
+    static HDRLightPreset CreatePresetFromLight(int configIndex, const std::string& presetName);
+    static bool SavePresets(const char* filepath);
+    static bool LoadPresets(const char* filepath);
+    static int GetPresetCount();
+    static const char* GetPresetNameByIndex(int index);
     
     // Debug ball position tracking
     static void SetDebugBallPosition(float x, float y);  // Set current ball position (normalized 0-1)
@@ -167,6 +196,7 @@ private:
     static std::vector<LightState> s_lightStates;
     static std::vector<BumperState> s_bumperStates;
     static std::vector<TestLight> s_testLights;
+    static std::vector<HDRLightPreset> s_presets;
     
     // Debug ball tracking
     static float s_debugBallX, s_debugBallY;

@@ -323,6 +323,239 @@
 
             </LinearLayout>
 
+            <!-- Property Editing Section -->
+            <TextView
+                android:id="@+id/propsLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Properties:"
+                android:textColor="#AAAAAA"
+                android:textSize="10sp"
+                android:layout_marginTop="8dp" />
+
+            <!-- Color: R -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="wrap_content"
+                    android:text="R"
+                    android:textColor="#FF6666"
+                    android:textSize="10sp" />
+                <SeekBar
+                    android:id="@+id/sliderR"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:layout_weight="1"
+                    android:max="200"
+                    android:progress="100" />
+                <TextView
+                    android:id="@+id/valueR"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:text="1.0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- Color: G -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="wrap_content"
+                    android:text="G"
+                    android:textColor="#66FF66"
+                    android:textSize="10sp" />
+                <SeekBar
+                    android:id="@+id/sliderG"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:layout_weight="1"
+                    android:max="200"
+                    android:progress="100" />
+                <TextView
+                    android:id="@+id/valueG"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:text="1.0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- Color: B -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="wrap_content"
+                    android:text="B"
+                    android:textColor="#6666FF"
+                    android:textSize="10sp" />
+                <SeekBar
+                    android:id="@+id/sliderB"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:layout_weight="1"
+                    android:max="200"
+                    android:progress="100" />
+                <TextView
+                    android:id="@+id/valueB"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:text="1.0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- Size -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="wrap_content"
+                    android:text="Sz"
+                    android:textColor="#FFFF66"
+                    android:textSize="10sp" />
+                <SeekBar
+                    android:id="@+id/sliderSize"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progress="20" />
+                <TextView
+                    android:id="@+id/valueSize"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:text="0.02"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- Intensity -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="wrap_content"
+                    android:text="Int"
+                    android:textColor="#FF66FF"
+                    android:textSize="10sp" />
+                <SeekBar
+                    android:id="@+id/sliderIntensity"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:layout_weight="1"
+                    android:max="2000"
+                    android:progress="600" />
+                <TextView
+                    android:id="@+id/valueIntensity"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:text="600"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- Glow -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="wrap_content"
+                    android:text="Glw"
+                    android:textColor="#66FFFF"
+                    android:textSize="10sp" />
+                <SeekBar
+                    android:id="@+id/sliderGlow"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:layout_weight="1"
+                    android:max="300"
+                    android:progress="100" />
+                <TextView
+                    android:id="@+id/valueGlow"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:text="1.0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- Preset Section -->
+            <TextView
+                android:id="@+id/presetLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Preset:"
+                android:textColor="#AAAAAA"
+                android:textSize="10sp"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                android:id="@+id/currentPresetText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="(none)"
+                android:textColor="#00FFFF"
+                android:textSize="11sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <Button
+                    android:id="@+id/createPresetBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Create"
+                    android:textSize="9sp"
+                    android:minWidth="48dp"
+                    android:padding="4dp" />
+
+                <Button
+                    android:id="@+id/applyPresetBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Apply"
+                    android:textSize="9sp"
+                    android:minWidth="48dp"
+                    android:padding="4dp"
+                    android:layout_marginStart="4dp" />
+
+                <Button
+                    android:id="@+id/clearPresetBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Clear"
+                    android:textSize="9sp"
+                    android:minWidth="40dp"
+                    android:padding="4dp"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
             <Button
                 android:id="@+id/closeLightDebugBtn"
                 android:layout_width="match_parent"

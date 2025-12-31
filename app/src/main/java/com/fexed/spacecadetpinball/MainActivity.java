@@ -25,6 +25,7 @@ import android.os.Looper;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -834,36 +835,47 @@ public class MainActivity extends SDLActivity {
 
     private void setCustomFonts() {
         if (PrefsHelper.getCustomFonts()) {
-            mBinding.ballstxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.ballstxt.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.txtscore.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.txtscore.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.infotxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.infotxt.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.missiontxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.missiontxt.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.plunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            // not editing the plunger because it's a button (and using its color as default color)
-            mBinding.bottomPlunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.bottomPlunger.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.tiltLeft.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.tiltLeft.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.tiltBottom.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.tiltBottom.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.tiltRight.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.tiltRight.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.left.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.left.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-            mBinding.right.setTypeface(ResourcesCompat.getFont(getContext(), R.font.bauhauscheavy));
-            mBinding.right.setTextColor(ResourcesCompat.getColor(getResources(), R.color.purple_200, getTheme()));
-        } else {
-            mBinding.ballstxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.dosvga));
+            mBinding.ballstxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.ballstxt.setTextColor(Color.WHITE);
-            mBinding.txtscore.setTypeface(ResourcesCompat.getFont(getContext(), R.font.dosvga));
+            mBinding.ballstxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.txtscore.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.txtscore.setTextColor(Color.WHITE);
-            mBinding.infotxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.dosvga));
+            mBinding.txtscore.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.infotxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.infotxt.setTextColor(Color.WHITE);
-            mBinding.missiontxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.dosvga));
+            mBinding.infotxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.missiontxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.missiontxt.setTextColor(Color.WHITE);
+            mBinding.missiontxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.plunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.plunger.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            // not editing the plunger because it's a button (and using its color as default color)
+            mBinding.bottomPlunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.bottomPlunger.setTextColor(Color.WHITE);
+            mBinding.bottomPlunger.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.tiltLeft.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.tiltLeft.setTextColor(Color.WHITE);
+            mBinding.tiltLeft.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.tiltBottom.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.tiltBottom.setTextColor(Color.WHITE);
+            mBinding.tiltBottom.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.tiltRight.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.tiltRight.setTextColor(Color.WHITE);
+            mBinding.tiltRight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.left.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.left.setTextColor(Color.WHITE);
+            mBinding.left.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.right.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.right.setTextColor(Color.WHITE);
+            mBinding.right.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        } else {
+            mBinding.ballstxt.setTypeface(Typeface.DEFAULT);
+            mBinding.ballstxt.setTextColor(Color.WHITE);
+            mBinding.txtscore.setTypeface(Typeface.DEFAULT);
+            mBinding.txtscore.setTextColor(Color.WHITE);
+            mBinding.infotxt.setTypeface(Typeface.DEFAULT);
+            mBinding.infotxt.setTextColor(Color.WHITE);
+            mBinding.missiontxt.setTypeface(Typeface.DEFAULT);
             mBinding.missiontxt.setTextColor(Color.WHITE);
             mBinding.plunger.setTypeface(Typeface.DEFAULT);
             mBinding.tiltLeft.setTypeface(Typeface.DEFAULT);
@@ -1143,12 +1155,75 @@ public class MainActivity extends SDLActivity {
     private native String getCurrentLightInfoNative();
     private native void turnOffAllLightsNative();
 
+    // Preset management native methods
+    private native int getPresetCountNative();
+    private native String getPresetNameNative(int index);
+    private native void createPresetFromCurrentLightNative(String presetName);
+    private native void applyPresetToCurrentLightNative(String presetName);
+    private native String getCurrentLightPresetNative();
+    private native void clearPresetFromCurrentLightNative();
+    private native void savePresetsNative(String filepath);
+    private native void loadPresetsNative(String filepath);
+
+    // Live property editing native methods
+    private native float[] getCurrentLightPropertiesNative();
+    private native void setCurrentLightColorNative(float r, float g, float b);
+    private native void setCurrentLightSizeNative(float width, float height);
+    private native void setCurrentLightIntensityNative(float intensityOn, float intensityFlash);
+    private native void setCurrentLightGlowNative(float glowRadius);
+
+    // Flag to prevent slider feedback loops
+    private boolean isUpdatingSliders = false;
+
     private void updateLightDebugInfo() {
         String lightInfo = getCurrentLightInfoNative();
         if (lightInfo != null && !lightInfo.isEmpty()) {
             mBinding.currentLightText.setText("Current: " + lightInfo);
         } else {
             mBinding.currentLightText.setText("Current: None");
+        }
+        
+        // Update preset display
+        String presetName = getCurrentLightPresetNative();
+        if (presetName != null && !presetName.isEmpty()) {
+            mBinding.currentPresetText.setText(presetName);
+        } else {
+            mBinding.currentPresetText.setText("(none)");
+        }
+        
+        // Update sliders with current light properties
+        updateSlidersFromLight();
+    }
+    
+    private void updateSlidersFromLight() {
+        isUpdatingSliders = true;
+        try {
+            float[] props = getCurrentLightPropertiesNative();
+            if (props != null && props.length >= 9) {
+                // props: [r, g, b, width, height, intensityOn, intensityFlash, glowRadius, aboveBall]
+                mBinding.sliderR.setProgress((int)(props[0] * 100));
+                mBinding.valueR.setText(String.format("%.1f", props[0]));
+                
+                mBinding.sliderG.setProgress((int)(props[1] * 100));
+                mBinding.valueG.setText(String.format("%.1f", props[1]));
+                
+                mBinding.sliderB.setProgress((int)(props[2] * 100));
+                mBinding.valueB.setText(String.format("%.1f", props[2]));
+                
+                // Size: use width, scale 0-0.1 to 0-100
+                mBinding.sliderSize.setProgress((int)(props[3] * 1000));
+                mBinding.valueSize.setText(String.format("%.3f", props[3]));
+                
+                // Intensity: 0-2000 nits
+                mBinding.sliderIntensity.setProgress((int)props[5]);
+                mBinding.valueIntensity.setText(String.format("%.0f", props[5]));
+                
+                // Glow: 0-3.0
+                mBinding.sliderGlow.setProgress((int)(props[7] * 100));
+                mBinding.valueGlow.setText(String.format("%.1f", props[7]));
+            }
+        } finally {
+            isUpdatingSliders = false;
         }
     }
 
@@ -1174,6 +1249,157 @@ public class MainActivity extends SDLActivity {
         mBinding.closeLightDebugBtn.setOnClickListener(v -> {
             hideLightDebugPanel();
         });
+        
+        // Preset buttons
+        mBinding.createPresetBtn.setOnClickListener(v -> {
+            showCreatePresetDialog();
+        });
+        mBinding.applyPresetBtn.setOnClickListener(v -> {
+            showApplyPresetDialog();
+        });
+
+        mBinding.clearPresetBtn.setOnClickListener(v -> {
+            clearPresetFromCurrentLightNative();
+            updateLightDebugInfo();
+            Toast.makeText(this, "Preset cleared", Toast.LENGTH_SHORT).show();
+        });
+
+        // Setup property sliders
+        setupPropertySliders();
+    }
+
+    private void setupPropertySliders() {
+        // R slider
+        mBinding.sliderR.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (isUpdatingSliders || !fromUser) return;
+                float r = progress / 100.0f;
+                mBinding.valueR.setText(String.format("%.1f", r));
+                float g = mBinding.sliderG.getProgress() / 100.0f;
+                float b = mBinding.sliderB.getProgress() / 100.0f;
+                setCurrentLightColorNative(r, g, b);
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        });
+
+        // G slider
+        mBinding.sliderG.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (isUpdatingSliders || !fromUser) return;
+                float g = progress / 100.0f;
+                mBinding.valueG.setText(String.format("%.1f", g));
+                float r = mBinding.sliderR.getProgress() / 100.0f;
+                float b = mBinding.sliderB.getProgress() / 100.0f;
+                setCurrentLightColorNative(r, g, b);
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        });
+
+        // B slider
+        mBinding.sliderB.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (isUpdatingSliders || !fromUser) return;
+                float b = progress / 100.0f;
+                mBinding.valueB.setText(String.format("%.1f", b));
+                float r = mBinding.sliderR.getProgress() / 100.0f;
+                float g = mBinding.sliderG.getProgress() / 100.0f;
+                setCurrentLightColorNative(r, g, b);
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        });
+
+        // Size slider
+        mBinding.sliderSize.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (isUpdatingSliders || !fromUser) return;
+                float size = progress / 1000.0f;
+                mBinding.valueSize.setText(String.format("%.3f", size));
+                setCurrentLightSizeNative(size, size);
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        });
+
+        // Intensity slider
+        mBinding.sliderIntensity.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (isUpdatingSliders || !fromUser) return;
+                float intensity = (float)progress;
+                mBinding.valueIntensity.setText(String.format("%.0f", intensity));
+                setCurrentLightIntensityNative(intensity, intensity * 1.5f);
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        });
+
+        // Glow slider
+        mBinding.sliderGlow.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (isUpdatingSliders || !fromUser) return;
+                float glow = progress / 100.0f;
+                mBinding.valueGlow.setText(String.format("%.1f", glow));
+                setCurrentLightGlowNative(glow);
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        });
+    }
+
+    private void showCreatePresetDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Create Preset from Current Light");
+        // ... (rest of the code remains the same)
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("Enter preset name");
+        input.setTextColor(Color.WHITE);
+        input.setHintTextColor(Color.GRAY);
+        builder.setView(input);
+        
+        builder.setPositiveButton("Create", (dialog, which) -> {
+            String name = input.getText().toString().trim();
+            if (!name.isEmpty()) {
+                createPresetFromCurrentLightNative(name);
+                String path = getFilesDir().getAbsolutePath() + "/light_presets.cfg";
+                savePresetsNative(path);
+                Toast.makeText(this, "Preset '" + name + "' created", Toast.LENGTH_SHORT).show();
+                updateLightDebugInfo();
+            }
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+    
+    private void showApplyPresetDialog() {
+        int presetCount = getPresetCountNative();
+        if (presetCount == 0) {
+            Toast.makeText(this, "No presets available. Create one first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        String[] presetNames = new String[presetCount];
+        for (int i = 0; i < presetCount; i++) {
+            presetNames[i] = getPresetNameNative(i);
+        }
+        
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Apply Preset to Current Light");
+        builder.setItems(presetNames, (dialog, which) -> {
+            applyPresetToCurrentLightNative(presetNames[which]);
+            Toast.makeText(this, "Applied preset '" + presetNames[which] + "'", Toast.LENGTH_SHORT).show();
+            updateLightDebugInfo();
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
     }
 
     public void showLightDebugPanel() {
@@ -1181,6 +1407,9 @@ public class MainActivity extends SDLActivity {
         mBinding.lightDebugPanel.bringToFront();
         setLightDebugModeNative(true);
         turnOffAllLightsNative();
+        // Load presets on panel open
+        String path = getFilesDir().getAbsolutePath() + "/light_presets.cfg";
+        loadPresetsNative(path);
         updateLightDebugInfo();
         Toast.makeText(this, "Light Debug Mode ON", Toast.LENGTH_SHORT).show();
     }

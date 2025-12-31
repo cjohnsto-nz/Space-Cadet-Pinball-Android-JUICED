@@ -26,6 +26,7 @@ std::vector<HDRBumperConfig> HDRLightOverlay::s_bumperConfigs;
 std::vector<HDRLightOverlay::LightState> HDRLightOverlay::s_lightStates;
 std::vector<HDRLightOverlay::BumperState> HDRLightOverlay::s_bumperStates;
 std::vector<HDRLightOverlay::TestLight> HDRLightOverlay::s_testLights;
+std::vector<HDRLightPreset> HDRLightOverlay::s_presets;
 float HDRLightOverlay::s_debugBallX = 0.0f;
 float HDRLightOverlay::s_debugBallY = 0.0f;
 bool HDRLightOverlay::s_debugBallEnabled = false;  // Disabled - only used for position tracking
@@ -1438,6 +1439,252 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
     fclose(f);
     HDRLIGHT_LOG("Loaded light positions from %s", filepath);
     return true;
+}
+
+// ============== Preset Management ==============
+
+void HDRLightOverlay::AddPreset(const HDRLightPreset& preset) {
+    // Check if preset with same name already exists
+    for (auto& existing : s_presets) {
+        if (existing.Name == preset.Name) {
+            existing = preset;  // Update existing
+            HDRLIGHT_LOG("Updated existing preset: %s", preset.Name.c_str());
+            return;
+        }
+    }
+    s_presets.push_back(preset);
+    HDRLIGHT_LOG("Added new preset: %s", preset.Name.c_str());
+}
+
+void HDRLightOverlay::UpdatePreset(const std::string& name, const HDRLightPreset& preset) {
+    for (auto& existing : s_presets) {
+        if (existing.Name == name) {
+            existing = preset;
+            existing.Name = name;  // Keep original name
+            
+            // Update all lights using this preset
+            for (auto& config : s_lightConfigs) {
+                if (config.PresetName == name) {
+                    config.Width = preset.Width;
+                    config.Height = preset.Height;
+                    config.R = preset.R;
+                    config.G = preset.G;
+                    config.B = preset.B;
+                    config.IntensityOn = preset.IntensityOn;
+                    config.IntensityFlash = preset.IntensityFlash;
+                    config.GlowRadius = preset.GlowRadius;
+                    config.AboveBall = preset.AboveBall;
+                }
+            }
+            HDRLIGHT_LOG("Updated preset %s and %zu linked lights", name.c_str(), s_lightConfigs.size());
+            return;
+        }
+    }
+    HDRLIGHT_LOG("Preset not found for update: %s", name.c_str());
+}
+
+void HDRLightOverlay::DeletePreset(const std::string& name) {
+    for (auto it = s_presets.begin(); it != s_presets.end(); ++it) {
+        if (it->Name == name) {
+            // Clear preset reference from all lights using it
+            for (auto& config : s_lightConfigs) {
+                if (config.PresetName == name) {
+                    config.PresetName.clear();
+                }
+            }
+            s_presets.erase(it);
+            HDRLIGHT_LOG("Deleted preset: %s", name.c_str());
+            return;
+        }
+    }
+}
+
+const HDRLightPreset* HDRLightOverlay::GetPreset(const std::string& name) {
+    for (const auto& preset : s_presets) {
+        if (preset.Name == name) {
+            return &preset;
+        }
+    }
+    return nullptr;
+}
+
+const std::vector<HDRLightPreset>& HDRLightOverlay::GetAllPresets() {
+    return s_presets;
+}
+
+void HDRLightOverlay::AssignPresetToLight(int configIndex, const std::string& presetName) {
+    if (configIndex < 0 || configIndex >= (int)s_lightConfigs.size()) return;
+    
+    const HDRLightPreset* preset = GetPreset(presetName);
+    if (!preset) {
+        HDRLIGHT_LOG("Cannot assign preset %s - not found", presetName.c_str());
+        return;
+    }
+    
+    auto& config = s_lightConfigs[configIndex];
+    config.PresetName = presetName;
+    config.Width = preset->Width;
+    config.Height = preset->Height;
+    config.R = preset->R;
+    config.G = preset->G;
+    config.B = preset->B;
+    config.IntensityOn = preset->IntensityOn;
+    config.IntensityFlash = preset->IntensityFlash;
+    config.GlowRadius = preset->GlowRadius;
+    config.AboveBall = preset->AboveBall;
+    
+    HDRLIGHT_LOG("Assigned preset %s to light %s[%d]", presetName.c_str(), config.GroupName, config.LightIndex);
+}
+
+void HDRLightOverlay::ClearPresetFromLight(int configIndex) {
+    if (configIndex < 0 || configIndex >= (int)s_lightConfigs.size()) return;
+    s_lightConfigs[configIndex].PresetName.clear();
+}
+
+HDRLightPreset HDRLightOverlay::CreatePresetFromLight(int configIndex, const std::string& presetName) {
+    HDRLightPreset preset;
+    preset.Name = presetName;
+    
+    if (configIndex >= 0 && configIndex < (int)s_lightConfigs.size()) {
+        const auto& config = s_lightConfigs[configIndex];
+        preset.Width = config.Width;
+        preset.Height = config.Height;
+        preset.R = config.R;
+        preset.G = config.G;
+        preset.B = config.B;
+        preset.IntensityOn = config.IntensityOn;
+        preset.IntensityFlash = config.IntensityFlash;
+        preset.GlowRadius = config.GlowRadius;
+        preset.AboveBall = config.AboveBall;
+    } else {
+        // Default values
+        preset.Width = 0.04f;
+        preset.Height = 0.04f;
+        preset.R = 1.0f;
+        preset.G = 1.0f;
+        preset.B = 1.0f;
+        preset.IntensityOn = 600.0f;
+        preset.IntensityFlash = 1000.0f;
+        preset.GlowRadius = 1.0f;
+        preset.AboveBall = false;
+    }
+    
+    return preset;
+}
+
+bool HDRLightOverlay::SavePresets(const char* filepath) {
+    if (s_presets.empty()) {
+        HDRLIGHT_LOG("No presets to save");
+        return false;
+    }
+    
+    FILE* f = fopen(filepath, "w");
+    if (!f) {
+        HDRLIGHT_LOG("Failed to open %s for writing presets", filepath);
+        return false;
+    }
+    
+    fprintf(f, "# HDR Light Presets\n");
+    fprintf(f, "# Format: name,w,h,r,g,b,intensityOn,intensityFlash,glowRadius,aboveBall\n\n");
+    
+    for (const auto& preset : s_presets) {
+        fprintf(f, "%s,%.6f,%.6f,%.3f,%.3f,%.3f,%.1f,%.1f,%.3f,%d\n",
+                preset.Name.c_str(),
+                preset.Width, preset.Height,
+                preset.R, preset.G, preset.B,
+                preset.IntensityOn, preset.IntensityFlash,
+                preset.GlowRadius,
+                preset.AboveBall ? 1 : 0);
+    }
+    
+    fclose(f);
+    HDRLIGHT_LOG("Saved %zu presets to %s", s_presets.size(), filepath);
+    return true;
+}
+
+bool HDRLightOverlay::LoadPresets(const char* filepath) {
+    FILE* f = fopen(filepath, "r");
+    if (!f) {
+        HDRLIGHT_LOG("No saved presets at %s", filepath);
+        return false;
+    }
+    
+    s_presets.clear();
+    
+    char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        if (line[0] == '#' || line[0] == '\n') continue;
+        
+        char name[64];
+        float w, h, r, g, b, intensityOn, intensityFlash, glowRadius;
+        int aboveBall;
+        
+        if (sscanf(line, "%63[^,],%f,%f,%f,%f,%f,%f,%f,%f,%d",
+                   name, &w, &h, &r, &g, &b, &intensityOn, &intensityFlash, &glowRadius, &aboveBall) == 10) {
+            HDRLightPreset preset;
+            preset.Name = name;
+            preset.Width = w;
+            preset.Height = h;
+            preset.R = r;
+            preset.G = g;
+            preset.B = b;
+            preset.IntensityOn = intensityOn;
+            preset.IntensityFlash = intensityFlash;
+            preset.GlowRadius = glowRadius;
+            preset.AboveBall = (aboveBall != 0);
+            s_presets.push_back(preset);
+            HDRLIGHT_LOG("Loaded preset: %s", name);
+        }
+    }
+    
+    fclose(f);
+    HDRLIGHT_LOG("Loaded %zu presets from %s", s_presets.size(), filepath);
+    return true;
+}
+
+int HDRLightOverlay::GetPresetCount() {
+    return (int)s_presets.size();
+}
+
+const char* HDRLightOverlay::GetPresetNameByIndex(int index) {
+    if (index < 0 || index >= (int)s_presets.size()) return nullptr;
+    return s_presets[index].Name.c_str();
+}
+
+void HDRLightOverlay::UpdateLightColor(const char* groupName, int lightIndex, float r, float g, float b) {
+    for (auto& config : s_lightConfigs) {
+        if (strcmp(config.GroupName, groupName) == 0 && config.LightIndex == lightIndex) {
+            config.R = r;
+            config.G = g;
+            config.B = b;
+            config.PresetName.clear();  // Clear preset when manually editing
+            HDRLIGHT_LOG("Updated color for %s[%d]: (%.2f, %.2f, %.2f)", groupName, lightIndex, r, g, b);
+            return;
+        }
+    }
+}
+
+void HDRLightOverlay::UpdateLightIntensity(const char* groupName, int lightIndex, float intensityOn, float intensityFlash) {
+    for (auto& config : s_lightConfigs) {
+        if (strcmp(config.GroupName, groupName) == 0 && config.LightIndex == lightIndex) {
+            config.IntensityOn = intensityOn;
+            config.IntensityFlash = intensityFlash;
+            config.PresetName.clear();  // Clear preset when manually editing
+            HDRLIGHT_LOG("Updated intensity for %s[%d]: on=%.1f flash=%.1f", groupName, lightIndex, intensityOn, intensityFlash);
+            return;
+        }
+    }
+}
+
+void HDRLightOverlay::UpdateLightGlow(const char* groupName, int lightIndex, float glowRadius) {
+    for (auto& config : s_lightConfigs) {
+        if (strcmp(config.GroupName, groupName) == 0 && config.LightIndex == lightIndex) {
+            config.GlowRadius = glowRadius;
+            config.PresetName.clear();  // Clear preset when manually editing
+            HDRLIGHT_LOG("Updated glow for %s[%d]: %.2f", groupName, lightIndex, glowRadius);
+            return;
+        }
+    }
 }
 
 int HDRLightOverlay::ResetOutOfBoundsLights() {
