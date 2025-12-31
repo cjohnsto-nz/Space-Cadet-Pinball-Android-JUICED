@@ -65,6 +65,7 @@ public class MainActivity extends SDLActivity {
     private int gamesInSession = 0;
 
     static private MediaPlayer player = new MediaPlayer();
+    private BeatMapPlayer beatMapPlayer;
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
@@ -97,6 +98,25 @@ public class MainActivity extends SDLActivity {
             player.setLooping(true);
             player.setVolume(PrefsHelper.getVolume()/(float) 100, PrefsHelper.getVolume()/(float) 100);
             if (PrefsHelper.getMusic()) player.start();
+            
+            // Initialize beat map player for bass-reactive HDR glow
+            beatMapPlayer = new BeatMapPlayer();
+            if (beatMapPlayer.loadFromAssets(this, "808generative_beats.json")) {
+                beatMapPlayer.setMediaPlayer(player);
+                beatMapPlayer.setBaseGlowModifier(PrefsHelper.getHDRGlowIntensity() / 100.0f);
+                beatMapPlayer.setGlowRange(1.0f); // Glow can double on bass hits
+                // No smoothing - use exact MIDI timing for instant attack
+                beatMapPlayer.setListener(glowModifier -> {
+                    setHDRGlowModifier(glowModifier);
+                });
+                // Only start if both music and beat-reactive glow are enabled
+                if (PrefsHelper.getMusic() && PrefsHelper.getBeatReactiveGlow()) {
+                    beatMapPlayer.start();
+                }
+                Log.i(TAG, "Beat map loaded for bass-reactive glow");
+            } else {
+                Log.w(TAG, "No beat map found, HDR glow will not react to music");
+            }
         } catch (IOException ignored) {
             player = null;
         }
@@ -289,11 +309,13 @@ public class MainActivity extends SDLActivity {
                 isPlaying = false;
                 pauseNativeThread();
                 if (player != null) player.pause();
+                if (beatMapPlayer != null) beatMapPlayer.pause();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.play));
             } else {
                 isPlaying = true;
                 resumeNativeThread();
                 if (player != null) player.start();
+                if (beatMapPlayer != null) beatMapPlayer.resume();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
 
             }
@@ -799,7 +821,12 @@ public class MainActivity extends SDLActivity {
     protected void onResume() {
         super.onResume();
         StateHelper.INSTANCE.addListener(mStateListener);
-        if (player != null && PrefsHelper.getMusic()) player.start();
+        if (player != null && PrefsHelper.getMusic()) {
+            player.start();
+            if (beatMapPlayer != null && PrefsHelper.getBeatReactiveGlow()) {
+                beatMapPlayer.resume();
+            }
+        }
 
         if (!isPlaying) pauseNativeThread();
         if (isGameReady) {
@@ -931,6 +958,7 @@ public class MainActivity extends SDLActivity {
         super.onPause();
         StateHelper.INSTANCE.removeListener(mStateListener);
         if (player != null) player.pause();
+        if (beatMapPlayer != null) beatMapPlayer.pause();
 //        sensorManager.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.unregisterListener(accelerometerListener);
     }

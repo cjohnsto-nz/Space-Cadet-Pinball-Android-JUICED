@@ -282,6 +282,16 @@
             app:layout_constraintStart_toStartOf="@+id/textViewGlowIntensity"
             app:layout_constraintTop_toBottomOf="@+id/glowIntensityHint" />
 
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/beatReactiveSwitch"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Beat-Reactive Glow"
+            app:layout_constraintEnd_toEndOf="@+id/glowIntensityBar"
+            app:layout_constraintStart_toStartOf="@+id/textViewGlowIntensity"
+            app:layout_constraintTop_toBottomOf="@+id/particlesSwitch" />
+
         <TextView
             android:id="@+id/textViewTrailOpacity"
             android:layout_width="0dp"
@@ -292,7 +302,7 @@
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@+id/trailOpacityValue"
             app:layout_constraintStart_toStartOf="@+id/textViewGlowIntensity"
-            app:layout_constraintTop_toBottomOf="@+id/particlesSwitch" />
+            app:layout_constraintTop_toBottomOf="@+id/beatReactiveSwitch" />
 
         <TextView
             android:id="@+id/trailOpacityValue"

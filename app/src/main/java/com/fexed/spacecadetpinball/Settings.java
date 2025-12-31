@@ -194,6 +194,13 @@ public class Settings extends AppCompatActivity {
             setParticlesEnabledNative(b);
         });
 
+        // Beat-reactive glow toggle
+        boolean beatReactiveGlow = PrefsHelper.getBeatReactiveGlow();
+        mBinding.beatReactiveSwitch.setChecked(beatReactiveGlow);
+        mBinding.beatReactiveSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setBeatReactiveGlow(b);
+        });
+
         // Light editor toggle
         mBinding.lightEditSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
             PrefsHelper.setLightEditMode(b);
