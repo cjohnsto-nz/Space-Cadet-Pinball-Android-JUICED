@@ -5878,18 +5878,49 @@ extern "C" {
         }
     }
     
+    // Forward declarations for helper functions used by next/prev
+    static TLightGroup* GetLightGroupByName(const std::string& groupName);
+    static TLight* GetIndividualLightByName(const std::string& lightName);
+    static bool g_tableLightDebugOn = false;
+    
+    // Helper to turn on the current light (both table and HDR)
+    static void TurnOnCurrentLight() {
+        if (g_lightList.empty()) return;
+        auto& currentLight = g_lightList[g_currentLightIndex];
+        std::string groupName = currentLight.first;
+        int lightIndex = currentLight.second;
+        
+        // Turn on HDR light
+        HDRLightOverlay::ClearDebugToggledLights();
+        HDRLightOverlay::ToggleDebugLight(groupName.c_str(), lightIndex);
+        
+        // Turn on table light
+        TLight* light = nullptr;
+        TLightGroup* group = GetLightGroupByName(groupName);
+        if (group && lightIndex >= 0 && lightIndex < static_cast<int>(group->List.size())) {
+            light = group->List[lightIndex];
+        } else {
+            light = GetIndividualLightByName(groupName);
+        }
+        if (light) {
+            control_SetLightDebugToggleAllowed(true);
+            light->Message(1, 0.0);  // Turn on
+            control_SetLightDebugToggleAllowed(false);
+            g_tableLightDebugOn = true;
+        }
+    }
+    
     JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_nextLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         g_currentLightIndex = (g_currentLightIndex + 1) % g_lightList.size();
+        TurnOnCurrentLight();
     }
     
     JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_previousLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         g_currentLightIndex = (g_currentLightIndex - 1 + g_lightList.size()) % g_lightList.size();
+        TurnOnCurrentLight();
     }
-    
-    // Track toggle state for table light debug
-    static bool g_tableLightDebugOn = false;
     
     // Helper to get TLightGroup by name
     static TLightGroup* GetLightGroupByName(const std::string& groupName) {
