@@ -527,9 +527,9 @@ void HDRLightOverlay::UpdateLightStates() {
             if (colorIndex > 2) colorIndex = 2;
             // Colors match wormhole destinations: Green, Red, Yellow
             static const float bsinkColors[3][3] = {
-                {0.0f, 1.0f, 0.0f},  // 0 = Green
-                {1.0f, 0.0f, 0.0f},  // 1 = Red
-                {1.0f, 1.0f, 0.0f}   // 2 = Yellow
+                {1.0f, 1.0f, 0.0f},  // 0 = Yellow,
+                {0.0f, 1.0f, 0.0f},  // 1 = Green
+                {1.0f, 0.0f, 0.0f}   // 2 = Red
             };
             state.r = bsinkColors[colorIndex][0];
             state.g = bsinkColors[colorIndex][1];

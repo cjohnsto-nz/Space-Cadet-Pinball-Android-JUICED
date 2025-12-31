@@ -1101,6 +1101,366 @@ void control::make_links(TPinballTable* table)
 			});
 		}
 		
+		// Register ALL remaining individual lights for HDR overlay
+		// These are mission lights, status lights, and other game indicators
+		// All unlocked lights are placed in a single column on the left side, below the debug menu
+		{
+			float peakNits = HDR::GetMaxDisplayNits();
+			float defaultW = 0.02f;
+			float defaultH = 0.02f;
+			float startY = 0.35f;  // Start below debug menu
+			float spacing = 0.015f;  // Tight spacing for single column
+			int row = 0;
+			
+			// lite1-7: Wormhole and sink related lights
+			if (control_lite1_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite1", control_lite1_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite1", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite2_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite2", control_lite2_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite2", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite3_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite3", control_lite3_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite3", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite4_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite4", control_lite4_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite4", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite5_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite5", control_lite5_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite5", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite6_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite6", control_lite6_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite6", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite7_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite7", control_lite7_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite7", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			
+			// lite11-13: Additional lights
+			if (control_lite11_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite11", control_lite11_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite11", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite12_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite12", control_lite12_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite12", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite13_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite13", control_lite13_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite13", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			
+			// lite16-30: Various game lights
+			if (control_lite16_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite16", control_lite16_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite16", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite17_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite17", control_lite17_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite17", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite18_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite18", control_lite18_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite18", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite19_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite19", control_lite19_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite19", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite20_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite20", control_lite20_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite20", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite21_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite21", control_lite21_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite21", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite22_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite22", control_lite22_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite22", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite23_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite23", control_lite23_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite23", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite24_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite24", control_lite24_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite24", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite25_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite25", control_lite25_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite25", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite26_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite26", control_lite26_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite26", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite27_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite27", control_lite27_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite27", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite28_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite28", control_lite28_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite28", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite29_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite29", control_lite29_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite29", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite30_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite30", control_lite30_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite30", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			
+			// lite54-72: More game lights (continue single column)
+			if (control_lite54_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite54", control_lite54_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite54", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite55_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite55", control_lite55_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite55", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite56_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite56", control_lite56_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite56", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite58_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite58", control_lite58_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite58", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite59_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite59", control_lite59_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite59", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite60_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite60", control_lite60_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite60", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite61_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite61", control_lite61_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite61", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite62_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite62", control_lite62_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite62", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite67_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite67", control_lite67_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite67", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite68_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite68", control_lite68_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite68", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite69_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite69", control_lite69_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite69", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite70_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite70", control_lite70_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite70", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite71_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite71", control_lite71_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite71", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite72_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite72", control_lite72_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite72", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite77_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite77", control_lite77_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite77", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite84_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite84", control_lite84_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite84", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite85_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite85", control_lite85_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite85", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.5f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			
+			// lite101-133: Mission and status lights (continue single column)
+			if (control_lite101_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite101", control_lite101_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite101", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite102_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite102", control_lite102_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite102", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite103_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite103", control_lite103_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite103", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite104_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite104", control_lite104_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite104", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite105_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite105", control_lite105_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite105", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite106_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite106", control_lite106_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite106", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite107_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite107", control_lite107_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite107", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite108_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite108", control_lite108_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite108", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite109_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite109", control_lite109_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite109", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite110_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite110", control_lite110_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite110", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.5f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite130_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite130", control_lite130_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite130", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite131_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite131", control_lite131_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite131", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite132_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite132", control_lite132_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite132", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite133_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite133", control_lite133_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite133", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 0.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			
+			// lite195-198: Status lights (continue single column)
+			if (control_lite195_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite195", control_lite195_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite195", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite196_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite196", control_lite196_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite196", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite198_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite198", control_lite198_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite198", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 1.0f, 1.0f, 0.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			
+			// lite300-322: Mission indicator lights (continue single column)
+			if (control_lite300_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite300", control_lite300_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite300", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite301_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite301", control_lite301_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite301", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite302_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite302", control_lite302_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite302", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite303_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite303", control_lite303_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite303", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite304_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite304", control_lite304_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite304", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite305_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite305", control_lite305_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite305", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite306_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite306", control_lite306_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite306", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite307_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite307", control_lite307_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite307", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite308_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite308", control_lite308_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite308", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite309_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite309", control_lite309_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite309", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite310_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite310", control_lite310_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite310", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite311_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite311", control_lite311_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite311", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite312_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite312", control_lite312_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite312", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite313_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite313", control_lite313_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite313", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite314_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite314", control_lite314_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite314", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite315_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite315", control_lite315_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite315", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite316_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite316", control_lite316_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite316", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite317_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite317", control_lite317_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite317", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite318_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite318", control_lite318_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite318", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite319_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite319", control_lite319_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite319", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite320_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite320", control_lite320_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite320", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite321_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite321", control_lite321_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite321", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			if (control_lite322_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("lite322", control_lite322_tag.Component);
+				HDRLightOverlay::AddLightConfig({"lite322", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.0f, 1.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+			
+			// literoll183 (not yet registered)
+			if (control_literoll183_tag.Component) {
+				HDRLightOverlay::RegisterIndividualLight("literoll183", control_literoll183_tag.Component);
+				HDRLightOverlay::AddLightConfig({"literoll183", 0, 0.02f, startY + row++ * spacing, defaultW, defaultH, 0.5f, 0.0f, 1.0f, peakNits, peakNits, 1.0f, false, false});
+			}
+		}
+		
 		// Register bumpers with dynamic color based on upgrade level
 		// Bumpers change color as they upgrade: blue -> green -> yellow -> red
 		// Attack bumpers (bump1-4) are on the left side
@@ -1239,7 +1599,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.02f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					1.0f, 1.0f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					peakNits, peakNits, 1.0f, false, true  // Locked
 				});
 			}
 		}
@@ -1254,7 +1614,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.08f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					0.2f, 0.3f, 0.5f,  // Light blue
-					peakNits, peakNits, 2.5f, false, false  // Large glow radius
+					300, 600, 2.5f, false, true  // Locked
 				});
 			}
 		}
@@ -1267,9 +1627,9 @@ void control::make_links(TPinballTable* table)
 				HDRLightOverlay::AddLightConfig({
 					"hyperspace_lights", i,
 					0.02f, 0.14f + i * 0.02f,  // Left column positions
-					0.04f, 0.065574f,
+					0.03f, 0.03f,
 					0.02f, 0.02f, 1.0f,  // Blue (same as outer circle)
-					peakNits, peakNits, 1.5f, true, false  // Unlocked, bigger glow, above ball
+					peakNits, peakNits, 1.5f, true, true  // Locked
 				});
 			}
 		}
@@ -1284,7 +1644,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.24f + i * 0.02f,  // Left column positions
 					0.025f, 0.025f,
 					1.0f, 0.5f, 0.0f,  // Orange
-					peakNits, peakNits, 0.8f, false, false  // Unlocked
+					peakNits, peakNits, 0.8f, false, true  // Locked
 				});
 			}
 		}
@@ -1299,7 +1659,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.32f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					peakNits, peakNits, 1.0f, false, true  // Locked
 				});
 			}
 		}
@@ -1314,7 +1674,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.38f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					1.0f, 1.0f, 1.0f,  // White
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					peakNits, peakNits, 1.0f, false, true  // Locked
 				});
 			}
 		}
@@ -1328,7 +1688,7 @@ void control::make_links(TPinballTable* table)
 				0.02f, 0.44f,  // Left column positions
 				0.025f, 0.025f,
 				0.02f, 0.02f, 1.0f,  // Blue (same as outer circle)
-				peakNits, peakNits, 1.2f, false, false  // Unlocked, increased glow
+				peakNits, peakNits, 1.2f, false, true  // Locked
 			});
 			
 			// Second light - Orange (like fuel ramp)
@@ -1337,7 +1697,7 @@ void control::make_links(TPinballTable* table)
 				0.02f, 0.46f,  // Left column positions
 				0.025f, 0.025f,
 				1.0f, 0.3f, 0.0f,  // Orange (same as literoll180)
-				peakNits, peakNits, 1.2f, false, false  // Unlocked, increased glow
+				peakNits, peakNits, 1.2f, false, true  // Locked
 			});
 			
 			// Third light - Purple (like fuel ramp)
@@ -1346,7 +1706,7 @@ void control::make_links(TPinballTable* table)
 				0.02f, 0.48f,  // Left column positions
 				0.025f, 0.025f,
 				0.8f, 0.0f, 1.0f,  // Purple (same as literoll182)
-				peakNits, peakNits, 1.2f, false, false  // Unlocked, increased glow
+				peakNits, peakNits, 1.2f, false, true  // Locked
 			});
 		}
 		
@@ -1360,7 +1720,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.56f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					1.0f, 0.7f, 0.1f,  // Yellow-orange
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					peakNits, peakNits, 1.0f, false, true  // Locked
 				});
 			}
 		}
@@ -1375,7 +1735,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.60f + i * 0.02f,  // Left column positions
 					0.025f, 0.025f,
 					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
-					peakNits, peakNits, 0.8f, false, false  // Unlocked
+					peakNits, peakNits, 0.8f, false, true  // Locked
 				});
 			}
 		}
@@ -1390,7 +1750,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.68f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					peakNits, peakNits, 1.0f, false, true  // Locked
 				});
 			}
 		}
@@ -1405,7 +1765,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.74f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					peakNits, peakNits, 1.0f, false, true  // Locked
 				});
 			}
 		}
@@ -1420,7 +1780,7 @@ void control::make_links(TPinballTable* table)
 					0.02f, 0.82f + i * 0.02f,  // Left column positions
 					0.03f, 0.03f,
 					1.0f, 1.0f, 0.0f,  // Yellow
-					peakNits, peakNits, 1.0f, false, false  // Unlocked
+					peakNits, peakNits, 1.0f, false, true  // Locked
 				});
 			}
 		}
@@ -1434,7 +1794,7 @@ void control::make_links(TPinballTable* table)
 				0.02f, 0.92f,  // Left column positions
 				0.03f, 0.03f,
 				1.0f, 0.0f, 0.0f,  // Red
-				peakNits, peakNits, 1.0f, false, false  // Unlocked
+				peakNits, peakNits, 1.0f, false, true  // Locked
 			});
 			
 			// Light 1 - Green
@@ -1443,7 +1803,7 @@ void control::make_links(TPinballTable* table)
 				0.02f, 0.94f,  // Left column positions
 				0.03f, 0.03f,
 				0.0f, 1.0f, 0.0f,  // Green
-				peakNits, peakNits, 1.0f, false, false  // Unlocked
+				peakNits, peakNits, 1.0f, false, true  // Locked
 			});
 			
 			// Light 2 - Yellow (unchanged)
@@ -1452,7 +1812,7 @@ void control::make_links(TPinballTable* table)
 				0.02f, 0.96f,  // Left column positions
 				0.03f, 0.03f,
 				1.0f, 1.0f, 0.0f,  // Yellow (like bumper targets)
-				peakNits, peakNits, 1.0f, false, false  // Unlocked
+				peakNits, peakNits, 1.0f, false, true  // Locked
 			});
 		}
 		
@@ -5247,6 +5607,104 @@ void InitializeLightDebugList() {
     g_lightList.push_back({"worm_hole_lights", 0});
     g_lightList.push_back({"worm_hole_lights", 1});
     g_lightList.push_back({"worm_hole_lights", 2});
+    
+    // Individual lights - lite1-7
+    g_lightList.push_back({"lite1", 0});
+    g_lightList.push_back({"lite2", 0});
+    g_lightList.push_back({"lite3", 0});
+    g_lightList.push_back({"lite4", 0});
+    g_lightList.push_back({"lite5", 0});
+    g_lightList.push_back({"lite6", 0});
+    g_lightList.push_back({"lite7", 0});
+    g_lightList.push_back({"lite8", 0});
+    g_lightList.push_back({"lite9", 0});
+    g_lightList.push_back({"lite10", 0});
+    g_lightList.push_back({"lite11", 0});
+    g_lightList.push_back({"lite12", 0});
+    g_lightList.push_back({"lite13", 0});
+    g_lightList.push_back({"lite16", 0});
+    g_lightList.push_back({"lite17", 0});
+    g_lightList.push_back({"lite18", 0});
+    g_lightList.push_back({"lite19", 0});
+    g_lightList.push_back({"lite20", 0});
+    g_lightList.push_back({"lite21", 0});
+    g_lightList.push_back({"lite22", 0});
+    g_lightList.push_back({"lite23", 0});
+    g_lightList.push_back({"lite24", 0});
+    g_lightList.push_back({"lite25", 0});
+    g_lightList.push_back({"lite26", 0});
+    g_lightList.push_back({"lite27", 0});
+    g_lightList.push_back({"lite28", 0});
+    g_lightList.push_back({"lite29", 0});
+    g_lightList.push_back({"lite30", 0});
+    g_lightList.push_back({"lite54", 0});
+    g_lightList.push_back({"lite55", 0});
+    g_lightList.push_back({"lite56", 0});
+    g_lightList.push_back({"lite58", 0});
+    g_lightList.push_back({"lite59", 0});
+    g_lightList.push_back({"lite60", 0});
+    g_lightList.push_back({"lite61", 0});
+    g_lightList.push_back({"lite62", 0});
+    g_lightList.push_back({"lite67", 0});
+    g_lightList.push_back({"lite68", 0});
+    g_lightList.push_back({"lite69", 0});
+    g_lightList.push_back({"lite70", 0});
+    g_lightList.push_back({"lite71", 0});
+    g_lightList.push_back({"lite72", 0});
+    g_lightList.push_back({"lite77", 0});
+    g_lightList.push_back({"lite84", 0});
+    g_lightList.push_back({"lite85", 0});
+    g_lightList.push_back({"lite101", 0});
+    g_lightList.push_back({"lite102", 0});
+    g_lightList.push_back({"lite103", 0});
+    g_lightList.push_back({"lite104", 0});
+    g_lightList.push_back({"lite105", 0});
+    g_lightList.push_back({"lite106", 0});
+    g_lightList.push_back({"lite107", 0});
+    g_lightList.push_back({"lite108", 0});
+    g_lightList.push_back({"lite109", 0});
+    g_lightList.push_back({"lite110", 0});
+    g_lightList.push_back({"lite130", 0});
+    g_lightList.push_back({"lite131", 0});
+    g_lightList.push_back({"lite132", 0});
+    g_lightList.push_back({"lite133", 0});
+    g_lightList.push_back({"lite169", 0});
+    g_lightList.push_back({"lite170", 0});
+    g_lightList.push_back({"lite171", 0});
+    g_lightList.push_back({"lite195", 0});
+    g_lightList.push_back({"lite196", 0});
+    g_lightList.push_back({"lite198", 0});
+    g_lightList.push_back({"lite199", 0});
+    g_lightList.push_back({"lite200", 0});
+    g_lightList.push_back({"lite300", 0});
+    g_lightList.push_back({"lite301", 0});
+    g_lightList.push_back({"lite302", 0});
+    g_lightList.push_back({"lite303", 0});
+    g_lightList.push_back({"lite304", 0});
+    g_lightList.push_back({"lite305", 0});
+    g_lightList.push_back({"lite306", 0});
+    g_lightList.push_back({"lite307", 0});
+    g_lightList.push_back({"lite308", 0});
+    g_lightList.push_back({"lite309", 0});
+    g_lightList.push_back({"lite310", 0});
+    g_lightList.push_back({"lite311", 0});
+    g_lightList.push_back({"lite312", 0});
+    g_lightList.push_back({"lite313", 0});
+    g_lightList.push_back({"lite314", 0});
+    g_lightList.push_back({"lite315", 0});
+    g_lightList.push_back({"lite316", 0});
+    g_lightList.push_back({"lite317", 0});
+    g_lightList.push_back({"lite318", 0});
+    g_lightList.push_back({"lite319", 0});
+    g_lightList.push_back({"lite320", 0});
+    g_lightList.push_back({"lite321", 0});
+    g_lightList.push_back({"lite322", 0});
+    g_lightList.push_back({"literoll179", 0});
+    g_lightList.push_back({"literoll180", 0});
+    g_lightList.push_back({"literoll181", 0});
+    g_lightList.push_back({"literoll182", 0});
+    g_lightList.push_back({"literoll183", 0});
+    g_lightList.push_back({"literoll184", 0});
 }
 
 // Per-frame enforcement of light debug mode - turns off all NON-selected/toggled lights
@@ -5455,6 +5913,107 @@ extern "C" {
         return nullptr;
     }
     
+    // Helper to get individual TLight by name
+    static TLight* GetIndividualLightByName(const std::string& lightName) {
+        if (lightName == "lite1") return control_lite1_tag.Component;
+        if (lightName == "lite2") return control_lite2_tag.Component;
+        if (lightName == "lite3") return control_lite3_tag.Component;
+        if (lightName == "lite4") return control_lite4_tag.Component;
+        if (lightName == "lite5") return control_lite5_tag.Component;
+        if (lightName == "lite6") return control_lite6_tag.Component;
+        if (lightName == "lite7") return control_lite7_tag.Component;
+        if (lightName == "lite8") return control_lite8_tag.Component;
+        if (lightName == "lite9") return control_lite9_tag.Component;
+        if (lightName == "lite10") return control_lite10_tag.Component;
+        if (lightName == "lite11") return control_lite11_tag.Component;
+        if (lightName == "lite12") return control_lite12_tag.Component;
+        if (lightName == "lite13") return control_lite13_tag.Component;
+        if (lightName == "lite16") return control_lite16_tag.Component;
+        if (lightName == "lite17") return control_lite17_tag.Component;
+        if (lightName == "lite18") return control_lite18_tag.Component;
+        if (lightName == "lite19") return control_lite19_tag.Component;
+        if (lightName == "lite20") return control_lite20_tag.Component;
+        if (lightName == "lite21") return control_lite21_tag.Component;
+        if (lightName == "lite22") return control_lite22_tag.Component;
+        if (lightName == "lite23") return control_lite23_tag.Component;
+        if (lightName == "lite24") return control_lite24_tag.Component;
+        if (lightName == "lite25") return control_lite25_tag.Component;
+        if (lightName == "lite26") return control_lite26_tag.Component;
+        if (lightName == "lite27") return control_lite27_tag.Component;
+        if (lightName == "lite28") return control_lite28_tag.Component;
+        if (lightName == "lite29") return control_lite29_tag.Component;
+        if (lightName == "lite30") return control_lite30_tag.Component;
+        if (lightName == "lite54") return control_lite54_tag.Component;
+        if (lightName == "lite55") return control_lite55_tag.Component;
+        if (lightName == "lite56") return control_lite56_tag.Component;
+        if (lightName == "lite58") return control_lite58_tag.Component;
+        if (lightName == "lite59") return control_lite59_tag.Component;
+        if (lightName == "lite60") return control_lite60_tag.Component;
+        if (lightName == "lite61") return control_lite61_tag.Component;
+        if (lightName == "lite62") return control_lite62_tag.Component;
+        if (lightName == "lite67") return control_lite67_tag.Component;
+        if (lightName == "lite68") return control_lite68_tag.Component;
+        if (lightName == "lite69") return control_lite69_tag.Component;
+        if (lightName == "lite70") return control_lite70_tag.Component;
+        if (lightName == "lite71") return control_lite71_tag.Component;
+        if (lightName == "lite72") return control_lite72_tag.Component;
+        if (lightName == "lite77") return control_lite77_tag.Component;
+        if (lightName == "lite84") return control_lite84_tag.Component;
+        if (lightName == "lite85") return control_lite85_tag.Component;
+        if (lightName == "lite101") return control_lite101_tag.Component;
+        if (lightName == "lite102") return control_lite102_tag.Component;
+        if (lightName == "lite103") return control_lite103_tag.Component;
+        if (lightName == "lite104") return control_lite104_tag.Component;
+        if (lightName == "lite105") return control_lite105_tag.Component;
+        if (lightName == "lite106") return control_lite106_tag.Component;
+        if (lightName == "lite107") return control_lite107_tag.Component;
+        if (lightName == "lite108") return control_lite108_tag.Component;
+        if (lightName == "lite109") return control_lite109_tag.Component;
+        if (lightName == "lite110") return control_lite110_tag.Component;
+        if (lightName == "lite130") return control_lite130_tag.Component;
+        if (lightName == "lite131") return control_lite131_tag.Component;
+        if (lightName == "lite132") return control_lite132_tag.Component;
+        if (lightName == "lite133") return control_lite133_tag.Component;
+        if (lightName == "lite169") return control_lite169_tag.Component;
+        if (lightName == "lite170") return control_lite170_tag.Component;
+        if (lightName == "lite171") return control_lite171_tag.Component;
+        if (lightName == "lite195") return control_lite195_tag.Component;
+        if (lightName == "lite196") return control_lite196_tag.Component;
+        if (lightName == "lite198") return control_lite198_tag.Component;
+        if (lightName == "lite199") return control_lite199_tag.Component;
+        if (lightName == "lite200") return control_lite200_tag.Component;
+        if (lightName == "lite300") return control_lite300_tag.Component;
+        if (lightName == "lite301") return control_lite301_tag.Component;
+        if (lightName == "lite302") return control_lite302_tag.Component;
+        if (lightName == "lite303") return control_lite303_tag.Component;
+        if (lightName == "lite304") return control_lite304_tag.Component;
+        if (lightName == "lite305") return control_lite305_tag.Component;
+        if (lightName == "lite306") return control_lite306_tag.Component;
+        if (lightName == "lite307") return control_lite307_tag.Component;
+        if (lightName == "lite308") return control_lite308_tag.Component;
+        if (lightName == "lite309") return control_lite309_tag.Component;
+        if (lightName == "lite310") return control_lite310_tag.Component;
+        if (lightName == "lite311") return control_lite311_tag.Component;
+        if (lightName == "lite312") return control_lite312_tag.Component;
+        if (lightName == "lite313") return control_lite313_tag.Component;
+        if (lightName == "lite314") return control_lite314_tag.Component;
+        if (lightName == "lite315") return control_lite315_tag.Component;
+        if (lightName == "lite316") return control_lite316_tag.Component;
+        if (lightName == "lite317") return control_lite317_tag.Component;
+        if (lightName == "lite318") return control_lite318_tag.Component;
+        if (lightName == "lite319") return control_lite319_tag.Component;
+        if (lightName == "lite320") return control_lite320_tag.Component;
+        if (lightName == "lite321") return control_lite321_tag.Component;
+        if (lightName == "lite322") return control_lite322_tag.Component;
+        if (lightName == "literoll179") return control_literoll179_tag.Component;
+        if (lightName == "literoll180") return control_literoll180_tag.Component;
+        if (lightName == "literoll181") return control_literoll181_tag.Component;
+        if (lightName == "literoll182") return control_literoll182_tag.Component;
+        if (lightName == "literoll183") return control_literoll183_tag.Component;
+        if (lightName == "literoll184") return control_literoll184_tag.Component;
+        return nullptr;
+    }
+    
     JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_toggleTableLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
@@ -5462,21 +6021,27 @@ extern "C" {
         std::string groupName = currentLight.first;
         int lightIndex = currentLight.second;
         
-        // Get the light group and toggle the specific light by index
+        TLight* light = nullptr;
+        
+        // First try to get as a light group
         TLightGroup* group = GetLightGroupByName(groupName);
         if (group && lightIndex >= 0 && lightIndex < static_cast<int>(group->List.size())) {
-            TLight* light = group->List[lightIndex];
-            if (light) {
-                // Toggle: check current state and flip it
-                // Message(2, 0.0) returns BmpIndex1 (current on/off state)
-                int currentState = light->Message(2, 0.0);
-                // Temporarily allow the toggle command to bypass the block
-                control_SetLightDebugToggleAllowed(true);
-                // Message(0, 0.0) turns off, Message(1, 0.0) turns on
-                light->Message(currentState ? 0 : 1, 0.0);
-                control_SetLightDebugToggleAllowed(false);
-                g_tableLightDebugOn = !currentState;
-            }
+            light = group->List[lightIndex];
+        } else {
+            // Try as individual light
+            light = GetIndividualLightByName(groupName);
+        }
+        
+        if (light) {
+            // Toggle: check current state and flip it
+            // Message(2, 0.0) returns BmpIndex1 (current on/off state)
+            int currentState = light->Message(2, 0.0);
+            // Temporarily allow the toggle command to bypass the block
+            control_SetLightDebugToggleAllowed(true);
+            // Message(0, 0.0) turns off, Message(1, 0.0) turns on
+            light->Message(currentState ? 0 : 1, 0.0);
+            control_SetLightDebugToggleAllowed(false);
+            g_tableLightDebugOn = !currentState;
         }
     }
     
