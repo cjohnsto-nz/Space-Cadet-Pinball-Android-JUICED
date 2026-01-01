@@ -2710,6 +2710,12 @@ void control::WormHoleControl(int code, TPinballComponent* caller)
 
 	if (code == 63)
 	{
+		// Timer mode: check if waiting for final sink after timer expired
+		if (TimerMode::IsWaitingForFinalSink())
+		{
+			TimerMode::OnFinalSink();
+			return;
+		}
 		int sinkFlag = 0;
 		if (control_sink1_tag.Component != sink)
 		{
@@ -3068,6 +3074,12 @@ void control::BlackHoleKickoutControl(int code, TPinballComponent* caller)
 
 	if (code == 63)
 	{
+		// Timer mode: check if waiting for final sink after timer expired
+		if (TimerMode::IsWaitingForFinalSink())
+		{
+			TimerMode::OnFinalSink();
+			return;
+		}
 		int addedScore = TableG->AddScore(caller->get_scoring(0));
 		snprintf(Buffer, sizeof Buffer, pinball::get_rc_string(80, 0), addedScore);
 		control_info_text_box_tag.Component->Display(Buffer, 2.0, 2);
@@ -3096,6 +3108,12 @@ void control::GravityWellKickoutControl(int code, TPinballComponent* caller)
 	{
 	case 63:
 		{
+			// Timer mode: check if waiting for final sink after timer expired
+			if (TimerMode::IsWaitingForFinalSink())
+			{
+				TimerMode::OnFinalSink();
+				return;
+			}
 			auto addedScore = TableG->AddScore(caller->get_scoring(0));
 			snprintf(Buffer, sizeof Buffer, pinball::get_rc_string(81, 0), addedScore);
 			control_info_text_box_tag.Component->Display(Buffer, 2.0, 2);
@@ -3225,7 +3243,15 @@ void control::ShootAgainLightControl(int code, TPinballComponent* caller)
 void control::EscapeChuteSinkControl(int code, TPinballComponent* caller)
 {
 	if (code == 63)
+	{
+		// Timer mode: check if waiting for final sink after timer expired
+		if (TimerMode::IsWaitingForFinalSink())
+		{
+			TimerMode::OnFinalSink();
+			return;
+		}
 		caller->Message(56, static_cast<TSink*>(caller)->TimerTime);
+	}
 }
 
 // Track previous mission state for audio notifications
@@ -3648,6 +3674,12 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 
 	if (code == 60)
 	{
+		// Timer mode: don't respawn ball if game is over
+		if (TimerMode::IsTimerMode() && TimerMode::HasExpired())
+		{
+			return;
+		}
+		
 		if (control_lite199_tag.Component->MessageField)
 		{
 			TableG->Message(1022, 0.0);
@@ -3685,6 +3717,14 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 			{
 				TimerMode::OnBallCrash();
 			}
+			
+			// Check if timer expired from penalty - if so, end game
+			if (TimerMode::IsWaitingForFinalSink())
+			{
+				TimerMode::OnFinalSink();
+				return;
+			}
+			
 			// Auto-fire ball back from a random wormhole
 			control_drain_tag.Component->Message(1024, 0.0);
 			// Pick random sink (wormhole) to exit from: sink1, sink2, or sink3

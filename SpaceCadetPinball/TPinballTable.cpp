@@ -260,7 +260,9 @@ int TPinballTable::AddScore(int score)
 		if (ScoreSpecial2 > 5000000)
 			ScoreSpecial2 = 5000000;
 	}
-	int addedScore = ScoreAdded + score * score_multipliers[ScoreMultiplier];
+	// In timer mode, disable field multiplier - use base score only
+	int multiplier = TimerMode::IsTimerMode() ? 1 : score_multipliers[ScoreMultiplier];
+	int addedScore = ScoreAdded + score * multiplier;
 	CurScore += addedScore;
 	if (CurScore > 1000000000)
 	{

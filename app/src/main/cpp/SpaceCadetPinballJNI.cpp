@@ -696,6 +696,18 @@ Java_com_fexed_spacecadetpinball_MainActivity_getTimerScoreProgress(JNIEnv *env,
     return TimerMode::GetScoreProgress();
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_pauseTimerMode(JNIEnv *env, jobject thiz) {
+    TimerMode::PauseTimer();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_resumeTimerMode(JNIEnv *env, jobject thiz) {
+    TimerMode::ResumeTimer();
+}
+
 // Timer bonus notification callback
 void SpaceCadetPinballJNI::notifyTimerBonus(int secondsChange) {
     JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();

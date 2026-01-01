@@ -27,6 +27,8 @@ public:
     // Timer control
     static void StartTimer();  // Start with 3 minutes
     static void StopTimer();
+    static void PauseTimer();
+    static void ResumeTimer();
     static void Update(float deltaTime);  // Called each frame
 
     // Get remaining time
@@ -73,10 +75,11 @@ private:
     // Wall-clock based timing for accuracy
     static int64_t s_endTimeMs;          // When timer expires (wall clock ms)
     static int64_t s_bonusTimeMs;        // Accumulated bonus time in ms
+    static int64_t s_pauseTimeMs;        // When timer was paused (0 if not paused)
     static int64_t GetCurrentTimeMs();   // Get current wall clock time
 
     static constexpr int64_t kStartingTimeMs = 180000;    // 3 minutes in ms
-    static constexpr int64_t kTimePerThresholdMs = 10000; // 10 seconds in ms
-    static constexpr int kScorePerThreshold = 50000;      // 50,000 points
+    static constexpr int64_t kTimePerThresholdMs = 15000; // 15 seconds in ms
+    static constexpr int kScorePerThreshold = 100000;     // 100,000 points
     static constexpr int64_t kCrashPenaltyMs = 30000;     // 30 seconds in ms
 };

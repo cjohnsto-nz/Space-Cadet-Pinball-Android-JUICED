@@ -370,20 +370,17 @@ public class MainActivity extends SDLActivity {
                 pauseNativeThread();
                 pauseMusic(); // Oboe
                 if (beatMapPlayer != null) beatMapPlayer.pause();
+                if (timerModeActive) pauseTimerMode();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.play));
             } else {
                 isPlaying = true;
                 resumeNativeThread();
                 resumeMusic(); // Oboe
                 if (beatMapPlayer != null) beatMapPlayer.resume();
+                if (timerModeActive) resumeTimerMode();
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
-
             }
         });
-
-//        mBinding.replay.setOnClickListener(view -> {
-//            Toast.makeText(getContext(), R.string.restartprompt, Toast.LENGTH_SHORT).show();
-//        });
 
 
         mBinding.tiltLeft.setOnTouchListener((v1, event) -> {
@@ -968,41 +965,41 @@ public class MainActivity extends SDLActivity {
         if (PrefsHelper.getCustomFonts()) {
             mBinding.ballstxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.ballstxt.setTextColor(Color.WHITE);
-            mBinding.ballstxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.ballstxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.txtscore.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.txtscore.setTextColor(Color.WHITE);
-            mBinding.txtscore.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.txtscore.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.infotxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.infotxt.setTextColor(Color.WHITE);
-            mBinding.infotxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.infotxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.missiontxt.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.missiontxt.setTextColor(Color.WHITE);
-            mBinding.missiontxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.missiontxt.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.plunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
-            mBinding.plunger.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.plunger.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             // not editing the plunger because it's a button (and using its color as default color)
             mBinding.bottomPlunger.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.bottomPlunger.setTextColor(Color.WHITE);
-            mBinding.bottomPlunger.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.bottomPlunger.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.tiltLeft.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.tiltLeft.setTextColor(Color.WHITE);
-            mBinding.tiltLeft.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.tiltLeft.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.tiltBottom.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.tiltBottom.setTextColor(Color.WHITE);
-            mBinding.tiltBottom.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.tiltBottom.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.tiltRight.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.tiltRight.setTextColor(Color.WHITE);
-            mBinding.tiltRight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.tiltRight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.left.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.left.setTextColor(Color.WHITE);
-            mBinding.left.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.left.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.right.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.right.setTextColor(Color.WHITE);
-            mBinding.right.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.right.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.txtTimer.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
-            mBinding.txtTimer.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.txtTimer.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
             mBinding.txtTimerBonus.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
-            mBinding.txtTimerBonus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.txtTimerBonus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
         } else {
             mBinding.ballstxt.setTypeface(Typeface.DEFAULT);
             mBinding.ballstxt.setTextColor(Color.WHITE);
@@ -1347,6 +1344,8 @@ public class MainActivity extends SDLActivity {
     private native void startTimerMode();
     private native void resetTimerMode();
     private native int getTimerScoreProgress();
+    private native void pauseTimerMode();
+    private native void resumeTimerMode();
 
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;
@@ -1649,9 +1648,9 @@ public class MainActivity extends SDLActivity {
                         mBinding.txtTimer.setTextColor(Color.WHITE);
                     }
                     
-                    // Update score progress display (score/50000 for next +10s)
+                    // Update score progress display (score/100000 for next +15s)
                     int scoreProgress = getTimerScoreProgress();
-                    String progressText = String.format("%,d / 50,000", scoreProgress);
+                    String progressText = String.format("%,d / 100,000", scoreProgress);
                     setTextWithBackground(mBinding.txtscore, progressText);
                     
                     // Continue updating every 100ms

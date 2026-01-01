@@ -18,6 +18,7 @@ int TimerMode::s_totalScore = 0;
 bool TimerMode::s_modeSelectionPending = false;
 int64_t TimerMode::s_endTimeMs = 0;
 int64_t TimerMode::s_bonusTimeMs = 0;
+int64_t TimerMode::s_pauseTimeMs = 0;
 
 int64_t TimerMode::GetCurrentTimeMs()
 {
@@ -31,7 +32,9 @@ int TimerMode::GetRemainingTimeMs()
     if (!s_timerActive || s_timerExpired)
         return 0;
     
-    int64_t remaining = (s_endTimeMs + s_bonusTimeMs) - GetCurrentTimeMs();
+    // If paused, calculate remaining from pause time instead of current time
+    int64_t currentTime = (s_pauseTimeMs > 0) ? s_pauseTimeMs : GetCurrentTimeMs();
+    int64_t remaining = (s_endTimeMs + s_bonusTimeMs) - currentTime;
     return remaining > 0 ? static_cast<int>(remaining) : 0;
 }
 
@@ -70,6 +73,26 @@ void TimerMode::StartTimer()
 void TimerMode::StopTimer()
 {
     s_timerActive = false;
+    s_pauseTimeMs = 0;
+}
+
+void TimerMode::PauseTimer()
+{
+    if (s_timerActive && s_pauseTimeMs == 0)
+    {
+        s_pauseTimeMs = GetCurrentTimeMs();
+    }
+}
+
+void TimerMode::ResumeTimer()
+{
+    if (s_timerActive && s_pauseTimeMs > 0)
+    {
+        // Add the paused duration to the end time
+        int64_t pausedDuration = GetCurrentTimeMs() - s_pauseTimeMs;
+        s_endTimeMs += pausedDuration;
+        s_pauseTimeMs = 0;
+    }
 }
 
 void TimerMode::Update(float deltaTime)
@@ -162,6 +185,13 @@ void TimerMode::OnFinalSink()
 
     s_waitingForFinalSink = false;
     s_timerActive = false;
+
+    // Set ball count to 0 to properly trigger game over state
+    if (pb::MainTable)
+    {
+        pb::MainTable->ChangeBallCount(0);
+        pb::MainTable->ExtraBalls = 0;
+    }
 
     // End the game
     pb::end_game();
