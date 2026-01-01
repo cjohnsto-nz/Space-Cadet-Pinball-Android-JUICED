@@ -372,6 +372,23 @@ public class Settings extends AppCompatActivity {
             }
         });
 
+        // Music Volume slider
+        mBinding.musicVolumebar.setProgress(PrefsHelper.getMusicVolume());
+        mBinding.musicVolumebar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int percentage, boolean b) {
+                PrefsHelper.setMusicVolume(percentage);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+
         if (PrefsHelper.getCheatsUsed()) {
             mBinding.cheatindicatorlbl.setText(R.string.cheat_used);
             mBinding.cheatAlertSttngs.setVisibility(View.VISIBLE);

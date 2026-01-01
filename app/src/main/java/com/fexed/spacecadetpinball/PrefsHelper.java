@@ -29,6 +29,7 @@ public class PrefsHelper {
     private static final String KEY_ENHANCED_AUDIO = "enhanced_audio";
     private static final String KEY_PARTICLES_ENABLED = "particles_enabled";
     private static final String KEY_BEAT_REACTIVE_GLOW = "beat_reactive_glow";
+    private static final String KEY_MUSIC_VOLUME = "music_volume";
 
     public static SharedPreferences getPrefs() {
         return prefs;
@@ -227,5 +228,14 @@ public class PrefsHelper {
 
     public static void setBeatReactiveGlow(boolean value) {
         prefs.edit().putBoolean(KEY_BEAT_REACTIVE_GLOW, value).apply();
+    }
+
+    // Music volume (0-100, default 100)
+    public static int getMusicVolume() {
+        return prefs.getInt(KEY_MUSIC_VOLUME, 100);
+    }
+
+    public static void setMusicVolume(int value) {
+        prefs.edit().putInt(KEY_MUSIC_VOLUME, value).apply();
     }
 }

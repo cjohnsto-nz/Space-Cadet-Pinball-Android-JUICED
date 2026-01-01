@@ -94,7 +94,7 @@ public class MainActivity extends SDLActivity {
         // Initialize Oboe music player for real-time audio effects
         initOboeMusicPlayer();
         if (loadMusicFromAssets(getAssets(), "808generative.wav")) {
-            setMusicVolume(PrefsHelper.getVolume() / 100.0f);
+            setMusicVolume(PrefsHelper.getMusicVolume() / 100.0f);
             if (PrefsHelper.getMusic()) {
                 startMusic();
             }
@@ -839,7 +839,7 @@ public class MainActivity extends SDLActivity {
         if (!isPlaying) pauseNativeThread();
         if (isGameReady) {
             setVolume(PrefsHelper.getVolume());
-            setMusicVolume(PrefsHelper.getVolume() / 100.0f); // Oboe
+            setMusicVolume(PrefsHelper.getMusicVolume() / 100.0f); // Oboe
         }
         PrefsHelper.setCheatsUsed(checkCheatsUsed());
         setTiltButtons();

@@ -253,11 +253,12 @@ bool OboeMusicPlayer::start() {
 
     oboe::AudioStreamBuilder builder;
     builder.setDirection(oboe::Direction::Output)
-           ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
-           ->setSharingMode(oboe::SharingMode::Exclusive)
+           ->setPerformanceMode(oboe::PerformanceMode::None)  // Balanced mode for stable playback
+           ->setSharingMode(oboe::SharingMode::Shared)        // Shared mode is more stable
            ->setFormat(oboe::AudioFormat::Float)
            ->setChannelCount(mChannels)
            ->setSampleRate(mSampleRate)
+           ->setBufferCapacityInFrames(mSampleRate / 10)      // 100ms buffer for stability
            ->setDataCallback(this);
 
     oboe::Result result = builder.openStream(mStream);
