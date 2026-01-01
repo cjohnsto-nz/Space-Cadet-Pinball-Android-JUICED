@@ -3,6 +3,7 @@
 #include "HDRConfig.h"
 #include "HDRLightOverlay.h"
 #include "render.h"
+#include <chrono>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -39,6 +40,23 @@ float HDRRenderer::s_cameraZoom = 2.0f;
 float HDRRenderer::s_currentCameraZoom = 1.0f;
 float HDRRenderer::s_currentCameraCenterX = 0.5f;
 float HDRRenderer::s_currentCameraCenterY = 0.5f;
+
+// Cached uniform locations - output program
+GLint HDRRenderer::s_loc_uHDRTexture = -1;
+GLint HDRRenderer::s_loc_uMaxNits = -1;
+GLint HDRRenderer::s_loc_uSDRWhiteNits = -1;
+GLint HDRRenderer::s_loc_uCameraZoom = -1;
+GLint HDRRenderer::s_loc_uCameraCenter = -1;
+GLint HDRRenderer::s_loc_uViewportSize = -1;
+GLint HDRRenderer::s_loc_uViewportOffset = -1;
+GLint HDRRenderer::s_loc_uRawBallPos = -1;
+GLint HDRRenderer::s_loc_uLastBallPos = -1;
+GLint HDRRenderer::s_loc_uBallValid = -1;
+GLint HDRRenderer::s_loc_uSmoothedCameraPos = -1;
+// Cached uniform locations - upload program
+GLint HDRRenderer::s_loc_upload_uTexture = -1;
+GLint HDRRenderer::s_loc_upload_uIntensityMultiplier = -1;
+GLint HDRRenderer::s_loc_upload_uExposure = -1;
 
 // Vertex shader - simple fullscreen quad (camera transform done in fragment shader)
 const char* HDRRenderer::s_vertexShaderSrc = R"(#version 300 es
@@ -354,6 +372,9 @@ bool HDRRenderer::Init(int width, int height) {
     // Create fullscreen quad
     CreateFullscreenQuad();
     
+    // Cache uniform locations once at init time
+    CacheUniformLocations();
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
     
@@ -361,6 +382,29 @@ bool HDRRenderer::Init(int width, int height) {
     HDR_LOG("HDR renderer initialized successfully");
     
     return true;
+}
+
+void HDRRenderer::CacheUniformLocations() {
+    // Cache output program uniforms
+    s_loc_uHDRTexture = glGetUniformLocation(s_outputProgram, "uHDRTexture");
+    s_loc_uMaxNits = glGetUniformLocation(s_outputProgram, "uMaxNits");
+    s_loc_uSDRWhiteNits = glGetUniformLocation(s_outputProgram, "uSDRWhiteNits");
+    s_loc_uCameraZoom = glGetUniformLocation(s_outputProgram, "uCameraZoom");
+    s_loc_uCameraCenter = glGetUniformLocation(s_outputProgram, "uCameraCenter");
+    s_loc_uViewportSize = glGetUniformLocation(s_outputProgram, "uViewportSize");
+    s_loc_uViewportOffset = glGetUniformLocation(s_outputProgram, "uViewportOffset");
+    s_loc_uRawBallPos = glGetUniformLocation(s_outputProgram, "uRawBallPos");
+    s_loc_uLastBallPos = glGetUniformLocation(s_outputProgram, "uLastBallPos");
+    s_loc_uBallValid = glGetUniformLocation(s_outputProgram, "uBallValid");
+    s_loc_uSmoothedCameraPos = glGetUniformLocation(s_outputProgram, "uSmoothedCameraPos");
+    
+    // Cache upload program uniforms
+    s_loc_upload_uTexture = glGetUniformLocation(s_uploadProgram, "uTexture");
+    s_loc_upload_uIntensityMultiplier = glGetUniformLocation(s_uploadProgram, "uIntensityMultiplier");
+    s_loc_upload_uExposure = glGetUniformLocation(s_uploadProgram, "uExposure");
+    
+    HDR_LOG("Cached uniform locations: tex=%d, maxNits=%d, zoom=%d, uploadTex=%d", 
+            s_loc_uHDRTexture, s_loc_uMaxNits, s_loc_uCameraZoom, s_loc_upload_uTexture);
 }
 
 void HDRRenderer::Uninit() {
@@ -433,10 +477,10 @@ void HDRRenderer::UploadTexture(const ColorRgba* pixels, int width, int height) 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     
-    // Upload SDR pixels to texture using glTexImage2D (more compatible than glTexSubImage2D)
+    // Upload SDR pixels to texture using glTexSubImage2D (faster - no reallocation)
     // Note: ColorRgba is BGRA format - we swap R/B in the shader
     glBindTexture(GL_TEXTURE_2D, s_sdrTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
@@ -450,16 +494,10 @@ void HDRRenderer::UploadTexture(const ColorRgba* pixels, int width, int height) 
     
     glUseProgram(s_uploadProgram);
     
-    // Set uniforms
-    GLint texLoc = glGetUniformLocation(s_uploadProgram, "uTexture");
-    GLint intensityLoc = glGetUniformLocation(s_uploadProgram, "uIntensityMultiplier");
-    GLint exposureLoc = glGetUniformLocation(s_uploadProgram, "uExposure");
-    
-    // HDR_LOG("UploadTexture: uniform locations tex=%d, intensity=%d, exposure=%d", texLoc, intensityLoc, exposureLoc);
-    
-    glUniform1i(texLoc, 0);
-    glUniform1f(intensityLoc, 1.0f);  // Default SDR intensity
-    glUniform1f(exposureLoc, s_exposure);
+    // Set uniforms using cached locations
+    glUniform1i(s_loc_upload_uTexture, 0);
+    glUniform1f(s_loc_upload_uIntensityMultiplier, 1.0f);  // Default SDR intensity
+    glUniform1f(s_loc_upload_uExposure, s_exposure);
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s_sdrTexture);
@@ -541,26 +579,14 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     
     glUseProgram(s_outputProgram);
     
-    // Set uniforms
-    GLint texLoc = glGetUniformLocation(s_outputProgram, "uHDRTexture");
-    GLint maxNitsLoc = glGetUniformLocation(s_outputProgram, "uMaxNits");
-    GLint sdrWhiteLoc = glGetUniformLocation(s_outputProgram, "uSDRWhiteNits");
-    
-    // HDR_LOG("Present: uniform locations tex=%d, maxNits=%d, sdrWhite=%d", texLoc, maxNitsLoc, sdrWhiteLoc);
-    
-    glUniform1i(texLoc, 0);
-    glUniform1f(maxNitsLoc, HDR::GetMaxDisplayNits());
-    glUniform1f(sdrWhiteLoc, HDR::Luminance::SDR_WHITE_NITS);
-    
-    // Set camera tracking uniforms
-    GLint zoomLoc = glGetUniformLocation(s_outputProgram, "uCameraZoom");
-    GLint centerLoc = glGetUniformLocation(s_outputProgram, "uCameraCenter");
-    GLint viewportSizeLoc = glGetUniformLocation(s_outputProgram, "uViewportSize");
+    // Set uniforms using cached locations (avoid glGetUniformLocation every frame)
+    glUniform1i(s_loc_uHDRTexture, 0);
+    glUniform1f(s_loc_uMaxNits, HDR::GetMaxDisplayNits());
+    glUniform1f(s_loc_uSDRWhiteNits, HDR::Luminance::SDR_WHITE_NITS);
     
     // Set viewport size and offset for screen-space calculations
-    GLint viewportOffsetLoc = glGetUniformLocation(s_outputProgram, "uViewportOffset");
-    glUniform2f(viewportSizeLoc, (float)viewportW, (float)viewportH);
-    glUniform2f(viewportOffsetLoc, (float)viewportX, (float)viewportY);
+    glUniform2f(s_loc_uViewportSize, (float)viewportW, (float)viewportH);
+    glUniform2f(s_loc_uViewportOffset, (float)viewportX, (float)viewportY);
     
     // DEBUG: Log viewport info - disabled due to spam
     // static int vpLogCount = 0;
@@ -625,21 +651,17 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
         currentZoom = s_cameraZoom;
         
         // Also pass raw ball position for green debug line
-        GLint rawBallPosLoc = glGetUniformLocation(s_outputProgram, "uRawBallPos");
-        glUniform2f(rawBallPosLoc, ballX, ballY);
+        glUniform2f(s_loc_uRawBallPos, ballX, ballY);
     }
     
-    // Set camera tracking uniforms
-    glUniform1f(zoomLoc, currentZoom);
-    glUniform2f(centerLoc, cameraCenterX, cameraCenterY);
+    // Set camera tracking uniforms using cached locations
+    glUniform1f(s_loc_uCameraZoom, currentZoom);
+    glUniform2f(s_loc_uCameraCenter, cameraCenterX, cameraCenterY);
     
     // Pass last valid position and validity flag
-    GLint lastPosLoc = glGetUniformLocation(s_outputProgram, "uLastBallPos");
-    GLint ballValidLoc = glGetUniformLocation(s_outputProgram, "uBallValid");
-    GLint smoothedPosLoc = glGetUniformLocation(s_outputProgram, "uSmoothedCameraPos");
-    glUniform2f(lastPosLoc, lastValidBallX, lastValidBallY);
-    glUniform1f(ballValidLoc, ballValid ? 1.0f : 0.0f);
-    glUniform2f(smoothedPosLoc, smoothedCameraX, smoothedCameraY);
+    glUniform2f(s_loc_uLastBallPos, lastValidBallX, lastValidBallY);
+    glUniform1f(s_loc_uBallValid, ballValid ? 1.0f : 0.0f);
+    glUniform2f(s_loc_uSmoothedCameraPos, smoothedCameraX, smoothedCameraY);
     
     // Store camera state for light overlay - use SAME position as main texture
     s_currentCameraZoom = currentZoom;
@@ -655,12 +677,19 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     
+    // Profiling
+    static float maxQuadMs = 0, maxOverlayMs = 0;
+    static int presentProfileCounter = 0;
+    auto tQuadStart = std::chrono::steady_clock::now();
+    
     // Draw fullscreen quad
     glBindVertexArray(s_quadVAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
     
     glUseProgram(0);
+    
+    auto tQuadEnd = std::chrono::steady_clock::now();
     
     // Render HDR light overlays on top of the PQ-encoded output
     // These need to be rendered directly to screen with their own PQ encoding
@@ -669,6 +698,20 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
         // Pass viewport info so overlays render in the correct position
         HDRLightOverlay::RenderOverlaysPQ(viewportX, viewportY, viewportW, viewportH, 
                                           s_width, s_height, HDR::GetMaxDisplayNits());
+    }
+    
+    auto tOverlayEnd = std::chrono::steady_clock::now();
+    
+    // Track max times
+    float quadMs = std::chrono::duration<float, std::milli>(tQuadEnd - tQuadStart).count();
+    float overlayMs = std::chrono::duration<float, std::milli>(tOverlayEnd - tQuadEnd).count();
+    if (quadMs > maxQuadMs) maxQuadMs = quadMs;
+    if (overlayMs > maxOverlayMs) maxOverlayMs = overlayMs;
+    
+    if (++presentProfileCounter >= 120) {
+        HDR_LOG("Present breakdown - Quad: %.1fms, Overlays: %.1fms", maxQuadMs, maxOverlayMs);
+        presentProfileCounter = 0;
+        maxQuadMs = maxOverlayMs = 0;
     }
     
     // Check for GL errors

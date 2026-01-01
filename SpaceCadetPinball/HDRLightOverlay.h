@@ -262,6 +262,25 @@ private:
     static GLuint s_overlayVAO;
     static GLuint s_overlayVBO;
     
+    // Instanced rendering for batched lights
+    static GLuint s_instancedProgramPQ;  // Instanced PQ shader
+    static GLuint s_instancedVAO;
+    static GLuint s_instancedVBO;        // Quad vertices
+    static GLuint s_instanceDataVBO;     // Per-instance light data
+    static constexpr int MAX_INSTANCED_LIGHTS = 256;
+    
+    // Per-instance data structure: rect(4) + color(3) + intensity(1) + glow(1) = 9 floats
+    struct InstanceData {
+        float x, y, w, h;      // Light rect
+        float r, g, b;         // Color
+        float intensity;       // Intensity in nits
+        float glow;            // Glow radius
+    };
+    static std::vector<InstanceData> s_instanceBuffer;
+    
+    static void CreateInstancedShader();
+    static void RenderBatchedLightsPQ(float maxNits);
+    
     // Trail mesh rendering
     static GLuint s_trailProgram;
     static GLuint s_trailVAO;
@@ -278,7 +297,24 @@ private:
     static void CreateShaders();
     static void CreateQuad();
     static void CreateTrailShader();
+    static void CacheUniformLocations();
     static void RenderSingleLight(const LightState& state, int texWidth, int texHeight);
     static void RenderSingleLightPQ(const LightState& state, float maxNits);
     static void RenderTrailMesh(float maxNits);
+    
+    // Cached uniform locations for overlay program
+    static GLint s_loc_uAspectRatio;
+    static GLint s_loc_uLightRect;
+    static GLint s_loc_uLightColor;
+    static GLint s_loc_uIntensity;
+    static GLint s_loc_uGlowRadius;
+    
+    // Cached uniform locations for PQ overlay program
+    static GLint s_loc_pq_uCameraZoom;
+    static GLint s_loc_pq_uCameraCenter;
+    static GLint s_loc_pq_uLightRect;
+    static GLint s_loc_pq_uLightColor;
+    static GLint s_loc_pq_uIntensityNits;
+    static GLint s_loc_pq_uMaxNits;
+    static GLint s_loc_pq_uGlowRadius;
 };

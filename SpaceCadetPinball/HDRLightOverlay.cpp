@@ -13,6 +13,10 @@
 #include <cstring>
 #include <chrono>
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 // Debug logging disabled - too much spam
 // #ifdef __ANDROID__
 // #include <android/log.h>
@@ -65,6 +69,41 @@ GLuint HDRLightOverlay::s_trailTexture = 0;
 GLuint HDRLightOverlay::s_trailCompositeProgram = 0;
 int HDRLightOverlay::s_trailFBOWidth = 0;
 int HDRLightOverlay::s_trailFBOHeight = 0;
+
+// Cached uniform locations for overlay program
+GLint HDRLightOverlay::s_loc_uAspectRatio = -1;
+GLint HDRLightOverlay::s_loc_uLightRect = -1;
+GLint HDRLightOverlay::s_loc_uLightColor = -1;
+GLint HDRLightOverlay::s_loc_uIntensity = -1;
+GLint HDRLightOverlay::s_loc_uGlowRadius = -1;
+
+// Cached uniform locations for PQ overlay program
+GLint HDRLightOverlay::s_loc_pq_uCameraZoom = -1;
+GLint HDRLightOverlay::s_loc_pq_uCameraCenter = -1;
+GLint HDRLightOverlay::s_loc_pq_uLightRect = -1;
+GLint HDRLightOverlay::s_loc_pq_uLightColor = -1;
+GLint HDRLightOverlay::s_loc_pq_uIntensityNits = -1;
+GLint HDRLightOverlay::s_loc_pq_uMaxNits = -1;
+GLint HDRLightOverlay::s_loc_pq_uGlowRadius = -1;
+
+// Instanced rendering
+GLuint HDRLightOverlay::s_instancedProgramPQ = 0;
+GLuint HDRLightOverlay::s_instancedVAO = 0;
+GLuint HDRLightOverlay::s_instancedVBO = 0;
+GLuint HDRLightOverlay::s_instanceDataVBO = 0;
+std::vector<HDRLightOverlay::InstanceData> HDRLightOverlay::s_instanceBuffer;
+static GLint s_loc_inst_uCameraZoom = -1;
+static GLint s_loc_inst_uCameraCenter = -1;
+static GLint s_loc_inst_uMaxNits = -1;
+
+// Cached trail uniform locations
+static GLint s_loc_trail_uCameraZoom = -1;
+static GLint s_loc_trail_uCameraCenter = -1;
+static GLint s_loc_trail_uTrailColor = -1;
+static GLint s_loc_trail_uIntensityNits = -1;
+static GLint s_loc_trailComp_uTrailTexture = -1;
+static GLint s_loc_trailComp_uMaxOpacity = -1;
+
 static bool s_debugAllLightsOn = false;  // Debug mode - shows all lights regardless of state
 static bool s_editMode = false;  // Edit mode - allows dragging lights to reposition
 static int s_selectedLightIndex = -1;  // >= 0 for lights, < -1 for test lights
@@ -201,6 +240,99 @@ void main() {
 }
 )";
 
+// Instanced vertex shader - reads per-instance light data from attributes
+static const char* s_instancedVertexSrc = R"(#version 300 es
+precision highp float;
+
+// Per-vertex attributes (quad)
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aTexCoord;
+
+// Per-instance attributes
+layout(location = 2) in vec4 aLightRect;    // x, y, w, h
+layout(location = 3) in vec3 aLightColor;   // r, g, b
+layout(location = 4) in vec2 aLightParams;  // intensity, glow
+
+uniform float uCameraZoom;
+uniform vec2 uCameraCenter;
+
+out vec2 vLocalCoord;
+out vec3 vColor;
+out float vIntensity;
+out float vGlow;
+
+void main() {
+    // aPos is -1 to 1, convert to 0-1
+    vec2 localPos = aPos * 0.5 + 0.5;
+    
+    // Calculate world position using instance rect
+    vec2 worldPos;
+    worldPos.x = aLightRect.x + (localPos.x - 0.5) * aLightRect.z;
+    worldPos.y = aLightRect.y + (localPos.y - 0.5) * aLightRect.w;
+    
+    // Apply camera transform
+    vec2 screenPos = (worldPos - 1.0 + uCameraCenter) * uCameraZoom + 0.5;
+    
+    // Convert to clip space
+    screenPos.x = screenPos.x * 2.0 - 1.0;
+    screenPos.y = 1.0 - screenPos.y * 2.0;
+    
+    gl_Position = vec4(screenPos, 0.0, 1.0);
+    vLocalCoord = aTexCoord;
+    vColor = aLightColor;
+    vIntensity = aLightParams.x;
+    vGlow = aLightParams.y;
+}
+)";
+
+// Instanced fragment shader with PQ encoding
+static const char* s_instancedFragmentPQSrc = R"(#version 300 es
+precision highp float;
+
+in vec2 vLocalCoord;
+in vec3 vColor;
+in float vIntensity;
+in float vGlow;
+
+out vec4 fragColor;
+
+uniform float uMaxNits;
+
+// PQ constants
+const float m1 = 0.1593017578125;
+const float m2 = 78.84375;
+const float c1 = 0.8359375;
+const float c2 = 18.8515625;
+const float c3 = 18.6875;
+
+vec3 linearToPQ(vec3 linear) {
+    vec3 Y = linear / 10000.0;
+    Y = max(Y, vec3(0.0));
+    vec3 Ym1 = pow(Y, vec3(m1));
+    vec3 numerator = c1 + c2 * Ym1;
+    vec3 denominator = 1.0 + c3 * Ym1;
+    return pow(numerator / denominator, vec3(m2));
+}
+
+void main() {
+    vec2 center = vec2(0.5, 0.5);
+    float dist = length(vLocalCoord - center) * 2.0;
+    
+    float coreFalloff = 1.0 - smoothstep(0.0, 0.15, dist);
+    float glowFalloff = 1.0 - smoothstep(0.15, 1.0, dist);
+    
+    float alpha = coreFalloff * 1.0 + glowFalloff * 0.5;
+    alpha *= vGlow;
+    alpha = clamp(alpha, 0.0, 1.0);
+    
+    float maxChannel = max(max(vColor.r, vColor.g), vColor.b);
+    vec3 hdrColorNits = (vColor / max(maxChannel, 0.001)) * uMaxNits;
+    
+    vec3 pqColor = linearToPQ(hdrColorNits);
+    fragColor = vec4(pqColor, alpha);
+}
+)";
+
 // Trail vertex shader - takes pre-computed positions with alpha
 // Supports camera zoom/pan transform
 static const char* s_trailVertexSrc = R"(#version 300 es
@@ -314,6 +446,7 @@ void HDRLightOverlay::Init() {
     
     CreateShaders();
     CreateQuad();
+    CreateInstancedShader();  // Create instanced rendering resources
     CreateTrailShader();
     
     s_initialized = true;
@@ -766,71 +899,42 @@ void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
         RenderSingleLight(state, textureWidth, textureHeight);
     }
     
-    // Render bumpers
+    // Set aspect ratio once for all renders
+    float aspectRatio = (float)textureWidth / (float)textureHeight;
+    glUniform1f(s_loc_uAspectRatio, aspectRatio);
+    
+    // Render bumpers using cached locations
     for (const auto& state : s_bumperStates) {
         const HDRBumperConfig* config = state.config;
         
-        float aspectRatio = (float)textureWidth / (float)textureHeight;
-        GLint aspectLoc = glGetUniformLocation(s_overlayProgram, "uAspectRatio");
-        glUniform1f(aspectLoc, aspectRatio);
-        
-        GLint rectLoc = glGetUniformLocation(s_overlayProgram, "uLightRect");
-        glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
-        
-        GLint colorLoc = glGetUniformLocation(s_overlayProgram, "uLightColor");
-        glUniform3f(colorLoc, state.r, state.g, state.b);
-        
-        GLint intensityLoc = glGetUniformLocation(s_overlayProgram, "uIntensity");
+        glUniform4f(s_loc_uLightRect, config->X, config->Y, config->Width, config->Height);
+        glUniform3f(s_loc_uLightColor, state.r, state.g, state.b);
         float linearIntensity = state.currentIntensity / 203.0f;  // SDR_WHITE_NITS
-        glUniform1f(intensityLoc, linearIntensity);
-        
-        GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
-        glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
+        glUniform1f(s_loc_uIntensity, linearIntensity);
+        glUniform1f(s_loc_uGlowRadius, config->GlowRadius * s_glowModifier);
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     
-    // Render test lights (always on)
+    // Render test lights (always on) using cached locations
     for (const auto& test : s_testLights) {
-        float aspectRatio = (float)textureWidth / (float)textureHeight;
-        GLint aspectLoc = glGetUniformLocation(s_overlayProgram, "uAspectRatio");
-        glUniform1f(aspectLoc, aspectRatio);
-        
-        GLint rectLoc = glGetUniformLocation(s_overlayProgram, "uLightRect");
-        glUniform4f(rectLoc, test.x, test.y, test.w, test.h);
-        
-        GLint colorLoc = glGetUniformLocation(s_overlayProgram, "uLightColor");
-        glUniform3f(colorLoc, test.r, test.g, test.b);
-        
-        GLint intensityLoc = glGetUniformLocation(s_overlayProgram, "uIntensity");
+        glUniform4f(s_loc_uLightRect, test.x, test.y, test.w, test.h);
+        glUniform3f(s_loc_uLightColor, test.r, test.g, test.b);
         float linearIntensity = test.intensity / 203.0f;  // SDR_WHITE_NITS
-        glUniform1f(intensityLoc, linearIntensity);
-        
-        GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
-        glUniform1f(glowLoc, 1.0f * s_glowModifier);
+        glUniform1f(s_loc_uIntensity, linearIntensity);
+        glUniform1f(s_loc_uGlowRadius, 1.0f * s_glowModifier);
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     
-    // Render debug ball if enabled
+    // Render debug ball if enabled using cached locations
     if (s_debugBallEnabled) {
-        float aspectRatio = (float)textureWidth / (float)textureHeight;
-        GLint aspectLoc = glGetUniformLocation(s_overlayProgram, "uAspectRatio");
-        glUniform1f(aspectLoc, aspectRatio);
-        
         // Debug ball - larger bright magenta circle for visibility
         float debugBallSize = 0.05f;  // Larger size for visibility
-        GLint rectLoc = glGetUniformLocation(s_overlayProgram, "uLightRect");
-        glUniform4f(rectLoc, s_debugBallX, s_debugBallY, debugBallSize, debugBallSize);
-        
-        GLint colorLoc = glGetUniformLocation(s_overlayProgram, "uLightColor");
-        glUniform3f(colorLoc, 1.0f, 0.0f, 1.0f);  // Magenta color for debug ball
-        
-        GLint intensityLoc = glGetUniformLocation(s_overlayProgram, "uIntensity");
-        glUniform1f(intensityLoc, 5.0f);  // Very bright intensity
-        
-        GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
-        glUniform1f(glowLoc, 1.0f);  // Full glow
+        glUniform4f(s_loc_uLightRect, s_debugBallX, s_debugBallY, debugBallSize, debugBallSize);
+        glUniform3f(s_loc_uLightColor, 1.0f, 0.0f, 1.0f);  // Magenta color for debug ball
+        glUniform1f(s_loc_uIntensity, 5.0f);  // Very bright intensity
+        glUniform1f(s_loc_uGlowRadius, 1.0f);  // Full glow
         
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -842,22 +946,12 @@ void HDRLightOverlay::RenderOverlays(int textureWidth, int textureHeight) {
 void HDRLightOverlay::RenderSingleLight(const LightState& state, int texWidth, int texHeight) {
     const HDRLightConfig* config = state.config;
     
-    // Set light rectangle uniform (normalized 0-1 coords)
-    GLint rectLoc = glGetUniformLocation(s_overlayProgram, "uLightRect");
-    glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
-    
-    // Set color uniform (linear RGB) - use dynamic color from state
-    GLint colorLoc = glGetUniformLocation(s_overlayProgram, "uLightColor");
-    glUniform3f(colorLoc, state.r, state.g, state.b);
-    
-    // Set intensity (convert nits to linear multiplier relative to SDR white)
-    GLint intensityLoc = glGetUniformLocation(s_overlayProgram, "uIntensity");
+    // Set uniforms using cached locations
+    glUniform4f(s_loc_uLightRect, config->X, config->Y, config->Width, config->Height);
+    glUniform3f(s_loc_uLightColor, state.r, state.g, state.b);
     float linearIntensity = state.currentIntensity / HDR::Luminance::SDR_WHITE_NITS;
-    glUniform1f(intensityLoc, linearIntensity);
-    
-    // Set glow radius (apply global modifier)
-    GLint glowLoc = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
-    glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
+    glUniform1f(s_loc_uIntensity, linearIntensity);
+    glUniform1f(s_loc_uGlowRadius, config->GlowRadius * s_glowModifier);
     
     // Draw the quad
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -892,117 +986,127 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);  // Additive blending
     
-    glUseProgram(s_overlayProgramPQ);
-    glBindVertexArray(s_overlayVAO);
+    // Build instance buffer with all lights, bumpers, and test lights
+    s_instanceBuffer.clear();
     
-    // Set camera transform uniforms (get from HDRRenderer)
-    float cameraZoom = HDRRenderer::GetCurrentCameraZoom();
-    float cameraCenterX = HDRRenderer::GetCurrentCameraCenterX();
-    float cameraCenterY = HDRRenderer::GetCurrentCameraCenterY();
-    
-    GLint zoomLoc = glGetUniformLocation(s_overlayProgramPQ, "uCameraZoom");
-    GLint centerLoc = glGetUniformLocation(s_overlayProgramPQ, "uCameraCenter");
-    glUniform1f(zoomLoc, cameraZoom);
-    glUniform2f(centerLoc, cameraCenterX, cameraCenterY);
-    
-    // Render game lights with PQ encoding
+    // Add game lights to instance buffer
     for (const auto& state : s_lightStates) {
-        RenderSingleLightPQ(state, maxNits);
+        const HDRLightConfig* config = state.config;
+        // Skip occluded lights
+        if (!config->AboveBall) {
+            float dx = s_debugBallX - config->X;
+            float dy = s_debugBallY - config->Y;
+            float dist = sqrtf(dx * dx + dy * dy);
+            if (dist < 0.0075f) continue;
+        }
+        InstanceData inst;
+        inst.x = config->X;
+        inst.y = config->Y;
+        inst.w = config->Width;
+        inst.h = config->Height;
+        inst.r = state.r;
+        inst.g = state.g;
+        inst.b = state.b;
+        inst.intensity = state.currentIntensity;
+        inst.glow = config->GlowRadius * s_glowModifier;
+        s_instanceBuffer.push_back(inst);
     }
     
-    // Render bumpers with PQ encoding
+    // Add bumpers to instance buffer
     for (const auto& state : s_bumperStates) {
         const HDRBumperConfig* config = state.config;
-        
-        GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
-        glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
-        
-        GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
-        glUniform3f(colorLoc, state.r, state.g, state.b);
-        
-        GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
-        glUniform1f(intensityLoc, state.currentIntensity);
-        
-        GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
-        glUniform1f(maxNitsLoc, maxNits);
-        
-        GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-        glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
-        
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        InstanceData inst;
+        inst.x = config->X;
+        inst.y = config->Y;
+        inst.w = config->Width;
+        inst.h = config->Height;
+        inst.r = state.r;
+        inst.g = state.g;
+        inst.b = state.b;
+        inst.intensity = state.currentIntensity;
+        inst.glow = config->GlowRadius * s_glowModifier;
+        s_instanceBuffer.push_back(inst);
     }
     
-    // Render test lights with PQ encoding
+    // Add test lights to instance buffer
     for (const auto& test : s_testLights) {
-        GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
-        glUniform4f(rectLoc, test.x, test.y, test.w, test.h);
-        
-        GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
-        glUniform3f(colorLoc, test.r, test.g, test.b);
-        
-        GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
-        glUniform1f(intensityLoc, test.intensity);
-        
-        GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
-        glUniform1f(maxNitsLoc, maxNits);
-        
-        GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-        glUniform1f(glowLoc, 1.0f * s_glowModifier);
-        
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        InstanceData inst;
+        inst.x = test.x;
+        inst.y = test.y;
+        inst.w = test.w;
+        inst.h = test.h;
+        inst.r = test.r;
+        inst.g = test.g;
+        inst.b = test.b;
+        inst.intensity = test.intensity;
+        inst.glow = 1.0f * s_glowModifier;
+        s_instanceBuffer.push_back(inst);
     }
     
-    // Render smooth curved ball trail as triangle strip mesh
-    glBindVertexArray(0);  // Unbind current VAO before switching
+    // Add particles to instance buffer
+    for (const auto& p : s_particles) {
+        float alpha = p.life / p.maxLife;
+        float currentIntensity = p.intensity * alpha;
+        float currentSize = p.size * (0.5f + 0.5f * alpha);
+        
+        InstanceData inst;
+        inst.x = p.x;
+        inst.y = p.y;
+        inst.w = currentSize;
+        inst.h = currentSize;
+        inst.r = p.r;
+        inst.g = p.g;
+        inst.b = p.b;
+        inst.intensity = currentIntensity;
+        inst.glow = 2.0f * s_glowModifier;
+        s_instanceBuffer.push_back(inst);
+    }
+    
+    // Add debug ball to instance buffer if enabled
+    if (s_debugBallEnabled) {
+        float debugBallSize = 0.025f;
+        InstanceData inst;
+        inst.x = s_debugBallX;
+        inst.y = s_debugBallY;
+        inst.w = debugBallSize;
+        inst.h = debugBallSize;
+        inst.r = 1.0f;
+        inst.g = 0.0f;
+        inst.b = 0.0f;
+        inst.intensity = 500.0f;
+        inst.glow = 0.1f;
+        s_instanceBuffer.push_back(inst);
+    }
+    
+    // Profiling overlay breakdown
+    static float maxBatchMs = 0, maxTrailMs = 0;
+    static int overlayProfileCounter = 0;
+    auto tBatchStart = std::chrono::steady_clock::now();
+    
+    // Render all lights, bumpers, particles in ONE draw call using instancing
+    RenderBatchedLightsPQ(maxNits);
+    
+    auto tBatchEnd = std::chrono::steady_clock::now();
+    
+    // Render smooth curved ball trail as triangle strip mesh (separate pass)
+    glBindVertexArray(0);
     RenderTrailMesh(maxNits);
     
-    // Re-bind for debug ball rendering
-    glUseProgram(s_overlayProgramPQ);
-    glBindVertexArray(s_overlayVAO);
+    auto tTrailEnd = std::chrono::steady_clock::now();
     
-    // Render debug ball if enabled (PQ encoding) - simple red circle, no glow
-    if (s_debugBallEnabled) {
-        float debugBallSize = 0.025f;  // Small circle
-        GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
-        glUniform4f(rectLoc, s_debugBallX, s_debugBallY, debugBallSize, debugBallSize);
-        
-        GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
-        glUniform3f(colorLoc, 1.0f, 0.0f, 0.0f);  // Red color
-        
-        GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
-        glUniform1f(intensityLoc, 500.0f);  // Moderate intensity
-        
-        GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
-        glUniform1f(maxNitsLoc, maxNits);
-        
-        GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-        glUniform1f(glowLoc, 0.1f);  // Minimal glow - almost solid circle
-        
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    }
+    float batchMs = std::chrono::duration<float, std::milli>(tBatchEnd - tBatchStart).count();
+    float trailMs = std::chrono::duration<float, std::milli>(tTrailEnd - tBatchEnd).count();
+    if (batchMs > maxBatchMs) maxBatchMs = batchMs;
+    if (trailMs > maxTrailMs) maxTrailMs = trailMs;
     
-    // Render particles with PQ encoding
-    for (const auto& p : s_particles) {
-        float alpha = p.life / p.maxLife;  // Fade out over lifetime
-        float currentIntensity = p.intensity * alpha;
-        float currentSize = p.size * (0.5f + 0.5f * alpha);  // Shrink slightly as it fades
-        
-        GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
-        glUniform4f(rectLoc, p.x, p.y, currentSize, currentSize);
-        
-        GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
-        glUniform3f(colorLoc, p.r, p.g, p.b);
-        
-        GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
-        glUniform1f(intensityLoc, currentIntensity);
-        
-        GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
-        glUniform1f(maxNitsLoc, maxNits);
-        
-        GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-        glUniform1f(glowLoc, 2.0f * s_glowModifier);  // Enhanced glow for particles
-        
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    if (++overlayProfileCounter >= 120) {
+#ifdef __ANDROID__
+        __android_log_print(ANDROID_LOG_INFO, "OverlayProfile", 
+                     "Batch: %.1fms (%zu lights), Trail: %.1fms", 
+                     maxBatchMs, s_instanceBuffer.size(), maxTrailMs);
+#endif
+        overlayProfileCounter = 0;
+        maxBatchMs = maxTrailMs = 0;
     }
     
     glBindVertexArray(0);
@@ -1024,25 +1128,12 @@ void HDRLightOverlay::RenderSingleLightPQ(const LightState& state, float maxNits
         }
     }
     
-    // Set light rectangle uniform (normalized 0-1 coords)
-    GLint rectLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
-    glUniform4f(rectLoc, config->X, config->Y, config->Width, config->Height);
-    
-    // Set color uniform (linear RGB, saturated) - use dynamic color from state
-    GLint colorLoc = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
-    glUniform3f(colorLoc, state.r, state.g, state.b);
-    
-    // Set intensity in nits directly
-    GLint intensityLoc = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
-    glUniform1f(intensityLoc, state.currentIntensity);
-    
-    // Set max nits for clamping
-    GLint maxNitsLoc = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
-    glUniform1f(maxNitsLoc, maxNits);
-    
-    // Set glow radius (apply global modifier)
-    GLint glowLoc = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
-    glUniform1f(glowLoc, config->GlowRadius * s_glowModifier);
+    // Set uniforms using cached locations
+    glUniform4f(s_loc_pq_uLightRect, config->X, config->Y, config->Width, config->Height);
+    glUniform3f(s_loc_pq_uLightColor, state.r, state.g, state.b);
+    glUniform1f(s_loc_pq_uIntensityNits, state.currentIntensity);
+    glUniform1f(s_loc_pq_uMaxNits, maxNits);
+    glUniform1f(s_loc_pq_uGlowRadius, config->GlowRadius * s_glowModifier);
     
     // Draw the quad
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1117,7 +1208,31 @@ void HDRLightOverlay::CreateShaders() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShaderPQ);
     
+    // Cache uniform locations once after shader creation
+    CacheUniformLocations();
+    
     HDRLIGHT_LOG("Created overlay shaders: linear=%d, PQ=%d", s_overlayProgram, s_overlayProgramPQ);
+}
+
+void HDRLightOverlay::CacheUniformLocations() {
+    // Cache overlay program uniforms
+    s_loc_uAspectRatio = glGetUniformLocation(s_overlayProgram, "uAspectRatio");
+    s_loc_uLightRect = glGetUniformLocation(s_overlayProgram, "uLightRect");
+    s_loc_uLightColor = glGetUniformLocation(s_overlayProgram, "uLightColor");
+    s_loc_uIntensity = glGetUniformLocation(s_overlayProgram, "uIntensity");
+    s_loc_uGlowRadius = glGetUniformLocation(s_overlayProgram, "uGlowRadius");
+    
+    // Cache PQ overlay program uniforms
+    s_loc_pq_uCameraZoom = glGetUniformLocation(s_overlayProgramPQ, "uCameraZoom");
+    s_loc_pq_uCameraCenter = glGetUniformLocation(s_overlayProgramPQ, "uCameraCenter");
+    s_loc_pq_uLightRect = glGetUniformLocation(s_overlayProgramPQ, "uLightRect");
+    s_loc_pq_uLightColor = glGetUniformLocation(s_overlayProgramPQ, "uLightColor");
+    s_loc_pq_uIntensityNits = glGetUniformLocation(s_overlayProgramPQ, "uIntensityNits");
+    s_loc_pq_uMaxNits = glGetUniformLocation(s_overlayProgramPQ, "uMaxNits");
+    s_loc_pq_uGlowRadius = glGetUniformLocation(s_overlayProgramPQ, "uGlowRadius");
+    
+    HDRLIGHT_LOG("Cached uniform locations: rect=%d, color=%d, pq_rect=%d", 
+                 s_loc_uLightRect, s_loc_uLightColor, s_loc_pq_uLightRect);
 }
 
 void HDRLightOverlay::CreateQuad() {
@@ -1142,6 +1257,131 @@ void HDRLightOverlay::CreateQuad() {
     
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    
+    glBindVertexArray(0);
+}
+
+void HDRLightOverlay::CreateInstancedShader() {
+    // Compile instanced vertex shader
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &s_instancedVertexSrc, nullptr);
+    glCompileShader(vertexShader);
+    
+    GLint success;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Instanced vertex shader error: %s", infoLog);
+    }
+    
+    // Compile instanced fragment shader
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &s_instancedFragmentPQSrc, nullptr);
+    glCompileShader(fragmentShader);
+    
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Instanced fragment shader error: %s", infoLog);
+    }
+    
+    // Link instanced program
+    s_instancedProgramPQ = glCreateProgram();
+    glAttachShader(s_instancedProgramPQ, vertexShader);
+    glAttachShader(s_instancedProgramPQ, fragmentShader);
+    glLinkProgram(s_instancedProgramPQ);
+    
+    glGetProgramiv(s_instancedProgramPQ, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(s_instancedProgramPQ, 512, nullptr, infoLog);
+        HDRLIGHT_LOG("Instanced program link error: %s", infoLog);
+    }
+    
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    
+    // Cache uniform locations
+    s_loc_inst_uCameraZoom = glGetUniformLocation(s_instancedProgramPQ, "uCameraZoom");
+    s_loc_inst_uCameraCenter = glGetUniformLocation(s_instancedProgramPQ, "uCameraCenter");
+    s_loc_inst_uMaxNits = glGetUniformLocation(s_instancedProgramPQ, "uMaxNits");
+    
+    // Create VAO for instanced rendering
+    float quadVertices[] = {
+        // Position    // TexCoord
+        -1.0f, -1.0f,  0.0f, 0.0f,
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f,
+    };
+    
+    glGenVertexArrays(1, &s_instancedVAO);
+    glGenBuffers(1, &s_instancedVBO);
+    glGenBuffers(1, &s_instanceDataVBO);
+    
+    glBindVertexArray(s_instancedVAO);
+    
+    // Quad vertices (per-vertex data)
+    glBindBuffer(GL_ARRAY_BUFFER, s_instancedVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    
+    // Position attribute (location 0)
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    
+    // TexCoord attribute (location 1)
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    
+    // Instance data buffer (per-instance data)
+    glBindBuffer(GL_ARRAY_BUFFER, s_instanceDataVBO);
+    glBufferData(GL_ARRAY_BUFFER, MAX_INSTANCED_LIGHTS * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
+    
+    // aLightRect (location 2) - vec4: x, y, w, h
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)0);
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);  // One per instance
+    
+    // aLightColor (location 3) - vec3: r, g, b
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(4 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);  // One per instance
+    
+    // aLightParams (location 4) - vec2: intensity, glow
+    glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(7 * sizeof(float)));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);  // One per instance
+    
+    glBindVertexArray(0);
+    
+    s_instanceBuffer.reserve(MAX_INSTANCED_LIGHTS);
+    
+    HDRLIGHT_LOG("Created instanced shader: program=%d, VAO=%d", s_instancedProgramPQ, s_instancedVAO);
+}
+
+void HDRLightOverlay::RenderBatchedLightsPQ(float maxNits) {
+    if (s_instanceBuffer.empty()) return;
+    
+    glUseProgram(s_instancedProgramPQ);
+    glBindVertexArray(s_instancedVAO);
+    
+    // Set uniforms
+    float cameraZoom = HDRRenderer::GetCurrentCameraZoom();
+    float cameraCenterX = HDRRenderer::GetCurrentCameraCenterX();
+    float cameraCenterY = HDRRenderer::GetCurrentCameraCenterY();
+    
+    glUniform1f(s_loc_inst_uCameraZoom, cameraZoom);
+    glUniform2f(s_loc_inst_uCameraCenter, cameraCenterX, cameraCenterY);
+    glUniform1f(s_loc_inst_uMaxNits, maxNits);
+    
+    // Upload instance data
+    glBindBuffer(GL_ARRAY_BUFFER, s_instanceDataVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, s_instanceBuffer.size() * sizeof(InstanceData), s_instanceBuffer.data());
+    
+    // Draw all lights in one call!
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, static_cast<GLsizei>(s_instanceBuffer.size()));
     
     glBindVertexArray(0);
 }
@@ -2107,10 +2347,22 @@ void HDRLightOverlay::CreateTrailShader() {
     glDeleteShader(compVertShader);
     glDeleteShader(compFragShader);
     
+    // Cache trail uniform locations
+    s_loc_trail_uCameraZoom = glGetUniformLocation(s_trailProgram, "uCameraZoom");
+    s_loc_trail_uCameraCenter = glGetUniformLocation(s_trailProgram, "uCameraCenter");
+    s_loc_trail_uTrailColor = glGetUniformLocation(s_trailProgram, "uTrailColor");
+    s_loc_trail_uIntensityNits = glGetUniformLocation(s_trailProgram, "uIntensityNits");
+    s_loc_trailComp_uTrailTexture = glGetUniformLocation(s_trailCompositeProgram, "uTrailTexture");
+    s_loc_trailComp_uMaxOpacity = glGetUniformLocation(s_trailCompositeProgram, "uMaxOpacity");
+    
     HDRLIGHT_LOG("Trail shader created successfully");
 }
 
 void HDRLightOverlay::RenderTrailMesh(float maxNits) {
+    // Quick toggle to disable trail for performance testing
+    static bool trailDisabled = false;  // DISABLED for performance testing
+    if (trailDisabled) return;
+    
     if (s_ballTrail.size() < 2) return;
     if (s_trailProgram == 0) {
         static int warnCount = 0;
@@ -2252,8 +2504,8 @@ void HDRLightOverlay::RenderTrailMesh(float maxNits) {
                 continue;
             }
             
-            // Interpolate between i1 and i2
-            int numSteps = 3;
+            // Interpolate between i1 and i2 - reduced steps for performance
+            int numSteps = 1;  // Was 3, reduced for performance
             for (int step = 0; step <= numSteps; step++) {
                 float t = (float)step / (float)numSteps;
                 
@@ -2374,22 +2626,15 @@ void HDRLightOverlay::RenderTrailMesh(float maxNits) {
     glUseProgram(s_trailProgram);
     glBindVertexArray(s_trailVAO);
     
-    // Set camera transform uniforms (get from HDRRenderer)
+    // Set camera transform uniforms using cached locations
     float cameraZoom = HDRRenderer::GetCurrentCameraZoom();
     float cameraCenterX = HDRRenderer::GetCurrentCameraCenterX();
     float cameraCenterY = HDRRenderer::GetCurrentCameraCenterY();
     
-    GLint trailZoomLoc = glGetUniformLocation(s_trailProgram, "uCameraZoom");
-    GLint trailCenterLoc = glGetUniformLocation(s_trailProgram, "uCameraCenter");
-    glUniform1f(trailZoomLoc, cameraZoom);
-    glUniform2f(trailCenterLoc, cameraCenterX, cameraCenterY);
-    
-    // Set uniforms for texture pass (no PQ encoding)
-    GLint colorLoc = glGetUniformLocation(s_trailProgram, "uTrailColor");
-    glUniform3f(colorLoc, 0.8f, 0.9f, 1.0f);
-    
-    GLint intensityLoc = glGetUniformLocation(s_trailProgram, "uIntensityNits");
-    glUniform1f(intensityLoc, 400.0f);
+    glUniform1f(s_loc_trail_uCameraZoom, cameraZoom);
+    glUniform2f(s_loc_trail_uCameraCenter, cameraCenterX, cameraCenterY);
+    glUniform3f(s_loc_trail_uTrailColor, 0.8f, 0.9f, 1.0f);
+    glUniform1f(s_loc_trail_uIntensityNits, 400.0f);
     
     // Draw each segment separately
     for (const auto& range : segmentRanges) {
@@ -2408,15 +2653,11 @@ void HDRLightOverlay::RenderTrailMesh(float maxNits) {
     
     glUseProgram(s_trailCompositeProgram);
     
-    // Bind trail texture
+    // Bind trail texture and set uniforms using cached locations
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s_trailTexture);
-    
-    GLint texLoc = glGetUniformLocation(s_trailCompositeProgram, "uTrailTexture");
-    glUniform1i(texLoc, 0);
-    
-    GLint opacityLoc = glGetUniformLocation(s_trailCompositeProgram, "uMaxOpacity");
-    glUniform1f(opacityLoc, s_trailOpacity);
+    glUniform1i(s_loc_trailComp_uTrailTexture, 0);
+    glUniform1f(s_loc_trailComp_uMaxOpacity, s_trailOpacity);
     
     // Draw fullscreen quad using the overlay VAO
     glBindVertexArray(s_overlayVAO);

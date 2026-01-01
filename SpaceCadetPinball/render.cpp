@@ -12,6 +12,11 @@
 #include "HDRRenderer.h"
 #include "HDRLightOverlay.h"
 #include "control.h"
+#include <chrono>
+
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 
 std::vector<render_sprite_type_struct*> render::dirty_list, render::sprite_list, render::ball_list;
@@ -492,20 +497,49 @@ void render::BlitVScreen()
 
 void render::PresentVScreen()
 {
-	BlitVScreen();
-
-	// Use HDR rendering path if available
+	// Use HDR rendering path if available - skip SDL texture blit entirely
 	if (HDRRenderer::ShouldUseHDR())
 	{
+		// Profiling
+		static float maxUploadMs = 0, maxPresentMs = 0;
+		static int profileCounter = 0;
+		
+		auto t0 = std::chrono::steady_clock::now();
+		
 		// Get actual window size for fullscreen output
 		int screenWidth, screenHeight;
 		SDL_GetWindowSize(winmain::MainWindow, &screenWidth, &screenHeight);
 		
-		// Upload SDR pixels to HDR renderer and present with PQ encoding
+		// Upload SDR pixels directly to HDR renderer (skip BlitVScreen - not needed for HDR path)
 		HDRRenderer::UploadTexture(vscreen->BmpBufPtr1, vscreen->Width, vscreen->Height);
+		
+		auto t1 = std::chrono::steady_clock::now();
+		
 		HDRRenderer::Present(screenWidth, screenHeight);
+		
+		auto t2 = std::chrono::steady_clock::now();
+		
+		// Track max times
+		float uploadMs = std::chrono::duration<float, std::milli>(t1 - t0).count();
+		float presentMs = std::chrono::duration<float, std::milli>(t2 - t1).count();
+		if (uploadMs > maxUploadMs) maxUploadMs = uploadMs;
+		if (presentMs > maxPresentMs) maxPresentMs = presentMs;
+		
+		if (++profileCounter >= 120) {
+#ifdef __ANDROID__
+			__android_log_print(ANDROID_LOG_WARN, "RenderProfile", 
+				"Upload: %.1fms, Present: %.1fms", 
+				maxUploadMs, maxPresentMs);
+#endif
+			profileCounter = 0;
+			maxUploadMs = maxPresentMs = 0;
+		}
+		
 		return;
 	}
+	
+	// Standard SDR rendering path - needs BlitVScreen for SDL texture
+	BlitVScreen();
 
 	// Standard SDR rendering path
 	if (offset_x == 0 && offset_y == 0)

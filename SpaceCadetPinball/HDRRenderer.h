@@ -80,6 +80,26 @@ private:
     static float s_currentCameraCenterX;   // Current frame's camera center X
     static float s_currentCameraCenterY;   // Current frame's camera center Y
     
+    // Cached uniform locations (avoid glGetUniformLocation every frame)
+    // Output program uniforms
+    static GLint s_loc_uHDRTexture;
+    static GLint s_loc_uMaxNits;
+    static GLint s_loc_uSDRWhiteNits;
+    static GLint s_loc_uCameraZoom;
+    static GLint s_loc_uCameraCenter;
+    static GLint s_loc_uViewportSize;
+    static GLint s_loc_uViewportOffset;
+    static GLint s_loc_uRawBallPos;
+    static GLint s_loc_uLastBallPos;
+    static GLint s_loc_uBallValid;
+    static GLint s_loc_uSmoothedCameraPos;
+    // Upload program uniforms
+    static GLint s_loc_upload_uTexture;
+    static GLint s_loc_upload_uIntensityMultiplier;
+    static GLint s_loc_upload_uExposure;
+    
+    static void CacheUniformLocations();
+    
     // Shader compilation helpers
     static GLuint CompileShader(GLenum type, const char* source);
     static GLuint CreateProgram(const char* vertexSrc, const char* fragmentSrc);

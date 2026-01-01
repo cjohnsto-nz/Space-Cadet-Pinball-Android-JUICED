@@ -160,6 +160,10 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 	auto frameStart = Clock::now();
 	double UpdateToFrameCounter = 0;
 	DurationMs sleepRemainder(0), frameDuration(TargetFrameTime);
+	
+	// Accumulator for fixed timestep physics
+	double physicsAccumulator = 0.0;
+	const double fixedDt = TargetFrameTime.count();  // Fixed physics timestep in ms
 	auto prevTime = frameStart;
 	while (true)
 	{
@@ -244,30 +248,30 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				static float maxDt = 0;
 				static float minDt = 9999.0f;
 				static float avgDt = 0;
-				static float dtHistory[30];
+				static float dtHistory[240];
 				static int dtIndex = 0;
 				
 				// Track min/max/avg
 				if (dt > maxDt) maxDt = dt;
 				if (dt < minDt) minDt = dt;
 				dtHistory[dtIndex] = dt;
-				dtIndex = (dtIndex + 1) % 30;
+				dtIndex = (dtIndex + 1) % 240;
 				
-				if (++frameLogCounter >= 30) {
+				if (++frameLogCounter >= 240) {  // Log every ~1 second at 240 UPS
 					// Calculate average from history
 					avgDt = 0;
 					float targetMs = static_cast<float>(TargetFrameTime.count());
 					float slowThreshold = targetMs * 1.5f;  // 50% over target
 					float verySlowThreshold = targetMs * 2.0f;  // 100% over target
 					int fastFrames = 0, okFrames = 0, slowFrames = 0, verySlowFrames = 0;
-					for (int i = 0; i < 30; i++) {
+					for (int i = 0; i < 240; i++) {
 						avgDt += dtHistory[i];
 						if (dtHistory[i] <= targetMs) fastFrames++;
 						else if (dtHistory[i] <= slowThreshold) okFrames++;
 						else if (dtHistory[i] <= verySlowThreshold) slowFrames++;
 						else verySlowFrames++;
 					}
-					avgDt /= 30.0f;
+					avgDt /= 240.0f;
 					
 					// Always log for now to get detailed data
 					__android_log_print(ANDROID_LOG_WARN, "FrameTiming", 
@@ -284,7 +288,36 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 					minDt = 9999.0f;
 				}
 				
-				pb::frame(dt);
+				// Accumulator-based fixed timestep for physics
+				// Accumulate real elapsed time and run multiple physics steps if needed
+				physicsAccumulator += dt;
+				
+				// Cap accumulator to prevent spiral of death (max 4 physics steps per frame)
+				const double maxAccumulator = fixedDt * 4.0;
+				if (physicsAccumulator > maxAccumulator) {
+					physicsAccumulator = maxAccumulator;
+				}
+				
+				// Run physics steps until we've caught up
+				int physicsSteps = 0;
+				while (physicsAccumulator >= fixedDt) {
+					pb::frame(static_cast<float>(fixedDt));
+					physicsAccumulator -= fixedDt;
+					physicsSteps++;
+				}
+				
+				// Track multi-step frames
+				static int multiStepFrames = 0;
+				static int physicsLogCounter = 0;
+				if (physicsSteps > 1) multiStepFrames++;
+				if (++physicsLogCounter >= 120) {
+					if (multiStepFrames > 0) {
+						__android_log_print(ANDROID_LOG_INFO, "PhysicsTiming", 
+							"Multi-step frames: %d/120 (%.1f%%)", multiStepFrames, multiStepFrames * 100.0f / 120.0f);
+					}
+					physicsLogCounter = 0;
+					multiStepFrames = 0;
+				}
 				
 				// Measure time spent in ball position tracking
 				auto ballTrackStart = Clock::now();
