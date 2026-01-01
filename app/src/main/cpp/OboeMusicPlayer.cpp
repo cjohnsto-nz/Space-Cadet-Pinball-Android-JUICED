@@ -5,6 +5,7 @@
 
 #define LOG_TAG "OboeMusicPlayer"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 // Global instance
@@ -225,6 +226,129 @@ bool OboeMusicPlayer::loadFromAssets(AAssetManager* assetManager, const std::str
     return true;
 }
 
+bool OboeMusicPlayer::loadMissionTrackFromAssets(AAssetManager* assetManager, const std::string& assetPath) {
+    LOGI("Loading mission track from assets: %s", assetPath.c_str());
+    
+    AAsset* asset = AAssetManager_open(assetManager, assetPath.c_str(), AASSET_MODE_STREAMING);
+    if (asset == nullptr) {
+        LOGE("Failed to open mission asset: %s", assetPath.c_str());
+        return false;
+    }
+    
+    off_t assetLength = AAsset_getLength(asset);
+    LOGI("Mission asset opened, length=%ld", (long)assetLength);
+    
+    if (assetLength < 44) {
+        LOGE("Mission asset too small: length=%ld", (long)assetLength);
+        AAsset_close(asset);
+        return false;
+    }
+    
+    // Read entire asset into memory
+    std::vector<char> assetData(assetLength);
+    int bytesRead = AAsset_read(asset, assetData.data(), assetLength);
+    AAsset_close(asset);
+    
+    if (bytesRead != assetLength) {
+        LOGE("Failed to read mission asset: read %d of %ld bytes", bytesRead, (long)assetLength);
+        return false;
+    }
+    
+    const char* data = assetData.data();
+    
+    // Parse WAV header
+    if (strncmp(data, "RIFF", 4) != 0 || strncmp(data + 8, "WAVE", 4) != 0) {
+        LOGE("Mission track: Not a valid WAV file");
+        return false;
+    }
+    
+    // Find fmt and data chunks
+    int32_t offset = 12;
+    int16_t audioFormat = 0;
+    int16_t channels = 0;
+    int32_t sampleRate = 0;
+    int16_t bitsPerSample = 0;
+    bool foundFmt = false;
+    bool foundData = false;
+    const char* pcmData = nullptr;
+    int32_t dataSize = 0;
+    
+    while (offset < assetLength - 8) {
+        const char* chunkId = data + offset;
+        int32_t chunkSize = *reinterpret_cast<const int32_t*>(data + offset + 4);
+        
+        if (strncmp(chunkId, "fmt ", 4) == 0) {
+            audioFormat = *reinterpret_cast<const int16_t*>(data + offset + 8);
+            channels = *reinterpret_cast<const int16_t*>(data + offset + 10);
+            sampleRate = *reinterpret_cast<const int32_t*>(data + offset + 12);
+            bitsPerSample = *reinterpret_cast<const int16_t*>(data + offset + 22);
+            foundFmt = true;
+            LOGI("Mission fmt: format=%d, channels=%d, sampleRate=%d, bits=%d",
+                 audioFormat, channels, sampleRate, bitsPerSample);
+        } else if (strncmp(chunkId, "data", 4) == 0) {
+            dataSize = chunkSize;
+            pcmData = data + offset + 8;
+            foundData = true;
+            break;
+        }
+        
+        offset += 8 + chunkSize;
+        if (chunkSize % 2 != 0) offset++;
+    }
+    
+    if (!foundFmt || !foundData) {
+        LOGE("Mission track: Missing fmt or data chunk");
+        return false;
+    }
+    
+    if (audioFormat != 1) {
+        LOGE("Mission track: Only PCM WAV supported");
+        return false;
+    }
+    
+    // Verify format matches main track
+    if (sampleRate != mSampleRate || channels != mChannels) {
+        LOGW("Mission track format differs from main track (sr=%d vs %d, ch=%d vs %d) - may cause issues",
+             sampleRate, mSampleRate, channels, mChannels);
+    }
+    
+    size_t numSamples = dataSize / (bitsPerSample / 8);
+    
+    std::lock_guard<std::mutex> lock(mDataMutex);
+    mMissionAudioData.clear();
+    mMissionAudioData.reserve(numSamples);
+    
+    if (bitsPerSample == 16) {
+        const int16_t* samples = reinterpret_cast<const int16_t*>(pcmData);
+        for (size_t i = 0; i < numSamples; i++) {
+            mMissionAudioData.push_back(samples[i] / 32768.0f);
+        }
+    } else if (bitsPerSample == 24) {
+        for (size_t i = 0; i < numSamples; i++) {
+            int32_t sample = (pcmData[i*3] & 0xFF) | 
+                            ((pcmData[i*3+1] & 0xFF) << 8) | 
+                            ((pcmData[i*3+2]) << 16);
+            mMissionAudioData.push_back(sample / 8388608.0f);
+        }
+    } else if (bitsPerSample == 32) {
+        const int32_t* samples = reinterpret_cast<const int32_t*>(pcmData);
+        for (size_t i = 0; i < numSamples; i++) {
+            mMissionAudioData.push_back(samples[i] / 2147483648.0f);
+        }
+    } else {
+        LOGE("Mission track: Unsupported bits per sample: %d", bitsPerSample);
+        return false;
+    }
+    
+    LOGI("Successfully loaded mission track: %zu samples", mMissionAudioData.size());
+    return true;
+}
+
+void OboeMusicPlayer::setMissionTrackEnabled(bool enabled) {
+    mMissionEnabled = enabled;
+    LOGI("Mission track %s", enabled ? "enabled" : "disabled");
+}
+
 bool OboeMusicPlayer::loadPCMData(const int16_t* data, size_t numSamples, int32_t sampleRate, int32_t channels) {
     std::lock_guard<std::mutex> lock(mDataMutex);
     
@@ -330,6 +454,10 @@ oboe::DataCallbackResult OboeMusicPlayer::onAudioReady(
 
     std::lock_guard<std::mutex> lock(mDataMutex);
     
+    // Determine target mission volume based on enabled state
+    float missionTargetVol = mMissionEnabled ? mMissionTargetVolume.load() : 0.0f;
+    bool hasMissionTrack = !mMissionAudioData.empty();
+    
     while (samplesWritten < samplesNeeded) {
         size_t currentIndex = mReadIndex.load();
         
@@ -350,7 +478,29 @@ oboe::DataCallbackResult OboeMusicPlayer::onAudioReady(
                                          mAudioData.size() - currentIndex);
         
         for (size_t i = 0; i < samplesToRead; i++) {
-            output[samplesWritten + i] = mAudioData[currentIndex + i] * volume;
+            // Main track
+            float sample = mAudioData[currentIndex + i] * volume;
+            
+            // Mix in mission track with smooth fade
+            if (hasMissionTrack) {
+                // Smooth fade toward target volume
+                if (mMissionCurrentVolume < missionTargetVol) {
+                    mMissionCurrentVolume += kMissionFadeSpeed;
+                    if (mMissionCurrentVolume > missionTargetVol) 
+                        mMissionCurrentVolume = missionTargetVol;
+                } else if (mMissionCurrentVolume > missionTargetVol) {
+                    mMissionCurrentVolume -= kMissionFadeSpeed;
+                    if (mMissionCurrentVolume < missionTargetVol) 
+                        mMissionCurrentVolume = missionTargetVol;
+                }
+                
+                // Add mission track if volume > 0 and within bounds
+                if (mMissionCurrentVolume > 0.001f && currentIndex + i < mMissionAudioData.size()) {
+                    sample += mMissionAudioData[currentIndex + i] * mMissionCurrentVolume * volume;
+                }
+            }
+            
+            output[samplesWritten + i] = sample;
         }
         
         mReadIndex = currentIndex + samplesToRead;

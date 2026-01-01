@@ -191,6 +191,21 @@ bool SpaceCadetPinballJNI::isBallCaptured() {
     return s_ballCaptured;
 }
 
+void SpaceCadetPinballJNI::setMissionActive(bool active) {
+    JNIEnv* jniEnv = nullptr;
+    if (g_JavaVM == nullptr) return;
+    g_JavaVM->GetEnv((void **) &jniEnv, JNI_VERSION_1_6);
+    if (jniEnv == nullptr) return;
+
+    jclass jniClass = jniEnv->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (jniClass == nullptr) return;
+    
+    jmethodID mid = jniEnv->GetStaticMethodID(jniClass, "setMissionActive", "(Z)V");
+    if (mid == nullptr) return;
+
+    jniEnv->CallStaticVoidMethod(jniClass, mid, active);
+}
+
 // HDR Support Functions
 bool SpaceCadetPinballJNI::queryHDRSupport() {
     return HDR::g_hdrCapabilities.isSupported;
@@ -546,4 +561,33 @@ JNIEXPORT jboolean JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_isMusicPlaying(JNIEnv *env, jobject thiz) {
     if (g_musicPlayer == nullptr) return false;
     return g_musicPlayer->isPlaying();
+}
+
+// Mission track JNI functions
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath) {
+    if (g_musicPlayer == nullptr) return false;
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (mgr == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(assetPath, nullptr);
+    bool result = g_musicPlayer->loadMissionTrackFromAssets(mgr, pathStr);
+    env->ReleaseStringUTFChars(assetPath, pathStr);
+    return result;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setMissionMusicEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->setMissionTrackEnabled(enabled);
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setMissionMusicVolume(JNIEnv *env, jobject thiz, jfloat volume) {
+    if (g_musicPlayer != nullptr) {
+        g_musicPlayer->setMissionVolume(volume);
+    }
 }

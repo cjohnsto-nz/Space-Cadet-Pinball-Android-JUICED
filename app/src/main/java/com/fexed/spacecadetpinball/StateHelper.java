@@ -135,6 +135,15 @@ public enum StateHelper {
         }
     }
 
+    public void setMissionActive(boolean active) {
+        Log.d(TAG, "setMissionActive: " + active);
+        for (IStateListener listener : mStateListeners) {
+            if (listener != null) {
+                listener.onMissionActiveChanged(active);
+            }
+        }
+    }
+
     public interface IStateListener {
 
         void onStateChanged(int state);
@@ -162,5 +171,7 @@ public enum StateHelper {
         void onHapticFeedback(float intensity);
 
         void onBallCapturedChanged(boolean captured);
+
+        void onMissionActiveChanged(boolean active);
     }
 }

@@ -5,6 +5,7 @@
 
 #ifdef __ANDROID__
 #include <jni.h>
+#include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 #endif
 
 #include "options.h"
@@ -3226,12 +3227,26 @@ void control::EscapeChuteSinkControl(int code, TPinballComponent* caller)
 		caller->Message(56, static_cast<TSink*>(caller)->TimerTime);
 }
 
+// Track previous mission state for audio notifications
+static int s_previousMissionState = 0;
+
 void control::MissionControl(int code, TPinballComponent* caller)
 {
 	if (!control_lite198_tag.Component)
 		return;
 
 	int lite198Msg = control_lite198_tag.Component->MessageField;
+	
+#ifdef __ANDROID__
+	// Notify Java layer when mission state changes (for mission music track)
+	// Mission is "active" when state >= 2 (actual mission in progress, not just selecting)
+	bool wasActive = s_previousMissionState >= 2;
+	bool isActive = lite198Msg >= 2;
+	if (wasActive != isActive) {
+		SpaceCadetPinballJNI::setMissionActive(isActive);
+	}
+	s_previousMissionState = lite198Msg;
+#endif
 	switch (code)
 	{
 	case 47:

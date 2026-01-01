@@ -48,4 +48,8 @@ public class JNIEntryPoint {
     static void setBallCaptured(boolean captured) {
         StateHelper.INSTANCE.setBallCaptured(captured);
     }
+
+    static void setMissionActive(boolean active) {
+        StateHelper.INSTANCE.setMissionActive(active);
+    }
 }

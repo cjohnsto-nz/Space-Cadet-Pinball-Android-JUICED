@@ -130,6 +130,12 @@ public:
     void setLooping(bool loop) { mLooping = loop; }
     bool isLooping() const { return mLooping; }
 
+    // Mission track support (layered on top of main track)
+    bool loadMissionTrackFromAssets(AAssetManager* assetManager, const std::string& assetPath);
+    void setMissionTrackEnabled(bool enabled);
+    bool isMissionTrackEnabled() const { return mMissionEnabled; }
+    void setMissionVolume(float volume) { mMissionTargetVolume = volume; }
+
     // Low-pass filter control (for muffled effect when ball is captured)
     void setLowPassEnabled(bool enabled) { mLowPassFilter.setEnabled(enabled); }
     bool isLowPassEnabled() const { return mLowPassFilter.isEnabled(); }
@@ -154,6 +160,13 @@ private:
     
     LowPassFilter mLowPassFilter;
     std::mutex mDataMutex;
+    
+    // Mission track (layered on top, same position as main track)
+    std::vector<float> mMissionAudioData;
+    std::atomic<bool> mMissionEnabled{false};
+    std::atomic<float> mMissionTargetVolume{1.0f};
+    float mMissionCurrentVolume = 0.0f;  // For smooth fade
+    static constexpr float kMissionFadeSpeed = 0.00005f;  // Slow fade rate per sample (~5 seconds)
 };
 
 // Global instance for JNI access

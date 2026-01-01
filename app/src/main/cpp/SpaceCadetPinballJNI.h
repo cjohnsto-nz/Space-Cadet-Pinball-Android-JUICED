@@ -42,6 +42,9 @@ public:
     static void setBallCaptured(bool captured);
     static bool isBallCaptured();
 
+    // Mission state (for mission music track)
+    static void setMissionActive(bool active);
+
     // HDR support
     static bool queryHDRSupport();
     static float getMaxDisplayLuminance();

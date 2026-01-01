@@ -95,6 +95,15 @@ public class MainActivity extends SDLActivity {
         initOboeMusicPlayer();
         if (loadMusicFromAssets(getAssets(), "808generative.wav")) {
             setMusicVolume(PrefsHelper.getMusicVolume() / 100.0f);
+            
+            // Load mission track (layered on top when mission is active)
+            if (loadMissionMusicFromAssets(getAssets(), "808generativemission.wav")) {
+                setMissionMusicVolume(0.7f);  // Reduce max volume to 70%
+                Log.i(TAG, "Mission music track loaded");
+            } else {
+                Log.w(TAG, "Failed to load mission music track");
+            }
+            
             if (PrefsHelper.getMusic()) {
                 startMusic();
             }
@@ -823,6 +832,13 @@ public class MainActivity extends SDLActivity {
             // Enable low-pass filter when ball is captured (in hole/sink) for muffled effect
             setMusicLowPassEnabled(captured);
         }
+
+        @Override
+        public void onMissionActiveChanged(boolean active) {
+            // Enable/disable mission music track overlay
+            setMissionMusicEnabled(active);
+            Log.i(TAG, "Mission music " + (active ? "enabled" : "disabled"));
+        }
     };
 
     @Override
@@ -1242,6 +1258,11 @@ public class MainActivity extends SDLActivity {
     private native void setMusicLowPassCutoff(float freq);
     private native long getMusicPositionMs();
     private native boolean isMusicPlaying();
+
+    // Mission track native methods
+    private native boolean loadMissionMusicFromAssets(android.content.res.AssetManager assetManager, String assetPath);
+    private native void setMissionMusicEnabled(boolean enabled);
+    private native void setMissionMusicVolume(float volume);
 
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;
