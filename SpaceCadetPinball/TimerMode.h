@@ -39,7 +39,8 @@ public:
     static void OnScoreAdded(int scoreAdded);
 
     // Penalty for ball crash (no replay/extra ball)
-    static void OnBallCrash();
+    // halfPenalty: true if grace timer was active (half the penalty)
+    static void OnBallCrash(bool halfPenalty = false);
 
     // Check if timer has expired
     static bool HasExpired() { return s_timerExpired; }

@@ -2710,10 +2710,11 @@ void control::WormHoleControl(int code, TPinballComponent* caller)
 
 	if (code == 63)
 	{
-		// Timer mode: check if waiting for final sink after timer expired
+		// Timer mode: if waiting for final sink, eject ball to drain
 		if (TimerMode::IsWaitingForFinalSink())
 		{
-			TimerMode::OnFinalSink();
+			// Eject ball so it drains - OnFinalSink called from drain code 60
+			caller->Message(56, 0.0);
 			return;
 		}
 		int sinkFlag = 0;
@@ -3074,10 +3075,11 @@ void control::BlackHoleKickoutControl(int code, TPinballComponent* caller)
 
 	if (code == 63)
 	{
-		// Timer mode: check if waiting for final sink after timer expired
+		// Timer mode: if waiting for final sink, eject ball to drain
 		if (TimerMode::IsWaitingForFinalSink())
 		{
-			TimerMode::OnFinalSink();
+			// Eject ball so it drains - OnFinalSink called from drain code 60
+			caller->Message(55, -1.0);
 			return;
 		}
 		int addedScore = TableG->AddScore(caller->get_scoring(0));
@@ -3108,10 +3110,11 @@ void control::GravityWellKickoutControl(int code, TPinballComponent* caller)
 	{
 	case 63:
 		{
-			// Timer mode: check if waiting for final sink after timer expired
+			// Timer mode: if waiting for final sink, eject ball to drain
 			if (TimerMode::IsWaitingForFinalSink())
 			{
-				TimerMode::OnFinalSink();
+				// Eject ball so it drains - OnFinalSink called from drain code 60
+				caller->Message(55, 0.0);
 				return;
 			}
 			auto addedScore = TableG->AddScore(caller->get_scoring(0));
@@ -3244,10 +3247,11 @@ void control::EscapeChuteSinkControl(int code, TPinballComponent* caller)
 {
 	if (code == 63)
 	{
-		// Timer mode: check if waiting for final sink after timer expired
+		// Timer mode: if waiting for final sink, eject ball to drain
 		if (TimerMode::IsWaitingForFinalSink())
 		{
-			TimerMode::OnFinalSink();
+			// Eject ball so it drains - OnFinalSink called from drain code 60
+			caller->Message(56, 0.0);
 			return;
 		}
 		caller->Message(56, static_cast<TSink*>(caller)->TimerTime);
@@ -3674,9 +3678,10 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 
 	if (code == 60)
 	{
-		// Timer mode: don't respawn ball if game is over
-		if (TimerMode::IsTimerMode() && TimerMode::HasExpired())
+		// Timer mode: trigger game over after ball is fully drained
+		if (TimerMode::IsWaitingForFinalSink())
 		{
+			TimerMode::OnFinalSink();
 			return;
 		}
 		
@@ -3698,10 +3703,10 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 	}
 	else if (code == 63)
 	{
-		// Timer mode: check if waiting for final sink after timer expired
+		// Timer mode: if waiting for final sink, just let the ball drain (don't respawn)
+		// OnFinalSink will be called from code 60 after ball is fully drained
 		if (TimerMode::IsWaitingForFinalSink())
 		{
-			TimerMode::OnFinalSink();
 			return;
 		}
 		
@@ -3712,18 +3717,49 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 		}
 		else if (TimerMode::IsTimerMode())
 		{
-			// In timer mode, ball crash (no replay/extra ball) applies penalty
-			if (!TableG->ReplayActiveFlag && !TableG->ExtraBalls)
+			// Check if replay ball light is lit - if so, use it instead of penalty
+			if (light_on(&control_lite199_tag))
 			{
-				TimerMode::OnBallCrash();
+				// Clear the replay ball light
+				control_lite199_tag.Component->Message(20, 0.0);
+				control_lite200_tag.Component->Message(19, 0.0);
+				control_soundwave59_tag.Component->Play();
+				// No penalty applied
+			}
+			else if (!TableG->ReplayActiveFlag && !TableG->ExtraBalls)
+			{
+				// Check if grace timer (lite200) is active - halve penalty if so
+				if (light_on(&control_lite200_tag))
+				{
+					// Grace period active - half penalty
+					TimerMode::OnBallCrash(true);
+					// Turn off grace timer
+					control_lite200_tag.Component->Message(20, 0.0);
+				}
+				else
+				{
+					// Full penalty
+					TimerMode::OnBallCrash(false);
+				}
 			}
 			
-			// Check if timer expired from penalty - if so, end game
+			// Check if timer expired from penalty - if so, let ball drain
 			if (TimerMode::IsWaitingForFinalSink())
 			{
-				TimerMode::OnFinalSink();
+				// Don't respawn - ball will drain and trigger OnFinalSink from code 60
 				return;
 			}
+			
+			// Reset launcher gate and skill shot for next ball
+			// Open the kicker gates (message 53 opens them)
+			control_gate1_tag.Component->Message(53, 0.0);
+			control_gate2_tag.Component->Message(53, 0.0);
+			// Reset skill shot lights and enable skill shot (lite67)
+			control_skill_shot_lights_tag.Component->Message(20, 0.0);
+			control_lite67_tag.Component->Message(19, 0.0);
+			control_skill_shot_lights_tag.Component->Message(26, 0.25f);
+			// Start shoot again grace timer (5 seconds)
+			control_lite200_tag.Component->Message(9, 5.0);
 			
 			// Auto-fire ball back from a random wormhole
 			control_drain_tag.Component->Message(1024, 0.0);

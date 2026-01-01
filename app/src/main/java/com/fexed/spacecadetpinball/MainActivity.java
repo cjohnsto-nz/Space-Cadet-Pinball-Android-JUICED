@@ -79,6 +79,7 @@ public class MainActivity extends SDLActivity {
     private Handler timerUpdateHandler;
     private Runnable timerUpdateRunnable;
     private boolean waitingForModeSelection = false;
+    private boolean pendingGameStart = false;  // Wait for ball to enter plunger before starting music/timer
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -340,7 +341,6 @@ public class MainActivity extends SDLActivity {
             return false;
         });
 
-
         mBinding.bottomPlunger.setOnTouchListener((v1, event) -> {
             v1.performClick();
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -356,6 +356,18 @@ public class MainActivity extends SDLActivity {
 
         mBinding.replay.setOnLongClickListener(view -> {
             exeHaptic();
+            
+            // Stop all music before restart
+            stopMusic();
+            if (beatMapPlayer != null) beatMapPlayer.stop();
+            
+            // Clean up timer mode if active
+            if (timerModeActive) {
+                onTimerModeGameOver();
+            }
+            resetTimerMode();
+            
+            // Trigger native restart
             SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_F2);
             SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_F2);
             PrefsHelper.setCheatsUsed(false);
@@ -381,7 +393,6 @@ public class MainActivity extends SDLActivity {
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
             }
         });
-
 
         mBinding.tiltLeft.setOnTouchListener((v1, event) -> {
             v1.performClick();
@@ -793,6 +804,39 @@ public class MainActivity extends SDLActivity {
 
         @Override
         public void onBallInPlungerChanged(boolean isBallInPlunger) {
+            // Start music and timer when ball first enters plunger after mode selection
+            if (isBallInPlunger && pendingGameStart) {
+                pendingGameStart = false;
+                runOnUiThread(() -> {
+                    // Show appropriate UI elements based on mode
+                    mBinding.missiontxt.setVisibility(View.VISIBLE);
+                    mBinding.infotxt.setVisibility(View.VISIBLE);
+                    
+                    if (timerModeActive) {
+                        // Timer mode: show timer and score progress, hide ball count
+                        mBinding.txtTimer.setVisibility(View.VISIBLE);
+                        mBinding.txtscore.setVisibility(View.VISIBLE);
+                        mBinding.ballstxt.setVisibility(View.GONE);
+                        // Start timer
+                        startTimerMode();
+                    } else {
+                        // Classic mode: show ball count and score
+                        mBinding.ballstxt.setVisibility(View.VISIBLE);
+                        mBinding.txtscore.setVisibility(View.VISIBLE);
+                        mBinding.txtTimer.setVisibility(View.GONE);
+                        mBinding.txtTimerBonus.setVisibility(View.GONE);
+                    }
+                    
+                    // Start music
+                    if (PrefsHelper.getMusic()) {
+                        startMusic();
+                        if (beatMapPlayer != null && PrefsHelper.getBeatReactiveGlow()) {
+                            beatMapPlayer.start();
+                        }
+                    }
+                });
+            }
+            
             if (PrefsHelper.getFullScreenPlunger()) {
                 runOnUiThread(() -> mBinding.plunger.setVisibility(isBallInPlunger ? View.VISIBLE : View.INVISIBLE));
                 if (isBallInPlunger) {
@@ -1583,6 +1627,15 @@ public class MainActivity extends SDLActivity {
 
     private void showModeSelectionDialog() {
         waitingForModeSelection = true;
+        
+        // Hide all text UI until game begins
+        mBinding.txtscore.setVisibility(View.GONE);
+        mBinding.ballstxt.setVisibility(View.GONE);
+        mBinding.txtTimer.setVisibility(View.GONE);
+        mBinding.txtTimerBonus.setVisibility(View.GONE);
+        mBinding.missiontxt.setVisibility(View.GONE);
+        mBinding.infotxt.setVisibility(View.GONE);
+        
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setTitle("Select Game Mode");
         builder.setCancelable(false);
@@ -1590,34 +1643,19 @@ public class MainActivity extends SDLActivity {
         String[] modes = {"Classic Mode", "Timer Mode (3 min)"};
         builder.setItems(modes, (dialog, which) -> {
             waitingForModeSelection = false;
+            pendingGameStart = true;  // Wait for ball to enter plunger before starting music/timer
             if (which == 0) {
-                // Classic mode
+                // Classic mode - will show ball count and score when game starts
                 setTimerMode(false);
                 timerModeActive = false;
-                mBinding.txtTimer.setVisibility(View.GONE);
-                mBinding.txtTimerBonus.setVisibility(View.GONE);
-                mBinding.txtscore.setVisibility(View.VISIBLE);
             } else {
-                // Timer mode
+                // Timer mode - will show timer and score progress when game starts
                 setTimerMode(true);
                 timerModeActive = true;
-                startTimerMode();
-                // Show timer and score progress, hide ball counter
-                mBinding.txtscore.setVisibility(View.VISIBLE);
-                mBinding.txtTimer.setVisibility(View.VISIBLE);
-                mBinding.ballstxt.setVisibility(View.GONE);
                 startTimerUpdateLoop();
             }
-            
-            // Start music after mode selection
-            if (PrefsHelper.getMusic()) {
-                startMusic();
-                if (beatMapPlayer != null && PrefsHelper.getBeatReactiveGlow()) {
-                    beatMapPlayer.start();
-                }
-            }
+            // UI elements will be shown when ball first enters plunger
         });
-        
         builder.show();
     }
 

@@ -639,7 +639,9 @@ void HDRLightOverlay::UpdateLightStates() {
             // Flashing - use flash intensity when lit
             state.currentIntensity = (light->Flasher.BmpIndex == 1) ? 
                 config.IntensityFlash : 0.0f;
-        } else if (state.isOn) {
+        } else if (state.isOn || light->FlasherFlag2 != 0) {
+            // Light is on via BmpIndex1 OR via Message(9) which sets FlasherFlag2
+            // Message(9) is used for timed "on" state (e.g., shoot again grace timer)
             state.currentIntensity = config.IntensityOn;
         } else {
             state.currentIntensity = 0.0f;

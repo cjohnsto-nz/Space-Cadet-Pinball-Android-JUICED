@@ -149,15 +149,16 @@ void TimerMode::OnScoreAdded(int scoreAdded)
     }
 }
 
-void TimerMode::OnBallCrash()
+void TimerMode::OnBallCrash(bool halfPenalty)
 {
     if (s_currentMode != Mode::Timer || !s_timerActive || s_timerExpired)
         return;
 
-    s_bonusTimeMs -= kCrashPenaltyMs;
+    int64_t penalty = halfPenalty ? (kCrashPenaltyMs / 2) : kCrashPenaltyMs;
+    s_bonusTimeMs -= penalty;
 
     // Notify Java UI with penalty (negative value)
-    SpaceCadetPinballJNI::notifyTimerBonus(-static_cast<int>(kCrashPenaltyMs / 1000));
+    SpaceCadetPinballJNI::notifyTimerBonus(-static_cast<int>(penalty / 1000));
 
     // Check if timer expired from penalty
     if (GetRemainingTimeMs() <= 0)
