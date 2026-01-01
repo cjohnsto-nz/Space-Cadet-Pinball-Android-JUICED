@@ -697,6 +697,12 @@ Java_com_fexed_spacecadetpinball_MainActivity_getTimerScoreProgress(JNIEnv *env,
 }
 
 extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getTimerThresholdIncrement(JNIEnv *env, jobject thiz) {
+    return TimerMode::GetCurrentThresholdIncrement();
+}
+
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_pauseTimerMode(JNIEnv *env, jobject thiz) {
     TimerMode::PauseTimer();

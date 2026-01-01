@@ -1388,6 +1388,7 @@ public class MainActivity extends SDLActivity {
     private native void startTimerMode();
     private native void resetTimerMode();
     private native int getTimerScoreProgress();
+    private native int getTimerThresholdIncrement();
     private native void pauseTimerMode();
     private native void resumeTimerMode();
 
@@ -1686,9 +1687,11 @@ public class MainActivity extends SDLActivity {
                         mBinding.txtTimer.setTextColor(Color.WHITE);
                     }
                     
-                    // Update score progress display (score/100000 for next +15s)
+                    // Update score progress display (score/threshold for next +15s)
+                    // Threshold is 100k + 25k per rank
                     int scoreProgress = getTimerScoreProgress();
-                    String progressText = String.format("%,d / 100,000", scoreProgress);
+                    int threshold = getTimerThresholdIncrement();
+                    String progressText = String.format("%,d / %,d", scoreProgress, threshold);
                     setTextWithBackground(mBinding.txtscore, progressText);
                     
                     // Continue updating every 100ms

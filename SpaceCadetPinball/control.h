@@ -89,6 +89,7 @@ public:
 	static bool light_on(component_tag<TLight>* tag);
 	static int SpecialAddScore(int score);
 	static int AddRankProgress(int rank);
+	static int GetPlayerRank();
 	static void AdvanceWormHoleDestination(int flag);
 
 	static void FlipperRebounderControl1(int code, TPinballComponent* caller);

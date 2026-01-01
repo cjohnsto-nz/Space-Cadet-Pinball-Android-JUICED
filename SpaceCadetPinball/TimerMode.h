@@ -57,8 +57,10 @@ public:
     // Score tracking for time bonuses
     static int GetScoreThreshold() { return s_scoreThreshold; }
     static int GetTotalScore() { return s_totalScore; }
-    // Get progress to next bonus (0-49999)
-    static int GetScoreProgress() { return s_totalScore % kScorePerThreshold; }
+    // Get current threshold increment based on rank (100k + 25k per rank)
+    static int GetCurrentThresholdIncrement();
+    // Get progress to next bonus
+    static int GetScoreProgress();
 
     // Mode selection state
     static bool IsModeSelectionPending() { return s_modeSelectionPending; }

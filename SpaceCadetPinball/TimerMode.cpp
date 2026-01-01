@@ -5,6 +5,7 @@
 #include "TPinballTable.h"
 #include "pinball.h"
 #include "TTextBox.h"
+#include "control.h"
 #include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 #include <chrono>
 
@@ -123,6 +124,22 @@ void TimerMode::Update(float deltaTime)
     }
 }
 
+int TimerMode::GetCurrentThresholdIncrement()
+{
+    // Base threshold is 100k, increases by 25k per rank above 1
+    // Rank 1 (Cadet): 100k, Rank 2 (Ensign): 125k, Rank 3: 150k, etc.
+    int rank = control::GetPlayerRank();
+    return kScorePerThreshold + ((rank - 1) * 25000);
+}
+
+int TimerMode::GetScoreProgress()
+{
+    // Progress within current threshold increment
+    int prevThreshold = s_scoreThreshold - GetCurrentThresholdIncrement();
+    if (prevThreshold < 0) prevThreshold = 0;
+    return s_totalScore - prevThreshold;
+}
+
 void TimerMode::OnScoreAdded(int scoreAdded)
 {
     if (s_currentMode != Mode::Timer || !s_timerActive || s_timerExpired)
@@ -131,19 +148,20 @@ void TimerMode::OnScoreAdded(int scoreAdded)
     s_totalScore += scoreAdded;
 
     // Check if we crossed threshold(s) - group multiple bonuses
+    // Threshold increment is based on current rank (100k + 25k per rank)
     int bonusCount = 0;
     while (s_totalScore >= s_scoreThreshold)
     {
-        s_scoreThreshold += kScorePerThreshold;
+        s_scoreThreshold += GetCurrentThresholdIncrement();
         bonusCount++;
     }
     
-    // Add all bonus time at once (exactly 10000ms per bonus)
+    // Add all bonus time at once (exactly 15000ms per bonus)
     if (bonusCount > 0)
     {
         s_bonusTimeMs += bonusCount * kTimePerThresholdMs;
         
-        // Notify Java UI with grouped bonus (e.g., +20 for two thresholds)
+        // Notify Java UI with grouped bonus (e.g., +30 for two thresholds)
         int totalBonus = bonusCount * static_cast<int>(kTimePerThresholdMs / 1000);
         SpaceCadetPinballJNI::notifyTimerBonus(totalBonus);
     }

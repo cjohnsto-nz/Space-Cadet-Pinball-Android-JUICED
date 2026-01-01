@@ -2114,6 +2114,13 @@ int control::SpecialAddScore(int score)
 	return addedScore;
 }
 
+int control::GetPlayerRank()
+{
+	if (control_middle_circle_tag.Component)
+		return control_middle_circle_tag.Component->Message(37, 0.0);
+	return 0;
+}
+
 int control::AddRankProgress(int rank)
 {
 	char Buffer[64];
@@ -2903,7 +2910,9 @@ void control::MultiplierLightGroupControl(int code, TPinballComponent* caller)
 		TableG->ScoreMultiplier = 4;
 		caller->Message(19, 0.0);
 		caller->Message(43, 30.0);
-		control_info_text_box_tag.Component->Display(pinball::get_rc_string(59, 0), 2.0, 2);
+		// Only show multiplier text in classic mode
+		if (!TimerMode::IsTimerMode())
+			control_info_text_box_tag.Component->Display(pinball::get_rc_string(59, 0), 2.0, 2);
 		break;
 	case 65:
 		TableG->ScoreMultiplier = 0;
@@ -3657,7 +3666,9 @@ void control::MultiplierTargetControl(int code, TPinballComponent* caller)
 				break;
 			}
 
-			control_info_text_box_tag.Component->Display(text, 2.0, 2);
+			// Only show multiplier text in classic mode
+			if (!TimerMode::IsTimerMode())
+				control_info_text_box_tag.Component->Display(text, 2.0, 2);
 			control_target9_tag.Component->MessageField = 0;
 			control_target9_tag.Component->Message(50, 0.0);
 			control_target8_tag.Component->MessageField = 0;
@@ -3724,9 +3735,16 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 				control_lite199_tag.Component->Message(20, 0.0);
 				control_lite200_tag.Component->Message(19, 0.0);
 				control_soundwave59_tag.Component->Play();
-				// No penalty applied
+				control_info_text_box_tag.Component->Display("Replay Ball - No Penalty!", 2.0, 2);
 			}
-			else if (!TableG->ReplayActiveFlag && !TableG->ExtraBalls)
+			else if (TableG->ExtraBalls)
+			{
+				// Use extra ball to skip penalty
+				TableG->ExtraBalls--;
+				control_soundwave59_tag.Component->Play();
+				control_info_text_box_tag.Component->Display("Extra Ball - No Penalty!", 2.0, 2);
+			}
+			else if (!TableG->ReplayActiveFlag)
 			{
 				// Check if grace timer (lite200) is active - halve penalty if so
 				if (light_on(&control_lite200_tag))
@@ -3735,6 +3753,7 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 					TimerMode::OnBallCrash(true);
 					// Turn off grace timer
 					control_lite200_tag.Component->Message(20, 0.0);
+					control_info_text_box_tag.Component->Display("Grace Period - Half Penalty!", 2.0, 2);
 				}
 				else
 				{
