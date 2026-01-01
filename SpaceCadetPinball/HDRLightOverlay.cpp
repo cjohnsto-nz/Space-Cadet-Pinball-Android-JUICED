@@ -13,12 +13,14 @@
 #include <cstring>
 #include <chrono>
 
-#ifdef __ANDROID__
-#include <android/log.h>
-#define HDRLIGHT_LOG(...) __android_log_print(ANDROID_LOG_INFO, "HDRLightOverlay", __VA_ARGS__)
-#else
+// Debug logging disabled - too much spam
+// #ifdef __ANDROID__
+// #include <android/log.h>
+// #define HDRLIGHT_LOG(...) __android_log_print(ANDROID_LOG_INFO, "HDRLightOverlay", __VA_ARGS__)
+// #else
+// #define HDRLIGHT_LOG(...)
+// #endif
 #define HDRLIGHT_LOG(...)
-#endif
 
 // Static member initialization
 std::vector<HDRLightOverlay::RegisteredGroup> HDRLightOverlay::s_registeredGroups;

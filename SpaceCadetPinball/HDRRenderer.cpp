@@ -562,14 +562,14 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     glUniform2f(viewportSizeLoc, (float)viewportW, (float)viewportH);
     glUniform2f(viewportOffsetLoc, (float)viewportX, (float)viewportY);
     
-    // DEBUG: Log viewport info
-    static int vpLogCount = 0;
-    if (++vpLogCount >= 120) {
-        vpLogCount = 0;
-        HDR_LOG("Viewport: offset=(%d,%d) size=(%d,%d) screen=(%d,%d) uniformLocs=(%d,%d)", 
-                viewportX, viewportY, viewportW, viewportH, screenWidth, screenHeight,
-                viewportSizeLoc, viewportOffsetLoc);
-    }
+    // DEBUG: Log viewport info - disabled due to spam
+    // static int vpLogCount = 0;
+    // if (++vpLogCount >= 120) {
+    //     vpLogCount = 0;
+    //     HDR_LOG("Viewport: offset=(%d,%d) size=(%d,%d) screen=(%d,%d) uniformLocs=(%d,%d)", 
+    //             viewportX, viewportY, viewportW, viewportH, screenWidth, screenHeight,
+    //             viewportSizeLoc, viewportOffsetLoc);
+    // }
     
     // Store current camera state for light overlay rendering
     float currentZoom = 1.0f;

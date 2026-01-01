@@ -274,7 +274,8 @@ void pinball::set_plunger_position(float position)
 {
     g_plungerPosition = std::max(0.0f, std::min(1.0f, position));
     g_useDragControl = true;
-    __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "set_plunger_position: position=%f, g_plungerPosition=%f", position, g_plungerPosition);
+    // Plunger position logging disabled
+    // __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "set_plunger_position: position=%f, g_plungerPosition=%f", position, g_plungerPosition);
     
     // Update visual position directly
     update_plunger_visual(g_plungerPosition);
@@ -286,7 +287,8 @@ void pinball::set_plunger_launch_power(float power)
     float curvedPower = apply_power_curve(power);
     g_plungerLaunchPower = std::max(0.0f, std::min(1.0f, curvedPower));
     g_useDragControl = true;
-    __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "set_plunger_launch_power: rawPower=%f, curvedPower=%f, g_plungerLaunchPower=%f", power, curvedPower, g_plungerLaunchPower);
+    // Plunger launch power logging disabled
+    // __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "set_plunger_launch_power: rawPower=%f, curvedPower=%f, g_plungerLaunchPower=%f", power, curvedPower, g_plungerLaunchPower);
 }
 
 // Getter functions for the game logic to use
@@ -327,13 +329,15 @@ float pinball::apply_power_curve(float position)
 		power = 0.256f + (sharpRange * sharpRange * 0.744f); // Quadratic scaling
 	}
 	
-	__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Sharp power curve: position=%f -> power=%f", position, power);
+	// Power curve logging disabled
+	// __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Sharp power curve: position=%f -> power=%f", position, power);
 	return power;
 }
 
 void pinball::update_plunger_visual(float position)
 {
-	__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "update_plunger_visual called with position=%f", position);
+	// Plunger visual logging disabled
+	// __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "update_plunger_visual called with position=%f", position);
 	
 	// Find the plunger object and update its visual position directly
 	if (pb::MainTable && pb::MainTable->Plunger)
@@ -345,8 +349,9 @@ void pinball::update_plunger_visual(float position)
 		float boostValue = powerForLaunch * static_cast<float>(plunger->MaxPullback);
 		plunger->Boost = boostValue;
 		
-		__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Updated plunger Boost to %f (position=%f, power=%f, MaxPullback=%d)", 
-			boostValue, position, powerForLaunch, plunger->MaxPullback);
+	// Plunger boost logging disabled
+	// __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Updated plunger Boost to %f (position=%f, power=%f, MaxPullback=%d)", 
+	// 	boostValue, position, powerForLaunch, plunger->MaxPullback);
 		
 		// Update visual plunger position using LINEAR position (not curved power) for smooth animation
 		if (plunger->ListBitmap && !plunger->ListBitmap->empty())
@@ -363,15 +368,18 @@ void pinball::update_plunger_visual(float position)
 				bmp->XPosition - plunger->PinballTable->XOffset,
 				bmp->YPosition - plunger->PinballTable->YOffset);
 				
-			__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Updated plunger sprite to index %d (linear position)", index);
+			// Plunger sprite index logging disabled
+			// __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Updated plunger sprite to index %d (linear position)", index);
 		}
 		else
 		{
-			__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Plunger ListBitmap not available");
+		// Plunger ListBitmap logging disabled
+		// __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Plunger ListBitmap not available");
 		}
 	}
 	else
 	{
-		__android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Plunger not available for visual update");
+	// Plunger not available logging disabled
+	// __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinball", "Plunger not available for visual update");
 	}
 }

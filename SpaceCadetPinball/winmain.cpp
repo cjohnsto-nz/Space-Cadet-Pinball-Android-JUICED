@@ -238,7 +238,56 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				
 				auto dt = static_cast<float>(frameDuration.count());
 				auto dtWhole = static_cast<int>(std::round(dt));
+				
+				// Debug: Log frame timing every 30 frames for better resolution
+				static int frameLogCounter = 0;
+				static float maxDt = 0;
+				static float minDt = 9999.0f;
+				static float avgDt = 0;
+				static float dtHistory[30];
+				static int dtIndex = 0;
+				
+				// Track min/max/avg
+				if (dt > maxDt) maxDt = dt;
+				if (dt < minDt) minDt = dt;
+				dtHistory[dtIndex] = dt;
+				dtIndex = (dtIndex + 1) % 30;
+				
+				if (++frameLogCounter >= 30) {
+					// Calculate average from history
+					avgDt = 0;
+					float targetMs = static_cast<float>(TargetFrameTime.count());
+					float slowThreshold = targetMs * 1.5f;  // 50% over target
+					float verySlowThreshold = targetMs * 2.0f;  // 100% over target
+					int fastFrames = 0, okFrames = 0, slowFrames = 0, verySlowFrames = 0;
+					for (int i = 0; i < 30; i++) {
+						avgDt += dtHistory[i];
+						if (dtHistory[i] <= targetMs) fastFrames++;
+						else if (dtHistory[i] <= slowThreshold) okFrames++;
+						else if (dtHistory[i] <= verySlowThreshold) slowFrames++;
+						else verySlowFrames++;
+					}
+					avgDt /= 30.0f;
+					
+					// Always log for now to get detailed data
+					__android_log_print(ANDROID_LOG_WARN, "FrameTiming", 
+						"Frame timing - Avg: %.1fms, Min: %.1fms, Max: %.1fms (target: %.1fms)", 
+						avgDt, minDt, maxDt, targetMs);
+					
+					// Log distribution using target-relative thresholds
+					__android_log_print(ANDROID_LOG_WARN, "FrameDist", 
+						"Frame distribution - <=%.1fms: %d, <=%.1fms: %d, <=%.1fms: %d, >%.1fms: %d", 
+						targetMs, fastFrames, slowThreshold, okFrames, verySlowThreshold, slowFrames, verySlowThreshold, verySlowFrames);
+					
+					frameLogCounter = 0;
+					maxDt = 0;
+					minDt = 9999.0f;
+				}
+				
 				pb::frame(dt);
+				
+				// Measure time spent in ball position tracking
+				auto ballTrackStart = Clock::now();
 				
 				// Update debug ball position from first active ball in table
 				if (pb::MainTable && !pb::MainTable->BallList.empty()) {
@@ -265,14 +314,7 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 						float normX = pos2D[0] / vscreenWidth;
 						float normY = pos2D[1] / vscreenHeight;
 						
-						// Log coordinates every second
-						static int logCounter = 0;
-						if (++logCounter >= 60) {
-							logCounter = 0;
-							__android_log_print(ANDROID_LOG_INFO, "DebugBall", 
-								"Ball 2D: (%.2f, %.2f) VScreen: (%.0f x %.0f) Norm: (%.4f, %.4f)", 
-								pos2D[0], pos2D[1], vscreenWidth, vscreenHeight, normX, normY);
-						}
+						// Debug logging disabled
 						
 						// Set debug ball position
 						HDRLightOverlay::SetDebugBallPosition(normX, normY);
@@ -285,6 +327,20 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				} else {
 					// No table - draw at center for testing
 					HDRLightOverlay::SetDebugBallPosition(0.3f, 0.5f);
+				}
+				
+				// Log ball tracking time periodically
+				auto ballTrackEnd = Clock::now();
+				static float maxBallTrackMs = 0;
+				float ballTrackMs = DurationMs(ballTrackEnd - ballTrackStart).count();
+				if (ballTrackMs > maxBallTrackMs) maxBallTrackMs = ballTrackMs;
+				static int ballTrackLogCounter = 0;
+				if (++ballTrackLogCounter >= 240) {
+					if (maxBallTrackMs > 0.5f) {
+						__android_log_print(ANDROID_LOG_WARN, "BallTrack", "Max ball tracking time: %.2fms", maxBallTrackMs);
+					}
+					ballTrackLogCounter = 0;
+					maxBallTrackMs = 0;
 				}
 				
 				if (gfr_display)
@@ -304,12 +360,16 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 
 			if (UpdateToFrameCounter >= UpdateToFrameRatio)
 			{
+				auto renderStart = Clock::now();
+				
 				SDL_RenderClear(renderer);
                 // Alternative clear hack, clear might fail on some systems
                 // Todo: remove original clear, if save for all platforms
                 SDL_RenderFillRect(renderer, nullptr);
 				render::PresentVScreen();
 
+				auto presentStart = Clock::now();
+				
 				// When using HDR, we use raw GL and need to swap buffers ourselves
 				// SDL_RenderPresent would overwrite our GL output
 				if (HDRRenderer::ShouldUseHDR())
@@ -320,6 +380,24 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				{
 					SDL_RenderPresent(renderer);
 				}
+				
+				auto swapEnd = Clock::now();
+				
+				// Log render timing periodically
+				static float maxRenderMs = 0, maxSwapMs = 0;
+				float renderMs = DurationMs(presentStart - renderStart).count();
+				float swapMs = DurationMs(swapEnd - presentStart).count();
+				if (renderMs > maxRenderMs) maxRenderMs = renderMs;
+				if (swapMs > maxSwapMs) maxSwapMs = swapMs;
+				static int renderLogCounter = 0;
+				if (++renderLogCounter >= 120) {
+					__android_log_print(ANDROID_LOG_WARN, "RenderTiming", 
+						"Render: %.1fms max, Swap: %.1fms max", maxRenderMs, maxSwapMs);
+					renderLogCounter = 0;
+					maxRenderMs = 0;
+					maxSwapMs = 0;
+				}
+				
 				frameCounter++;
 				UpdateToFrameCounter -= UpdateToFrameRatio;
 			}

@@ -447,14 +447,16 @@ Java_com_fexed_spacecadetpinball_MainActivity_setCameraTracking(JNIEnv *env, job
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_updatePlungerPosition(JNIEnv *env, jobject thiz, jfloat position) {
-    __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinballJNI", "updatePlungerPosition called with position=%f", position);
+    // Plunger JNI logging disabled
+    // __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinballJNI", "updatePlungerPosition called with position=%f", position);
     pinball::set_plunger_position(position);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_setPlungerLaunchPower(JNIEnv *env, jobject thiz, jfloat power) {
-    __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinballJNI", "setPlungerLaunchPower called with power=%f", power);
+    // Plunger launch power JNI logging disabled
+    // __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinballJNI", "setPlungerLaunchPower called with power=%f", power);
     // Set launch power based on drag percentage (0.0 to 1.0)
     // This will override the time-based charging system
     pinball::set_plunger_launch_power(power);

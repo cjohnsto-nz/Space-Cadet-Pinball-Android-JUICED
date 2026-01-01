@@ -255,9 +255,10 @@ public class MainActivity extends SDLActivity {
                         // Calculate drag percentage (0 to 1, where 1 is max drag)
                         float dragPercentage = Math.max(0, Math.min(1, dragDistance / plungerMaxDragDistance));
                         
-                        Log.d(TAG, "Plunger ACTION_MOVE: currentY=" + plungerCurrentY + 
-                              ", dragDistance=" + dragDistance + 
-                              ", dragPercentage=" + dragPercentage);
+                        // Plunger move logging disabled
+                        // Log.d(TAG, "Plunger ACTION_MOVE: currentY=" + plungerCurrentY + 
+                        //       ", dragDistance=" + dragDistance + 
+                        //       ", dragPercentage=" + dragPercentage);
                         
                         // Update plunger position visually (optional - could add visual feedback)
                         // For now, we'll just provide proportional haptic feedback
@@ -287,7 +288,8 @@ public class MainActivity extends SDLActivity {
                             }
                         }
                         
-                        Log.d(TAG, "Calling updatePlungerPosition(" + dragPercentage + ")");
+                        // Plunger update logging disabled
+                        // Log.d(TAG, "Calling updatePlungerPosition(" + dragPercentage + ")");
                         updatePlungerPosition(dragPercentage);
                         
                         return true;
@@ -302,8 +304,9 @@ public class MainActivity extends SDLActivity {
                         float finalDragDistance = plungerCurrentY - plungerStartY;
                         float dragPercentage = Math.max(0, Math.min(1, finalDragDistance / plungerMaxDragDistance));
                         
-                        Log.d(TAG, "Plunger ACTION_UP: finalDragDistance=" + finalDragDistance + 
-                              ", dragPercentage=" + dragPercentage);
+                        // Plunger ACTION_UP logging disabled
+                        // Log.d(TAG, "Plunger ACTION_UP: finalDragDistance=" + finalDragDistance + 
+                        //       ", dragPercentage=" + dragPercentage);
                         
                         // Launch with force proportional to drag distance
                         if (dragPercentage > 0.1f) { // Minimum 10% drag to launch
@@ -320,10 +323,12 @@ public class MainActivity extends SDLActivity {
                                 plungerVibrator.vibrate(effect);
                             }
                             
-                            Log.d(TAG, "Calling setPlungerLaunchPower(" + dragPercentage + ")");
+                            // Plunger launch logging disabled
+                            // Log.d(TAG, "Calling setPlungerLaunchPower(" + dragPercentage + ")");
                             setPlungerLaunchPower(dragPercentage);
                         } else {
-                            Log.d(TAG, "Drag too small, not launching (dragPercentage=" + dragPercentage + ")");
+                            // Plunger drag too small logging disabled
+                            // Log.d(TAG, "Drag too small, not launching (dragPercentage=" + dragPercentage + ")");
                         }
                         
                         SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_SPACE);
