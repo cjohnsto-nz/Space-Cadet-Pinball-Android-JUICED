@@ -41,6 +41,8 @@ public class JNIEntryPoint {
 
     static void gameIsReady() {StateHelper.INSTANCE.gameIsReady();}
 
+    static void startupSequenceStarted() {StateHelper.INSTANCE.startupSequenceStarted();}
+
     static void triggerHapticFeedback(float intensity) {
         StateHelper.INSTANCE.triggerHapticFeedback(intensity);
     }

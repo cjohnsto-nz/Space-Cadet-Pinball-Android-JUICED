@@ -34,6 +34,8 @@ public:
 
     static void gameReady();
 
+    static void startupSequenceStarted();
+
     static void postRemainingBalls(int balls);
 
     static void triggerHapticFeedback(float intensity);

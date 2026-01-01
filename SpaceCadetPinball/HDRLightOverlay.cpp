@@ -1252,8 +1252,11 @@ void HDRLightOverlay::EnableDebugBall(bool enabled) {
 
 void HDRLightOverlay::SetGlowModifier(float modifier) {
     s_userGlowSetting = modifier;  // Store user's setting
-    s_glowModifier = modifier;     // Apply immediately
-    HDRLIGHT_LOG("Glow modifier set to %.2f", modifier);
+    // During startup animation, don't apply beat-reactive changes - let warmup control the glow
+    if (!s_wasInStartupAnimation) {
+        s_glowModifier = modifier;     // Apply immediately only when not in startup
+    }
+    HDRLIGHT_LOG("Glow modifier set to %.2f (applied=%d)", modifier, !s_wasInStartupAnimation);
 }
 
 void HDRLightOverlay::SetTrailOpacity(float opacity) {

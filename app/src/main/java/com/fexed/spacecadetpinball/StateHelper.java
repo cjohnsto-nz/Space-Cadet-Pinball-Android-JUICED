@@ -119,6 +119,14 @@ public enum StateHelper {
         }
     }
 
+    public void startupSequenceStarted() {
+        for (IStateListener listener : mStateListeners) {
+            if (listener != null) {
+                listener.onStartupSequenceStarted();
+            }
+        }
+    }
+
     public void triggerHapticFeedback(float intensity) {
         for (IStateListener listener : mStateListeners) {
             if (listener != null) {
@@ -165,6 +173,8 @@ public enum StateHelper {
         void onCheatsUsed();
 
         void onGameReady();
+
+        void onStartupSequenceStarted();
 
         void onRemainingBallsRequested(int balls);
 

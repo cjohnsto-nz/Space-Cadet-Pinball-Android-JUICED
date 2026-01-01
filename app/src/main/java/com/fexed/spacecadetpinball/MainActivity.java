@@ -861,6 +861,11 @@ public class MainActivity extends SDLActivity {
         }
 
         @Override
+        public void onStartupSequenceStarted() {
+            isGameReady = false;
+        }
+
+        @Override
         public void onRemainingBallsRequested(int balls) {
             remainingBalls = balls;
             if (PrefsHelper.getRemainingBalls()) {
