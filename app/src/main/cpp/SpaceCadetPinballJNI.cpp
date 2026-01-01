@@ -656,3 +656,65 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssetsWithCach
     env->ReleaseStringUTFChars(assetPath, pathStr);
     return result;
 }
+
+// Timer Mode JNI functions
+#include "../../../../SpaceCadetPinball/TimerMode.h"
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_setTimerMode(JNIEnv *env, jobject thiz, jboolean enabled) {
+    TimerMode::SetMode(enabled ? TimerMode::Mode::Timer : TimerMode::Mode::Classic);
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_isTimerMode(JNIEnv *env, jobject thiz) {
+    return TimerMode::IsTimerMode();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getTimerRemainingMs(JNIEnv *env, jobject thiz) {
+    return TimerMode::GetRemainingTimeMs();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_startTimerMode(JNIEnv *env, jobject thiz) {
+    TimerMode::StartTimer();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_resetTimerMode(JNIEnv *env, jobject thiz) {
+    TimerMode::Reset();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getTimerScoreProgress(JNIEnv *env, jobject thiz) {
+    return TimerMode::GetScoreProgress();
+}
+
+// Timer bonus notification callback
+void SpaceCadetPinballJNI::notifyTimerBonus(int secondsChange) {
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (env == nullptr) return;
+    
+    jobject activity = (jobject)SDL_AndroidGetActivity();
+    if (activity == nullptr) return;
+    
+    jclass clazz = env->GetObjectClass(activity);
+    if (clazz == nullptr) {
+        env->DeleteLocalRef(activity);
+        return;
+    }
+    
+    jmethodID method = env->GetMethodID(clazz, "showTimerBonus", "(I)V");
+    if (method != nullptr) {
+        env->CallVoidMethod(activity, method, secondsChange);
+    }
+    
+    env->DeleteLocalRef(clazz);
+    env->DeleteLocalRef(activity);
+}

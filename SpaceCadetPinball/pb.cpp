@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "pb.h"
 
-
+#include "TimerMode.h"
 #include "control.h"
 #include "fullscrn.h"
 #include "high_score.h"
@@ -212,6 +212,9 @@ void pb::frame(float dtMilliSec)
 		return;
 
 	float dtSec = dtMilliSec * 0.001f;
+	
+	// Update timer mode countdown
+	TimerMode::Update(dtSec);
 	time_next = time_now + dtSec;
 	timed_frame(time_now, dtSec, true);
 	time_now = time_next;

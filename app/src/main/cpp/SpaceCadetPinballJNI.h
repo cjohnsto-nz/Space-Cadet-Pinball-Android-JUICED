@@ -55,6 +55,9 @@ public:
     
     // Demo mode toggle (called from game thread)
     static bool shouldToggleDemo();
+    
+    // Timer mode bonus notification
+    static void notifyTimerBonus(int secondsChange);
 };
 
 #endif // SPACECADETPINBALLJNI_H

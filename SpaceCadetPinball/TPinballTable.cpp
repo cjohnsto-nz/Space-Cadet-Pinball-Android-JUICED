@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "TPinballTable.h"
 
-
+#include "TimerMode.h"
 #include "control.h"
 #include "loader.h"
 #include "pb.h"
@@ -267,7 +267,17 @@ int TPinballTable::AddScore(int score)
 		++CurScoreE9;
 		CurScore = CurScore - 1000000000;
 	}
-	score::set(CurScoreStruct, CurScore);
+	
+	// In timer mode, score adds time instead of being displayed
+	if (TimerMode::IsTimerMode())
+	{
+		TimerMode::OnScoreAdded(addedScore);
+		// Don't update score display in timer mode
+	}
+	else
+	{
+		score::set(CurScoreStruct, CurScore);
+	}
 	return addedScore;
 }
 

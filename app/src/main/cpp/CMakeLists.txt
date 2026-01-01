@@ -138,6 +138,8 @@ set(SOURCE_FILES
         ../../../../SpaceCadetPinball/HDRRenderer.h
         ../../../../SpaceCadetPinball/HDRLightOverlay.cpp
         ../../../../SpaceCadetPinball/HDRLightOverlay.h
+        ../../../../SpaceCadetPinball/TimerMode.cpp
+        ../../../../SpaceCadetPinball/TimerMode.h
         OboeMusicPlayer.cpp
         OboeMusicPlayer.h
         SpaceCadetPinballJNI.cpp

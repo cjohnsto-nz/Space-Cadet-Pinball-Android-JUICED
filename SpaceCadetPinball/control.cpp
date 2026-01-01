@@ -8,6 +8,7 @@
 #include "../app/src/main/cpp/SpaceCadetPinballJNI.h"
 #endif
 
+#include "TimerMode.h"
 #include "options.h"
 #include "pb.h"
 #include "pinball.h"
@@ -3665,10 +3666,35 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 	}
 	else if (code == 63)
 	{
+		// Timer mode: check if waiting for final sink after timer expired
+		if (TimerMode::IsWaitingForFinalSink())
+		{
+			TimerMode::OnFinalSink();
+			return;
+		}
+		
 		if (table_unlimited_balls)
 		{
 			control_drain_tag.Component->Message(1024, 0.0);
 			control_sink3_tag.Component->Message(56, 0.0);
+		}
+		else if (TimerMode::IsTimerMode())
+		{
+			// In timer mode, ball crash (no replay/extra ball) applies penalty
+			if (!TableG->ReplayActiveFlag && !TableG->ExtraBalls)
+			{
+				TimerMode::OnBallCrash();
+			}
+			// Auto-fire ball back from a random wormhole
+			control_drain_tag.Component->Message(1024, 0.0);
+			// Pick random sink (wormhole) to exit from: sink1, sink2, or sink3
+			int randomSink = rand() % 3;
+			if (randomSink == 0)
+				control_sink1_tag.Component->Message(56, 0.0);
+			else if (randomSink == 1)
+				control_sink2_tag.Component->Message(56, 0.0);
+			else
+				control_sink3_tag.Component->Message(56, 0.0);
 		}
 		else
 		{

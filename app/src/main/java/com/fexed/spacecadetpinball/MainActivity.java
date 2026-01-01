@@ -74,6 +74,12 @@ public class MainActivity extends SDLActivity {
     private boolean lightEditModeEnabled = false;
     private int[] lastViewport = new int[4];  // x, y, w, h
 
+    // Timer mode state
+    private boolean timerModeActive = false;
+    private Handler timerUpdateHandler;
+    private Runnable timerUpdateRunnable;
+    private boolean waitingForModeSelection = false;
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,10 +147,9 @@ public class MainActivity extends SDLActivity {
                     Log.w(TAG, "Failed to load mission music track");
                 }
                 
-                if (PrefsHelper.getMusic()) {
-                    startMusic();
-                }
-                Log.i(TAG, "Oboe music player initialized with WAV file");
+                // Music will start after mode selection dialog
+                // Don't auto-start here - wait for player to select game mode
+                Log.i(TAG, "Oboe music player initialized with WAV file (waiting for mode selection)");
                 
                 // Initialize beat map player for bass-reactive HDR glow
                 beatMapPlayer = new BeatMapPlayer();
@@ -157,11 +162,8 @@ public class MainActivity extends SDLActivity {
                     beatMapPlayer.setListener(glowModifier -> {
                         setHDRGlowModifier(glowModifier);
                     });
-                    // Only start if both music and beat-reactive glow are enabled
-                    if (PrefsHelper.getMusic() && PrefsHelper.getBeatReactiveGlow()) {
-                        beatMapPlayer.start();
-                    }
-                    Log.i(TAG, "Beat map loaded for bass-reactive glow");
+                    // Beat map will start after mode selection along with music
+                    Log.i(TAG, "Beat map loaded for bass-reactive glow (waiting for mode selection)");
                 } else {
                     Log.w(TAG, "No beat map found, HDR glow will not react to music");
                 }
@@ -774,11 +776,21 @@ public class MainActivity extends SDLActivity {
 
             if (state == GameState.RUNNING) {
                 gamesInSession++;
-                runOnUiThread(() -> firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LEVEL_START, null));
+                runOnUiThread(() -> {
+                    firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LEVEL_START, null);
+                    // Show mode selection dialog on new game
+                    showModeSelectionDialog();
+                });
             }
 
             if (state == GameState.FINISHED) {
-                runOnUiThread(() -> firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LEVEL_END, null));
+                runOnUiThread(() -> {
+                    firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LEVEL_END, null);
+                    // Clean up timer mode if active
+                    if (timerModeActive) {
+                        onTimerModeGameOver();
+                    }
+                });
             }
         }
 
@@ -987,6 +999,10 @@ public class MainActivity extends SDLActivity {
             mBinding.right.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
             mBinding.right.setTextColor(Color.WHITE);
             mBinding.right.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.txtTimer.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.txtTimer.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+            mBinding.txtTimerBonus.setTypeface(ResourcesCompat.getFont(getContext(), R.font.nes_arcade));
+            mBinding.txtTimerBonus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         } else {
             mBinding.ballstxt.setTypeface(Typeface.DEFAULT);
             mBinding.ballstxt.setTextColor(Color.WHITE);
@@ -1324,6 +1340,14 @@ public class MainActivity extends SDLActivity {
     private native boolean loadMusicFromAssetsWithCache(android.content.res.AssetManager assetManager, String assetPath, String cacheDir);
     private native boolean loadMissionMusicFromAssetsWithCache(android.content.res.AssetManager assetManager, String assetPath, String cacheDir);
 
+    // Timer mode native methods
+    private native void setTimerMode(boolean enabled);
+    private native boolean isTimerMode();
+    private native int getTimerRemainingMs();
+    private native void startTimerMode();
+    private native void resetTimerMode();
+    private native int getTimerScoreProgress();
+
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;
 
@@ -1551,5 +1575,140 @@ public class MainActivity extends SDLActivity {
 
     public boolean isLightDebugPanelVisible() {
         return mBinding != null && mBinding.lightDebugPanel.getVisibility() == View.VISIBLE;
+    }
+
+    // Timer Mode Methods
+    // Track pending bonus to group multiple bonuses
+    private int pendingBonusSeconds = 0;
+    private Runnable bonusHideRunnable = null;
+
+    private void showModeSelectionDialog() {
+        waitingForModeSelection = true;
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Select Game Mode");
+        builder.setCancelable(false);
+        
+        String[] modes = {"Classic Mode", "Timer Mode (3 min)"};
+        builder.setItems(modes, (dialog, which) -> {
+            waitingForModeSelection = false;
+            if (which == 0) {
+                // Classic mode
+                setTimerMode(false);
+                timerModeActive = false;
+                mBinding.txtTimer.setVisibility(View.GONE);
+                mBinding.txtTimerBonus.setVisibility(View.GONE);
+                mBinding.txtscore.setVisibility(View.VISIBLE);
+            } else {
+                // Timer mode
+                setTimerMode(true);
+                timerModeActive = true;
+                startTimerMode();
+                // Show timer and score progress, hide ball counter
+                mBinding.txtscore.setVisibility(View.VISIBLE);
+                mBinding.txtTimer.setVisibility(View.VISIBLE);
+                mBinding.ballstxt.setVisibility(View.GONE);
+                startTimerUpdateLoop();
+            }
+            
+            // Start music after mode selection
+            if (PrefsHelper.getMusic()) {
+                startMusic();
+                if (beatMapPlayer != null && PrefsHelper.getBeatReactiveGlow()) {
+                    beatMapPlayer.start();
+                }
+            }
+        });
+        
+        builder.show();
+    }
+
+    private void startTimerUpdateLoop() {
+        if (timerUpdateHandler == null) {
+            timerUpdateHandler = new Handler(Looper.getMainLooper());
+        }
+        
+        timerUpdateRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (timerModeActive && isTimerMode()) {
+                    int remainingMs = getTimerRemainingMs();
+                    int seconds = remainingMs / 1000;
+                    int minutes = seconds / 60;
+                    seconds = seconds % 60;
+                    
+                    String timerText = String.format("%d:%02d", minutes, seconds);
+                    mBinding.txtTimer.setText(timerText);
+                    
+                    // Change color based on time remaining
+                    // White normally, orange when <=60s, red when <=30s
+                    if (remainingMs <= 30000) {
+                        mBinding.txtTimer.setTextColor(Color.RED);
+                    } else if (remainingMs <= 60000) {
+                        mBinding.txtTimer.setTextColor(Color.parseColor("#FF8800")); // Orange
+                    } else {
+                        mBinding.txtTimer.setTextColor(Color.WHITE);
+                    }
+                    
+                    // Update score progress display (score/50000 for next +10s)
+                    int scoreProgress = getTimerScoreProgress();
+                    String progressText = String.format("%,d / 50,000", scoreProgress);
+                    setTextWithBackground(mBinding.txtscore, progressText);
+                    
+                    // Continue updating every 100ms
+                    timerUpdateHandler.postDelayed(this, 100);
+                }
+            }
+        };
+        
+        timerUpdateHandler.post(timerUpdateRunnable);
+    }
+
+    private void stopTimerUpdateLoop() {
+        if (timerUpdateHandler != null && timerUpdateRunnable != null) {
+            timerUpdateHandler.removeCallbacks(timerUpdateRunnable);
+        }
+        timerModeActive = false;
+    }
+
+    // Show time bonus/penalty popup (groups multiple bonuses)
+    public void showTimerBonus(int secondsChange) {
+        runOnUiThread(() -> {
+            // Cancel any pending hide
+            if (bonusHideRunnable != null && timerUpdateHandler != null) {
+                timerUpdateHandler.removeCallbacks(bonusHideRunnable);
+            }
+            
+            // Accumulate bonus
+            pendingBonusSeconds += secondsChange;
+            
+            // Update display
+            String text;
+            if (pendingBonusSeconds > 0) {
+                text = "+" + pendingBonusSeconds;
+                mBinding.txtTimerBonus.setTextColor(Color.parseColor("#00FF00")); // Green
+            } else {
+                text = String.valueOf(pendingBonusSeconds);
+                mBinding.txtTimerBonus.setTextColor(Color.RED);
+            }
+            mBinding.txtTimerBonus.setText(text);
+            mBinding.txtTimerBonus.setVisibility(View.VISIBLE);
+            
+            // Schedule hide after 2 seconds
+            bonusHideRunnable = () -> {
+                mBinding.txtTimerBonus.setVisibility(View.GONE);
+                pendingBonusSeconds = 0;
+            };
+            if (timerUpdateHandler != null) {
+                timerUpdateHandler.postDelayed(bonusHideRunnable, 2000);
+            }
+        });
+    }
+
+    public void onTimerModeGameOver() {
+        runOnUiThread(() -> {
+            stopTimerUpdateLoop();
+            mBinding.txtTimer.setVisibility(View.GONE);
+            mBinding.txtTimerBonus.setVisibility(View.GONE);
+        });
     }
 }
