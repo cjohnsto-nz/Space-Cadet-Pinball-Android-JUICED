@@ -93,44 +93,91 @@ public class MainActivity extends SDLActivity {
 
         // Initialize Oboe music player for real-time audio effects
         initOboeMusicPlayer();
-        if (loadMusicFromAssets(getAssets(), "808generative.wav")) {
-            setMusicVolume(PrefsHelper.getMusicVolume() / 100.0f);
+        
+        // Show loading dialog for audio decoding
+        android.app.AlertDialog loadingDialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Loading Audio")
+                .setMessage("Decoding compressed audio files...")
+                .setCancelable(false)
+                .create();
+        loadingDialog.show();
+        
+        // Load audio in background thread so dialog can display
+        new Thread(() -> {
+            // Get cache directory for temporary files
+            String cacheDir = getCacheDir().getAbsolutePath();
             
-            // Load mission track (layered on top when mission is active)
-            if (loadMissionMusicFromAssets(getAssets(), "808generativemission.wav")) {
-                setMissionMusicVolume(0.7f);  // Reduce max volume to 70%
-                Log.i(TAG, "Mission music track loaded");
-            } else {
-                Log.w(TAG, "Failed to load mission music track");
+            // Load WAV with caching to avoid unpacking from APK every launch
+            boolean musicLoaded = false;
+            if (loadMusicFromAssetsWithCache(getAssets(), "808generative.wav", cacheDir)) {
+                Log.i(TAG, "Loaded main music as WAV");
+                musicLoaded = true;
             }
             
-            if (PrefsHelper.getMusic()) {
-                startMusic();
-            }
-            Log.i(TAG, "Oboe music player initialized with WAV file");
-            
-            // Initialize beat map player for bass-reactive HDR glow
-            beatMapPlayer = new BeatMapPlayer();
-            if (beatMapPlayer.loadFromAssets(this, "808generative_beats.json")) {
-                // Use Oboe position instead of MediaPlayer
-                beatMapPlayer.setPositionProvider(() -> getMusicPositionMs());
-                beatMapPlayer.setBaseGlowModifier(PrefsHelper.getHDRGlowIntensity() / 100.0f);
-                beatMapPlayer.setGlowRange(1.0f); // Glow can double on bass hits
-                // No smoothing - use exact MIDI timing for instant attack
-                beatMapPlayer.setListener(glowModifier -> {
-                    setHDRGlowModifier(glowModifier);
+            if (musicLoaded) {
+                setMusicVolume(PrefsHelper.getMusicVolume() / 100.0f);
+                
+                // Update loading message for mission track
+                runOnUiThread(() -> {
+                    try {
+                        loadingDialog.setMessage("Decoding mission audio...");
+                    } catch (Exception e) {
+                        // Dialog might be dismissed, ignore
+                    }
                 });
-                // Only start if both music and beat-reactive glow are enabled
-                if (PrefsHelper.getMusic() && PrefsHelper.getBeatReactiveGlow()) {
-                    beatMapPlayer.start();
+                
+                // Load mission track WAV with caching
+                boolean missionLoaded = false;
+                if (loadMissionMusicFromAssetsWithCache(getAssets(), "808generativemission.wav", cacheDir)) {
+                    Log.i(TAG, "Loaded mission music as WAV");
+                    missionLoaded = true;
                 }
-                Log.i(TAG, "Beat map loaded for bass-reactive glow");
+                
+                if (missionLoaded) {
+                    // setMissionMusicVolume(0.7f);  // Reduce max volume to 70%
+                    setMissionMusicVolume(0.7f);
+                    Log.i(TAG, "Mission music track loaded");
+                } else {
+                    Log.w(TAG, "Failed to load mission music track");
+                }
+                
+                if (PrefsHelper.getMusic()) {
+                    startMusic();
+                }
+                Log.i(TAG, "Oboe music player initialized with WAV file");
+                
+                // Initialize beat map player for bass-reactive HDR glow
+                beatMapPlayer = new BeatMapPlayer();
+                if (beatMapPlayer.loadFromAssets(this, "808generative_beats.json")) {
+                    // Use Oboe position instead of MediaPlayer
+                    beatMapPlayer.setPositionProvider(() -> getMusicPositionMs());
+                    beatMapPlayer.setBaseGlowModifier(PrefsHelper.getHDRGlowIntensity() / 100.0f);
+                    beatMapPlayer.setGlowRange(1.0f); // Glow can double on bass hits
+                    // No smoothing - use exact MIDI timing for instant attack
+                    beatMapPlayer.setListener(glowModifier -> {
+                        setHDRGlowModifier(glowModifier);
+                    });
+                    // Only start if both music and beat-reactive glow are enabled
+                    if (PrefsHelper.getMusic() && PrefsHelper.getBeatReactiveGlow()) {
+                        beatMapPlayer.start();
+                    }
+                    Log.i(TAG, "Beat map loaded for bass-reactive glow");
+                } else {
+                    Log.w(TAG, "No beat map found, HDR glow will not react to music");
+                }
             } else {
-                Log.w(TAG, "No beat map found, HDR glow will not react to music");
+                Log.e(TAG, "Failed to load music from assets");
             }
-        } else {
-            Log.e(TAG, "Failed to load music from assets");
-        }
+            
+            // Dismiss loading dialog
+            runOnUiThread(() -> {
+                try {
+                    loadingDialog.dismiss();
+                } catch (Exception e) {
+                    // Dialog might already be dismissed, ignore
+                }
+            });
+        }).start();
         
         mBinding = ActivityMainBinding.inflate(getLayoutInflater(), mLayout, false);
 
@@ -1261,8 +1308,16 @@ public class MainActivity extends SDLActivity {
 
     // Mission track native methods
     private native boolean loadMissionMusicFromAssets(android.content.res.AssetManager assetManager, String assetPath);
+    private native boolean loadMissionMusicCompressed(android.content.res.AssetManager assetManager, String assetPath, String cacheDir);
     private native void setMissionMusicEnabled(boolean enabled);
     private native void setMissionMusicVolume(float volume);
+
+    // Compressed audio native methods
+    private native boolean loadCompressedMusicFromAssets(android.content.res.AssetManager assetManager, String assetPath, String cacheDir);
+    
+    // WAV with cache native methods
+    private native boolean loadMusicFromAssetsWithCache(android.content.res.AssetManager assetManager, String assetPath, String cacheDir);
+    private native boolean loadMissionMusicFromAssetsWithCache(android.content.res.AssetManager assetManager, String assetPath, String cacheDir);
 
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;

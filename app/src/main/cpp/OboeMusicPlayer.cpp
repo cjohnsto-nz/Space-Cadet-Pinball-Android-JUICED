@@ -2,6 +2,8 @@
 #include <android/log.h>
 #include <fstream>
 #include <cstring>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define LOG_TAG "OboeMusicPlayer"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -226,6 +228,299 @@ bool OboeMusicPlayer::loadFromAssets(AAssetManager* assetManager, const std::str
     return true;
 }
 
+bool OboeMusicPlayer::loadFromAssetsWithCache(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir) {
+    LOGI("Loading WAV from assets with cache: %s", assetPath.c_str());
+    
+    // Check if cached PCM data exists
+    std::string cacheFilePath = cacheDir + "/" + assetPath + "_cache.pcm";
+    FILE* cacheFile = fopen(cacheFilePath.c_str(), "rb");
+    if (cacheFile) {
+        LOGI("Found cached PCM data, loading from cache");
+        
+        // Read header
+        int32_t cachedSampleRate, cachedChannels;
+        if (fread(&cachedSampleRate, sizeof(int32_t), 1, cacheFile) == 1 &&
+            fread(&cachedChannels, sizeof(int32_t), 1, cacheFile) == 1) {
+            
+            // Get file size to determine audio data size
+            fseek(cacheFile, 0, SEEK_END);
+            long fileSize = ftell(cacheFile);
+            fseek(cacheFile, 2 * sizeof(int32_t), SEEK_SET);
+            
+            size_t audioDataSize = fileSize - 2 * sizeof(int32_t);
+            
+            std::lock_guard<std::mutex> lock(mDataMutex);
+            mSampleRate = cachedSampleRate;
+            mChannels = cachedChannels;
+            mAudioData.resize(audioDataSize / sizeof(float));
+            
+            if (fread(mAudioData.data(), sizeof(float), mAudioData.size(), cacheFile) == mAudioData.size()) {
+                fclose(cacheFile);
+                mReadIndex = 0;
+                mLowPassFilter.setSampleRate(mSampleRate);
+                LOGI("Successfully loaded %zu samples from cache", mAudioData.size());
+                return true;
+            }
+        }
+        fclose(cacheFile);
+        LOGW("Cache file corrupted, loading from assets");
+    }
+    
+    // Load from assets
+    if (!loadFromAssets(assetManager, assetPath)) {
+        return false;
+    }
+    
+    // Save to cache for future loads
+    FILE* saveFile = fopen(cacheFilePath.c_str(), "wb");
+    if (saveFile) {
+        fwrite(&mSampleRate, sizeof(int32_t), 1, saveFile);
+        fwrite(&mChannels, sizeof(int32_t), 1, saveFile);
+        fwrite(mAudioData.data(), sizeof(float), mAudioData.size(), saveFile);
+        fclose(saveFile);
+        LOGI("Saved WAV data to cache: %s", cacheFilePath.c_str());
+    } else {
+        LOGW("Failed to save WAV to cache: %s", cacheFilePath.c_str());
+    }
+    
+    return true;
+}
+
+bool OboeMusicPlayer::loadCompressedFromAssets(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir) {
+    LOGI("Loading compressed audio from assets: %s", assetPath.c_str());
+    
+    // Check if cached PCM data exists
+    std::string cacheFilePath = cacheDir + "/" + assetPath + "_cache.pcm";
+    FILE* cacheFile = fopen(cacheFilePath.c_str(), "rb");
+    if (cacheFile) {
+        LOGI("Found cached PCM data, loading from cache");
+        fseek(cacheFile, 0, SEEK_END);
+        long cacheSize = ftell(cacheFile);
+        fseek(cacheFile, 0, SEEK_SET);
+        
+        // Read sample rate and channels first
+        int32_t cachedSampleRate, cachedChannels;
+        if (fread(&cachedSampleRate, sizeof(int32_t), 1, cacheFile) == 1 &&
+            fread(&cachedChannels, sizeof(int32_t), 1, cacheFile) == 1) {
+            
+            size_t audioDataSize = cacheSize - 2 * sizeof(int32_t);
+            mAudioData.resize(audioDataSize / sizeof(float));
+            
+            if (fread(mAudioData.data(), sizeof(float), mAudioData.size(), cacheFile) == mAudioData.size()) {
+                mSampleRate = cachedSampleRate;
+                mChannels = cachedChannels;
+                fclose(cacheFile);
+                
+                mReadIndex = 0;
+                mLowPassFilter.setSampleRate(mSampleRate);
+                
+                LOGI("Successfully loaded %zu samples from cache", mAudioData.size());
+                return true;
+            }
+        }
+        fclose(cacheFile);
+        LOGI("Cache file corrupted, will decode fresh");
+    }
+    
+    AAsset* asset = AAssetManager_open(assetManager, assetPath.c_str(), AASSET_MODE_STREAMING);
+    if (asset == nullptr) {
+        LOGE("Failed to open compressed asset: %s", assetPath.c_str());
+        return false;
+    }
+    
+    off_t assetLength = AAsset_getLength(asset);
+    LOGI("Compressed asset opened, length=%ld", (long)assetLength);
+    
+    // Read entire asset into memory for MediaExtractor
+    std::vector<char> assetData(assetLength);
+    int bytesRead = AAsset_read(asset, assetData.data(), assetLength);
+    AAsset_close(asset);
+    
+    if (bytesRead != assetLength) {
+        LOGE("Failed to read compressed asset: read %d of %ld bytes", bytesRead, (long)assetLength);
+        return false;
+    }
+    
+    // Create temporary file for MediaExtractor (it needs a file descriptor)
+    std::string tempPath = cacheDir + "/temp_audio.tmp";
+    FILE* tempFile = fopen(tempPath.c_str(), "wb");
+    if (!tempFile) {
+        LOGE("Failed to create temporary file");
+        return false;
+    }
+    
+    size_t written = fwrite(assetData.data(), 1, assetLength, tempFile);
+    fclose(tempFile);
+    
+    if (written != assetLength) {
+        LOGE("Failed to write temporary file");
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    // Use MediaExtractor to decode the compressed audio
+    AMediaExtractor* extractor = AMediaExtractor_new();
+    if (!extractor) {
+        LOGE("Failed to create MediaExtractor");
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    media_status_t status = AMediaExtractor_setDataSourceFd(extractor, open(tempPath.c_str(), O_RDONLY), 0, assetLength);
+    if (status != AMEDIA_OK) {
+        LOGE("Failed to set data source for MediaExtractor: %d", status);
+        AMediaExtractor_delete(extractor);
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    // Find the first audio track
+    size_t numTracks = AMediaExtractor_getTrackCount(extractor);
+    LOGI("Found %zu tracks", numTracks);
+    
+    AMediaCodec* codec = nullptr;
+    for (size_t i = 0; i < numTracks; i++) {
+        AMediaFormat* format = AMediaExtractor_getTrackFormat(extractor, i);
+        if (!format) continue;
+        
+        const char* mime;
+        if (AMediaFormat_getString(format, AMEDIAFORMAT_KEY_MIME, &mime)) {
+            LOGI("Track %zu MIME: %s", i, mime);
+            if (strncmp(mime, "audio/", 6) == 0) {
+                // Select this track
+                AMediaExtractor_selectTrack(extractor, i);
+                
+                // Create decoder
+                codec = AMediaCodec_createDecoderByType(mime);
+                if (codec) {
+                    status = AMediaCodec_configure(codec, format, nullptr, nullptr, 0);
+                    if (status == AMEDIA_OK) {
+                        AMediaFormat_delete(format);
+                        break;
+                    }
+                    AMediaCodec_delete(codec);
+                    codec = nullptr;
+                }
+            }
+        }
+        AMediaFormat_delete(format);
+    }
+    
+    if (!codec) {
+        LOGE("Failed to find and configure audio track");
+        AMediaExtractor_delete(extractor);
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    // Start decoding
+    status = AMediaCodec_start(codec);
+    if (status != AMEDIA_OK) {
+        LOGE("Failed to start codec: %d", status);
+        AMediaCodec_delete(codec);
+        AMediaExtractor_delete(extractor);
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    // Get format info
+    AMediaFormat* format = AMediaExtractor_getTrackFormat(extractor, 0);
+    int32_t sampleRate, channels;
+    if (AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, &sampleRate)) {
+        mSampleRate = sampleRate;
+    }
+    if (AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &channels)) {
+        mChannels = channels;
+    }
+    AMediaFormat_delete(format);
+    
+    LOGI("Decoding audio: %d Hz, %d channels", mSampleRate, mChannels);
+    
+    // Decode all samples
+    std::vector<int16_t> pcmData;
+    const size_t timeoutUs = 5000; // 5ms timeout
+    
+    while (true) {
+        // Get input buffer
+        ssize_t inputIndex = AMediaCodec_dequeueInputBuffer(codec, timeoutUs);
+        if (inputIndex < 0) {
+            if (inputIndex != AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
+                break; // End of stream or error
+            }
+            continue;
+        }
+        
+        size_t inputSize;
+        uint8_t* inputBuffer = AMediaCodec_getInputBuffer(codec, inputIndex, &inputSize);
+        if (!inputBuffer) {
+            LOGE("Failed to get input buffer");
+            break;
+        }
+        
+        // Read from extractor
+        ssize_t sampleSize = AMediaExtractor_readSampleData(extractor, inputBuffer, inputSize);
+        if (sampleSize <= 0) {
+            // End of stream
+            AMediaCodec_queueInputBuffer(codec, inputIndex, 0, 0, 0, AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
+            break;
+        }
+        
+        AMediaExtractor_advance(extractor);
+        AMediaCodec_queueInputBuffer(codec, inputIndex, 0, sampleSize, 0, 0);
+        
+        // Get output
+        AMediaCodecBufferInfo info;
+        ssize_t outputIndex = AMediaCodec_dequeueOutputBuffer(codec, &info, timeoutUs);
+        if (outputIndex >= 0) {
+            size_t outputSize;
+            const uint8_t* outputBuffer = AMediaCodec_getOutputBuffer(codec, outputIndex, &outputSize);
+            if (outputBuffer && info.size > 0) {
+                // Convert to int16_t and store
+                const int16_t* samples = reinterpret_cast<const int16_t*>(outputBuffer);
+                size_t sampleCount = info.size / sizeof(int16_t);
+                pcmData.insert(pcmData.end(), samples, samples + sampleCount);
+            }
+            AMediaCodec_releaseOutputBuffer(codec, outputIndex, false);
+        } else if (outputIndex == AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED) {
+            // Format changed, ignore
+        } else if (outputIndex != AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
+            break; // Error
+        }
+    }
+    
+    // Cleanup
+    AMediaCodec_stop(codec);
+    AMediaCodec_delete(codec);
+    AMediaExtractor_delete(extractor);
+    remove(tempPath.c_str());
+    
+    // Convert to float and store
+    mAudioData.clear();
+    mAudioData.reserve(pcmData.size());
+    for (int16_t sample : pcmData) {
+        mAudioData.push_back(sample / 32768.0f);
+    }
+    
+    mReadIndex = 0;
+    mLowPassFilter.setSampleRate(mSampleRate);
+    
+    // Save to cache for future loads
+    std::string saveCachePath = cacheDir + "/" + assetPath + "_cache.pcm";
+    FILE* saveFile = fopen(saveCachePath.c_str(), "wb");
+    if (saveFile) {
+        fwrite(&mSampleRate, sizeof(int32_t), 1, saveFile);
+        fwrite(&mChannels, sizeof(int32_t), 1, saveFile);
+        fwrite(mAudioData.data(), sizeof(float), mAudioData.size(), saveFile);
+        fclose(saveFile);
+        LOGI("Saved decoded audio to cache: %s", saveCachePath.c_str());
+    } else {
+        LOGW("Failed to save audio to cache: %s", saveCachePath.c_str());
+    }
+    
+    LOGI("Successfully decoded %zu samples from compressed audio", mAudioData.size());
+    return true;
+}
+
 bool OboeMusicPlayer::loadMissionTrackFromAssets(AAssetManager* assetManager, const std::string& assetPath) {
     LOGI("Loading mission track from assets: %s", assetPath.c_str());
     
@@ -341,6 +636,297 @@ bool OboeMusicPlayer::loadMissionTrackFromAssets(AAssetManager* assetManager, co
     }
     
     LOGI("Successfully loaded mission track: %zu samples", mMissionAudioData.size());
+    return true;
+}
+
+bool OboeMusicPlayer::loadMissionTrackFromAssetsWithCache(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir) {
+    LOGI("Loading mission WAV from assets with cache: %s", assetPath.c_str());
+    
+    // Check if cached PCM data exists
+    std::string cacheFilePath = cacheDir + "/" + assetPath + "_cache.pcm";
+    FILE* cacheFile = fopen(cacheFilePath.c_str(), "rb");
+    if (cacheFile) {
+        LOGI("Found cached mission PCM data, loading from cache");
+        
+        // Read header
+        int32_t cachedSampleRate, cachedChannels;
+        if (fread(&cachedSampleRate, sizeof(int32_t), 1, cacheFile) == 1 &&
+            fread(&cachedChannels, sizeof(int32_t), 1, cacheFile) == 1) {
+            
+            // Get file size to determine audio data size
+            fseek(cacheFile, 0, SEEK_END);
+            long fileSize = ftell(cacheFile);
+            fseek(cacheFile, 2 * sizeof(int32_t), SEEK_SET);
+            
+            size_t audioDataSize = fileSize - 2 * sizeof(int32_t);
+            
+            std::lock_guard<std::mutex> lock(mDataMutex);
+            mMissionSampleRate = cachedSampleRate;
+            mMissionChannels = cachedChannels;
+            mMissionAudioData.resize(audioDataSize / sizeof(float));
+            
+            if (fread(mMissionAudioData.data(), sizeof(float), mMissionAudioData.size(), cacheFile) == mMissionAudioData.size()) {
+                fclose(cacheFile);
+                LOGI("Successfully loaded %zu mission samples from cache", mMissionAudioData.size());
+                return true;
+            }
+        }
+        fclose(cacheFile);
+        LOGW("Mission cache file corrupted, loading from assets");
+    }
+    
+    // Load from assets
+    if (!loadMissionTrackFromAssets(assetManager, assetPath)) {
+        return false;
+    }
+    
+    // Save to cache for future loads
+    FILE* saveFile = fopen(cacheFilePath.c_str(), "wb");
+    if (saveFile) {
+        fwrite(&mMissionSampleRate, sizeof(int32_t), 1, saveFile);
+        fwrite(&mMissionChannels, sizeof(int32_t), 1, saveFile);
+        fwrite(mMissionAudioData.data(), sizeof(float), mMissionAudioData.size(), saveFile);
+        fclose(saveFile);
+        LOGI("Saved mission WAV data to cache: %s", cacheFilePath.c_str());
+    } else {
+        LOGW("Failed to save mission WAV to cache: %s", cacheFilePath.c_str());
+    }
+    
+    return true;
+}
+
+bool OboeMusicPlayer::loadMissionTrackCompressed(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir) {
+    LOGI("Loading compressed mission track from assets: %s", assetPath.c_str());
+    
+    // Check if cached PCM data exists
+    std::string cacheFilePath = cacheDir + "/" + assetPath + "_cache.pcm";
+    FILE* cacheFile = fopen(cacheFilePath.c_str(), "rb");
+    if (cacheFile) {
+        LOGI("Found cached mission PCM data, loading from cache");
+        fseek(cacheFile, 0, SEEK_END);
+        long cacheSize = ftell(cacheFile);
+        fseek(cacheFile, 0, SEEK_SET);
+        
+        // Read sample rate and channels first
+        int32_t cachedSampleRate, cachedChannels;
+        if (fread(&cachedSampleRate, sizeof(int32_t), 1, cacheFile) == 1 &&
+            fread(&cachedChannels, sizeof(int32_t), 1, cacheFile) == 1) {
+            
+            size_t audioDataSize = cacheSize - 2 * sizeof(int32_t);
+            mMissionAudioData.resize(audioDataSize / sizeof(float));
+            
+            if (fread(mMissionAudioData.data(), sizeof(float), mMissionAudioData.size(), cacheFile) == mMissionAudioData.size()) {
+                mMissionSampleRate = cachedSampleRate;
+                mMissionChannels = cachedChannels;
+                fclose(cacheFile);
+                
+                LOGI("Successfully loaded %zu mission samples from cache", mMissionAudioData.size());
+                return true;
+            }
+        }
+        fclose(cacheFile);
+        LOGI("Mission cache file corrupted, will decode fresh");
+    }
+    
+    AAsset* asset = AAssetManager_open(assetManager, assetPath.c_str(), AASSET_MODE_STREAMING);
+    if (asset == nullptr) {
+        LOGE("Failed to open compressed mission asset: %s", assetPath.c_str());
+        return false;
+    }
+    
+    off_t assetLength = AAsset_getLength(asset);
+    LOGI("Compressed mission asset opened, length=%ld", (long)assetLength);
+    
+    // Read entire asset into memory for MediaExtractor
+    std::vector<char> assetData(assetLength);
+    int bytesRead = AAsset_read(asset, assetData.data(), assetLength);
+    AAsset_close(asset);
+    
+    if (bytesRead != assetLength) {
+        LOGE("Failed to read compressed mission asset: read %d of %ld bytes", bytesRead, (long)assetLength);
+        return false;
+    }
+    
+    // Create temporary file for MediaExtractor
+    std::string tempPath = cacheDir + "/temp_mission_audio.tmp";
+    FILE* tempFile = fopen(tempPath.c_str(), "wb");
+    if (!tempFile) {
+        LOGE("Failed to create temporary mission file");
+        return false;
+    }
+    
+    size_t written = fwrite(assetData.data(), 1, assetLength, tempFile);
+    fclose(tempFile);
+    
+    if (written != assetLength) {
+        LOGE("Failed to write temporary mission file");
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    // Use MediaExtractor to decode the compressed audio
+    AMediaExtractor* extractor = AMediaExtractor_new();
+    if (!extractor) {
+        LOGE("Failed to create MediaExtractor for mission track");
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    media_status_t status = AMediaExtractor_setDataSourceFd(extractor, open(tempPath.c_str(), O_RDONLY), 0, assetLength);
+    if (status != AMEDIA_OK) {
+        LOGE("Failed to set data source for mission MediaExtractor: %d", status);
+        AMediaExtractor_delete(extractor);
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    // Find the first audio track
+    size_t numTracks = AMediaExtractor_getTrackCount(extractor);
+    LOGI("Found %zu tracks in mission audio", numTracks);
+    
+    AMediaCodec* codec = nullptr;
+    int32_t missionSampleRate = 48000;
+    int32_t missionChannels = 2;
+    
+    for (size_t i = 0; i < numTracks; i++) {
+        AMediaFormat* format = AMediaExtractor_getTrackFormat(extractor, i);
+        if (!format) continue;
+        
+        const char* mime;
+        if (AMediaFormat_getString(format, AMEDIAFORMAT_KEY_MIME, &mime)) {
+            LOGI("Mission track %zu MIME: %s", i, mime);
+            if (strncmp(mime, "audio/", 6) == 0) {
+                // Select this track
+                AMediaExtractor_selectTrack(extractor, i);
+                
+                // Get format info
+                AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, &missionSampleRate);
+                AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &missionChannels);
+                
+                // Create decoder
+                codec = AMediaCodec_createDecoderByType(mime);
+                if (codec) {
+                    status = AMediaCodec_configure(codec, format, nullptr, nullptr, 0);
+                    if (status == AMEDIA_OK) {
+                        AMediaFormat_delete(format);
+                        break;
+                    }
+                    AMediaCodec_delete(codec);
+                    codec = nullptr;
+                }
+            }
+        }
+        AMediaFormat_delete(format);
+    }
+    
+    if (!codec) {
+        LOGE("Failed to find and configure mission audio track");
+        AMediaExtractor_delete(extractor);
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    // Start decoding
+    status = AMediaCodec_start(codec);
+    if (status != AMEDIA_OK) {
+        LOGE("Failed to start mission codec: %d", status);
+        AMediaCodec_delete(codec);
+        AMediaExtractor_delete(extractor);
+        remove(tempPath.c_str());
+        return false;
+    }
+    
+    LOGI("Decoding mission audio: %d Hz, %d channels", missionSampleRate, missionChannels);
+    
+    // Check format compatibility
+    if (missionSampleRate != mSampleRate || missionChannels != mChannels) {
+        LOGW("Mission track format differs from main track (sr=%d vs %d, ch=%d vs %d) - may cause issues",
+             missionSampleRate, mSampleRate, missionChannels, mChannels);
+    }
+    
+    // Decode all samples
+    std::vector<int16_t> pcmData;
+    const size_t timeoutUs = 5000; // 5ms timeout
+    
+    while (true) {
+        // Get input buffer
+        ssize_t inputIndex = AMediaCodec_dequeueInputBuffer(codec, timeoutUs);
+        if (inputIndex < 0) {
+            if (inputIndex != AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
+                break; // End of stream or error
+            }
+            continue;
+        }
+        
+        size_t inputSize;
+        uint8_t* inputBuffer = AMediaCodec_getInputBuffer(codec, inputIndex, &inputSize);
+        if (!inputBuffer) {
+            LOGE("Failed to get mission input buffer");
+            break;
+        }
+        
+        // Read from extractor
+        ssize_t sampleSize = AMediaExtractor_readSampleData(extractor, inputBuffer, inputSize);
+        if (sampleSize <= 0) {
+            // End of stream
+            AMediaCodec_queueInputBuffer(codec, inputIndex, 0, 0, 0, AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
+            break;
+        }
+        
+        AMediaExtractor_advance(extractor);
+        AMediaCodec_queueInputBuffer(codec, inputIndex, 0, sampleSize, 0, 0);
+        
+        // Get output
+        AMediaCodecBufferInfo info;
+        ssize_t outputIndex = AMediaCodec_dequeueOutputBuffer(codec, &info, timeoutUs);
+        if (outputIndex >= 0) {
+            size_t outputSize;
+            const uint8_t* outputBuffer = AMediaCodec_getOutputBuffer(codec, outputIndex, &outputSize);
+            if (outputBuffer && info.size > 0) {
+                // Convert to int16_t and store
+                const int16_t* samples = reinterpret_cast<const int16_t*>(outputBuffer);
+                size_t sampleCount = info.size / sizeof(int16_t);
+                pcmData.insert(pcmData.end(), samples, samples + sampleCount);
+            }
+            AMediaCodec_releaseOutputBuffer(codec, outputIndex, false);
+        } else if (outputIndex == AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED) {
+            // Format changed, ignore
+        } else if (outputIndex != AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
+            break; // Error
+        }
+    }
+    
+    // Cleanup
+    AMediaCodec_stop(codec);
+    AMediaCodec_delete(codec);
+    AMediaExtractor_delete(extractor);
+    remove(tempPath.c_str());
+    
+    // Convert to float and store
+    std::lock_guard<std::mutex> lock(mDataMutex);
+    mMissionAudioData.clear();
+    mMissionAudioData.reserve(pcmData.size());
+    
+    for (int16_t sample : pcmData) {
+        mMissionAudioData.push_back(sample / 32768.0f);
+    }
+    
+    LOGI("Mission track size: %zu samples (main track: %zu)", mMissionAudioData.size(), mAudioData.size());
+    
+    // Save to cache for future loads
+    std::string saveCachePath = cacheDir + "/" + assetPath + "_cache.pcm";
+    FILE* saveFile = fopen(saveCachePath.c_str(), "wb");
+    if (saveFile) {
+        fwrite(&mMissionSampleRate, sizeof(int32_t), 1, saveFile);
+        fwrite(&mMissionChannels, sizeof(int32_t), 1, saveFile);
+        fwrite(mMissionAudioData.data(), sizeof(float), mMissionAudioData.size(), saveFile);
+        fclose(saveFile);
+        LOGI("Saved decoded mission audio to cache: %s", saveCachePath.c_str());
+    } else {
+        LOGW("Failed to save mission audio to cache: %s", saveCachePath.c_str());
+    }
+    
+    LOGI("Successfully decoded %zu samples from compressed mission audio", mMissionAudioData.size());
     return true;
 }
 

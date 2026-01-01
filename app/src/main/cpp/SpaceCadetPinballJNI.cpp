@@ -591,3 +591,59 @@ Java_com_fexed_spacecadetpinball_MainActivity_setMissionMusicVolume(JNIEnv *env,
         g_musicPlayer->setMissionVolume(volume);
     }
 }
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadCompressedMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+    if (g_musicPlayer == nullptr) return false;
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (mgr == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(assetPath, nullptr);
+    const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
+    bool result = g_musicPlayer->loadCompressedFromAssets(mgr, pathStr, cacheStr);
+    env->ReleaseStringUTFChars(cacheDir, cacheStr);
+    env->ReleaseStringUTFChars(assetPath, pathStr);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicCompressed(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+    if (g_musicPlayer == nullptr) return false;
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (mgr == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(assetPath, nullptr);
+    const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
+    bool result = g_musicPlayer->loadMissionTrackCompressed(mgr, pathStr, cacheStr);
+    env->ReleaseStringUTFChars(cacheDir, cacheStr);
+    env->ReleaseStringUTFChars(assetPath, pathStr);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromAssetsWithCache(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+    if (g_musicPlayer == nullptr) return false;
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (mgr == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(assetPath, nullptr);
+    const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
+    bool result = g_musicPlayer->loadFromAssetsWithCache(mgr, pathStr, cacheStr);
+    env->ReleaseStringUTFChars(cacheDir, cacheStr);
+    env->ReleaseStringUTFChars(assetPath, pathStr);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssetsWithCache(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+    if (g_musicPlayer == nullptr) return false;
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (mgr == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(assetPath, nullptr);
+    const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
+    bool result = g_musicPlayer->loadMissionTrackFromAssetsWithCache(mgr, pathStr, cacheStr);
+    env->ReleaseStringUTFChars(cacheDir, cacheStr);
+    env->ReleaseStringUTFChars(assetPath, pathStr);
+    return result;
+}

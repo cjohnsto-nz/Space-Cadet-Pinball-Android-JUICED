@@ -155,5 +155,6 @@ find_library(log-lib log)
 find_library(gles3-lib GLESv3)
 find_library(egl-lib EGL)
 find_library(android-lib android)
+find_library(media-ndk-lib mediandk)
 
-target_link_libraries(SpaceCadetPinball SDL2 SDL2_mixer oboe ${log-lib} ${gles3-lib} ${egl-lib} ${android-lib})
+target_link_libraries(SpaceCadetPinball SDL2 SDL2_mixer oboe ${log-lib} ${gles3-lib} ${egl-lib} ${android-lib} ${media-ndk-lib})

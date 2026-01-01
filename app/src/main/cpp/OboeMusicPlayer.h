@@ -7,6 +7,9 @@
 #include <mutex>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
+#include <media/NdkMediaExtractor.h>
+#include <media/NdkMediaCodec.h>
+#include <media/NdkMediaFormat.h>
 
 /**
  * Low-pass filter using a simple one-pole IIR filter
@@ -112,6 +115,12 @@ public:
     // Load audio from Android assets
     bool loadFromAssets(AAssetManager* assetManager, const std::string& assetPath);
     
+    // Load audio from Android assets with PCM caching
+    bool loadFromAssetsWithCache(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir);
+    
+    // Load compressed audio from assets (MP3, AAC, etc.)
+    bool loadCompressedFromAssets(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir);
+    
     // Load raw PCM data
     bool loadPCMData(const int16_t* data, size_t numSamples, int32_t sampleRate, int32_t channels);
 
@@ -132,6 +141,8 @@ public:
 
     // Mission track support (layered on top of main track)
     bool loadMissionTrackFromAssets(AAssetManager* assetManager, const std::string& assetPath);
+    bool loadMissionTrackFromAssetsWithCache(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir);
+    bool loadMissionTrackCompressed(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir);
     void setMissionTrackEnabled(bool enabled);
     bool isMissionTrackEnabled() const { return mMissionEnabled; }
     void setMissionVolume(float volume) { mMissionTargetVolume = volume; }
@@ -166,7 +177,9 @@ private:
     std::atomic<bool> mMissionEnabled{false};
     std::atomic<float> mMissionTargetVolume{1.0f};
     float mMissionCurrentVolume = 0.0f;  // For smooth fade
-    static constexpr float kMissionFadeSpeed = 0.00005f;  // Slow fade rate per sample (~5 seconds)
+    static constexpr float kMissionFadeSpeed = 0.000003f;  // Slow fade rate per sample (~5 seconds)
+    int32_t mMissionSampleRate = 48000;
+    int32_t mMissionChannels = 2;
 };
 
 // Global instance for JNI access
