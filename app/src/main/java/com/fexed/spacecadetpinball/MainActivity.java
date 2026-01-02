@@ -479,6 +479,13 @@ public class MainActivity extends SDLActivity {
             AssetManager assetManager = getAssets();
             copyAssetFile(assetManager, "808generative.mp3", musicFile);
         }
+        // Copy default light config if no user config exists
+        File userLightConfig = new File(filesDir, "light_positions.cfg");
+        if (!userLightConfig.exists()) {
+            File defaultLightConfig = new File(filesDir, "light_positions_default.cfg");
+            AssetManager assetManager = getAssets();
+            copyAssetFile(assetManager, "light_positions_default.cfg", defaultLightConfig);
+        }
     }
     
     private void copyAssetFolder(AssetManager assetManager, String assetPath, File targetDir) {

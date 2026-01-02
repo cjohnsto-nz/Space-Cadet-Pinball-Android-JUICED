@@ -1898,8 +1898,11 @@ void control::make_links(TPinballTable* table)
 			HDRLightOverlay::RegisterLightGroup("worm_hole_lights", control_worm_hole_lights_tag.Component);
 		}
 		
-		// Load light positions from config file
-		HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions.cfg");
+		// Load light positions from config file with fallback to default
+		if (!HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions.cfg")) {
+			// Try to load default config from assets if user config doesn't exist
+			HDRLightOverlay::LoadLightPositions("light_positions_default.cfg");
+		}
 	}
 }
 
