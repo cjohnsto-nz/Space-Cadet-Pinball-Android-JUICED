@@ -1667,6 +1667,9 @@ public class MainActivity extends SDLActivity {
     private void showModeSelectionDialog() {
         waitingForModeSelection = true;
         
+        // Pause the game while mode selection is shown so startup sequence doesn't complete
+        pauseNativeThread();
+        
         // Hide all text UI until game begins
         mBinding.txtscore.setVisibility(View.GONE);
         mBinding.ballstxt.setVisibility(View.GONE);
@@ -1683,6 +1686,9 @@ public class MainActivity extends SDLActivity {
         builder.setItems(modes, (dialog, which) -> {
             waitingForModeSelection = false;
             pendingGameStart = true;  // Wait for ball to enter plunger before starting music/timer
+            
+            // Resume the game now that mode is selected
+            resumeNativeThread();
             
             // Start session timer for both modes
             startSessionTimer();
