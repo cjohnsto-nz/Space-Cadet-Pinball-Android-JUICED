@@ -583,7 +583,42 @@ Java_com_fexed_spacecadetpinball_MainActivity_isMusicPlaying(JNIEnv *env, jobjec
     return g_musicPlayer->isPlaying();
 }
 
+// Load from file with PCM caching (fast on subsequent loads)
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromFileWithCache(JNIEnv *env, jobject thiz, jstring path, jstring cacheDir) {
+    if (g_musicPlayer == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(path, nullptr);
+    const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
+    bool result = g_musicPlayer->loadFromFileWithCache(pathStr, cacheStr);
+    env->ReleaseStringUTFChars(cacheDir, cacheStr);
+    env->ReleaseStringUTFChars(path, pathStr);
+    return result;
+}
+
 // Mission track JNI functions
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromFile(JNIEnv *env, jobject thiz, jstring path) {
+    if (g_musicPlayer == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(path, nullptr);
+    bool result = g_musicPlayer->loadMissionTrackFromFile(pathStr);
+    env->ReleaseStringUTFChars(path, pathStr);
+    return result;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromFileWithCache(JNIEnv *env, jobject thiz, jstring path, jstring cacheDir) {
+    if (g_musicPlayer == nullptr) return false;
+    const char* pathStr = env->GetStringUTFChars(path, nullptr);
+    const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
+    bool result = g_musicPlayer->loadMissionTrackFromFileWithCache(pathStr, cacheStr);
+    env->ReleaseStringUTFChars(cacheDir, cacheStr);
+    env->ReleaseStringUTFChars(path, pathStr);
+    return result;
+}
+
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath) {

@@ -33,7 +33,7 @@ int pb::time_ticks = 0;
 GameModes pb::game_mode = GameModes::GameOver;
 float pb::time_now = 0, pb::time_next = 0, pb::ball_speed_limit, pb::time_ticks_remainder = 0;
 high_score_struct pb::highscore_table[5];
-bool pb::FullTiltMode = false, pb::cheat_mode = false, pb::demo_mode = false;
+bool pb::FullTiltMode = false, pb::cheat_mode = false, pb::demo_mode = false, pb::audioReady = false;
 
 
 int pb::init()
@@ -186,6 +186,13 @@ void pb::toggle_demo()
 
 void pb::replay_level(bool demoMode)
 {
+	// Wait for audio to be ready before starting the game
+	// This prevents the ball from dropping while audio is still loading
+	while (!audioReady)
+	{
+		SDL_Delay(50);  // Wait 50ms and check again
+	}
+	
 	demo_mode = demoMode;
 	SpaceCadetPinballJNI::notifyGameState(SpaceCadetPinballJNI::GAMESTATE::RUNNING);
 	mode_change(GameModes::InGame);

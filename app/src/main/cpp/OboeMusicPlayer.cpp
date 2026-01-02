@@ -4,6 +4,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
+#include "SDL_endian.h"
 
 #define LOG_TAG "OboeMusicPlayer"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -46,22 +47,61 @@ bool OboeMusicPlayer::loadFromFile(const std::string& filePath) {
         return false;
     }
 
-    // Read WAV header
-    char header[44];
-    file.read(header, 44);
+    // Get file size
+    file.seekg(0, std::ios::end);
+    long fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+    
+    if (fileSize < 44) {
+        LOGE("File too small: %ld bytes", fileSize);
+        return false;
+    }
+    
+    // Read entire file into memory
+    std::vector<char> fileData(fileSize);
+    file.read(fileData.data(), fileSize);
     
     // Parse WAV header
-    if (strncmp(header, "RIFF", 4) != 0 || strncmp(header + 8, "WAVE", 4) != 0) {
+    const char* data = fileData.data();
+    if (memcmp(data, "RIFF", 4) != 0 || memcmp(data + 8, "WAVE", 4) != 0) {
         LOGE("Not a valid WAV file");
         return false;
     }
-
-    // Get format info
-    int16_t audioFormat = *reinterpret_cast<int16_t*>(header + 20);
-    mChannels = *reinterpret_cast<int16_t*>(header + 22);
-    mSampleRate = *reinterpret_cast<int32_t*>(header + 24);
-    int16_t bitsPerSample = *reinterpret_cast<int16_t*>(header + 34);
-    int32_t dataSize = *reinterpret_cast<int32_t*>(header + 40);
+    
+    // Find fmt chunk
+    int32_t pos = 12;
+    int32_t fmtPos = -1;
+    int32_t dataPos = -1;
+    int32_t dataSize = 0;
+    
+    while (pos < fileSize - 8) {
+        char chunkId[5] = {0};
+        memcpy(chunkId, data + pos, 4);
+        int32_t chunkSize = *reinterpret_cast<const int32_t*>(data + pos + 4);
+        
+        LOGI("Found chunk '%s' at pos %d, size %d", chunkId, pos, chunkSize);
+        
+        if (memcmp(chunkId, "fmt ", 4) == 0) {
+            fmtPos = pos + 8;
+        } else if (memcmp(chunkId, "data", 4) == 0) {
+            dataPos = pos + 8;
+            dataSize = chunkSize;
+            break;
+        }
+        pos += 8 + chunkSize;
+        if (chunkSize % 2 == 1) pos++; // Padding
+    }
+    
+    if (fmtPos < 0 || dataPos < 0) {
+        LOGE("WAV file missing fmt or data chunk");
+        return false;
+    }
+    
+    // Parse fmt chunk
+    int16_t audioFormat = *reinterpret_cast<const int16_t*>(data + fmtPos);
+    mChannels = *reinterpret_cast<const int16_t*>(data + fmtPos + 2);
+    mSampleRate = *reinterpret_cast<const int32_t*>(data + fmtPos + 4);
+    int16_t bitsPerSample = *reinterpret_cast<const int16_t*>(data + fmtPos + 14);
 
     LOGI("WAV: format=%d, channels=%d, sampleRate=%d, bits=%d, dataSize=%d",
          audioFormat, mChannels, mSampleRate, bitsPerSample, dataSize);
@@ -79,20 +119,20 @@ bool OboeMusicPlayer::loadFromFile(const std::string& filePath) {
     mAudioData.reserve(numSamples);
 
     if (bitsPerSample == 16) {
-        std::vector<int16_t> rawData(numSamples);
-        file.read(reinterpret_cast<char*>(rawData.data()), dataSize);
+        const int16_t* rawData = reinterpret_cast<const int16_t*>(data + dataPos);
         
         // Convert to float
         for (size_t i = 0; i < numSamples; i++) {
-            mAudioData.push_back(rawData[i] / 32768.0f);
+            int16_t sample = rawData[i];
+            mAudioData.push_back(sample / 32768.0f);
         }
     } else if (bitsPerSample == 32) {
-        std::vector<int32_t> rawData(numSamples);
-        file.read(reinterpret_cast<char*>(rawData.data()), dataSize);
+        const int32_t* rawData = reinterpret_cast<const int32_t*>(data + dataPos);
         
-        // Convert to float
+        // Convert to float (handle byte order)
         for (size_t i = 0; i < numSamples; i++) {
-            mAudioData.push_back(rawData[i] / 2147483648.0f);
+            int32_t sample = rawData[i];
+            mAudioData.push_back(sample / 2147483648.0f);
         }
     } else {
         LOGE("Unsupported bits per sample: %d", bitsPerSample);
@@ -103,6 +143,77 @@ bool OboeMusicPlayer::loadFromFile(const std::string& filePath) {
     mLowPassFilter.setSampleRate(mSampleRate);
     
     LOGI("Loaded %zu samples", mAudioData.size());
+    return true;
+}
+
+bool OboeMusicPlayer::loadFromFileWithCache(const std::string& filePath, const std::string& cacheDir) {
+    LOGI("Loading WAV from file with cache: %s", filePath.c_str());
+    LOGI("Cache directory: %s", cacheDir.c_str());
+    
+    // Extract filename from path for cache file naming
+    std::string filename = filePath;
+    size_t lastSlash = filePath.find_last_of('/');
+    if (lastSlash != std::string::npos) {
+        filename = filePath.substr(lastSlash + 1);
+    }
+    
+    // Check if cached PCM data exists
+    std::string cacheFilePath = cacheDir + "/" + filename + "_cache.pcm";
+    LOGI("Looking for cache file: %s", cacheFilePath.c_str());
+    FILE* cacheFile = fopen(cacheFilePath.c_str(), "rb");
+    if (!cacheFile) {
+        LOGI("Cache file not found, will decode from WAV");
+    }
+    if (cacheFile) {
+        LOGI("Found cached PCM data, loading from cache: %s", cacheFilePath.c_str());
+        
+        // Read header
+        int32_t cachedSampleRate, cachedChannels;
+        if (fread(&cachedSampleRate, sizeof(int32_t), 1, cacheFile) == 1 &&
+            fread(&cachedChannels, sizeof(int32_t), 1, cacheFile) == 1) {
+            
+            // Get file size to determine audio data size
+            fseek(cacheFile, 0, SEEK_END);
+            long fileSize = ftell(cacheFile);
+            fseek(cacheFile, 2 * sizeof(int32_t), SEEK_SET);
+            
+            size_t audioDataSize = fileSize - 2 * sizeof(int32_t);
+            
+            std::lock_guard<std::mutex> lock(mDataMutex);
+            mSampleRate = cachedSampleRate;
+            mChannels = cachedChannels;
+            mAudioData.resize(audioDataSize / sizeof(float));
+            
+            if (fread(mAudioData.data(), sizeof(float), mAudioData.size(), cacheFile) == mAudioData.size()) {
+                fclose(cacheFile);
+                mReadIndex = 0;
+                mLowPassFilter.setSampleRate(mSampleRate);
+                LOGI("Successfully loaded %zu samples from cache (sampleRate=%d, channels=%d)", 
+                     mAudioData.size(), mSampleRate, mChannels);
+                return true;
+            }
+        }
+        fclose(cacheFile);
+        LOGW("Cache file corrupted, loading from WAV file");
+    }
+    
+    // Load from WAV file
+    if (!loadFromFile(filePath)) {
+        return false;
+    }
+    
+    // Save to cache for future loads
+    FILE* saveFile = fopen(cacheFilePath.c_str(), "wb");
+    if (saveFile) {
+        fwrite(&mSampleRate, sizeof(int32_t), 1, saveFile);
+        fwrite(&mChannels, sizeof(int32_t), 1, saveFile);
+        fwrite(mAudioData.data(), sizeof(float), mAudioData.size(), saveFile);
+        fclose(saveFile);
+        LOGI("Saved decoded PCM to cache: %s (%zu samples)", cacheFilePath.c_str(), mAudioData.size());
+    } else {
+        LOGW("Failed to save PCM to cache: %s", cacheFilePath.c_str());
+    }
+    
     return true;
 }
 
@@ -518,6 +629,178 @@ bool OboeMusicPlayer::loadCompressedFromAssets(AAssetManager* assetManager, cons
     }
     
     LOGI("Successfully decoded %zu samples from compressed audio", mAudioData.size());
+    return true;
+}
+
+bool OboeMusicPlayer::loadMissionTrackFromFile(const std::string& filePath) {
+    LOGI("Loading mission track from file: %s", filePath.c_str());
+    
+    FILE* file = fopen(filePath.c_str(), "rb");
+    if (file == nullptr) {
+        LOGE("Failed to open mission file: %s", filePath.c_str());
+        return false;
+    }
+    
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    
+    if (fileSize < 44) {
+        LOGE("Mission file too small: %ld bytes", fileSize);
+        fclose(file);
+        return false;
+    }
+    
+    // Read entire file into memory
+    std::vector<char> fileData(fileSize);
+    size_t bytesRead = fread(fileData.data(), 1, fileSize, file);
+    fclose(file);
+    
+    if (bytesRead != fileSize) {
+        LOGE("Failed to read mission file: read %zu of %ld bytes", bytesRead, fileSize);
+        return false;
+    }
+    
+    // Parse WAV header
+    const char* data = fileData.data();
+    
+    // Check RIFF header
+    if (memcmp(data, "RIFF", 4) != 0) {
+        LOGE("Mission file is not a valid WAV file (no RIFF header)");
+        return false;
+    }
+    
+    // Check WAVE format
+    if (memcmp(data + 8, "WAVE", 4) != 0) {
+        LOGE("Mission file is not a valid WAV file (no WAVE format)");
+        return false;
+    }
+    
+    // Find fmt chunk
+    int32_t pos = 12;
+    int32_t fmtPos = -1;
+    int32_t dataPos = -1;
+    int32_t dataSize = 0;
+    
+    while (pos < fileSize - 8) {
+        char chunkId[5] = {0};
+        memcpy(chunkId, data + pos, 4);
+        int32_t chunkSize = *reinterpret_cast<const int32_t*>(data + pos + 4);
+        
+        if (memcmp(chunkId, "fmt ", 4) == 0) {
+            fmtPos = pos + 8;
+        } else if (memcmp(chunkId, "data", 4) == 0) {
+            dataPos = pos + 8;
+            dataSize = chunkSize;
+            break;
+        }
+        pos += 8 + chunkSize;
+        if (chunkSize % 2 == 1) pos++; // Padding
+    }
+    
+    if (fmtPos < 0 || dataPos < 0) {
+        LOGE("Mission WAV file missing fmt or data chunk");
+        return false;
+    }
+    
+    // Parse fmt chunk
+    int16_t audioFormat = *reinterpret_cast<const int16_t*>(data + fmtPos);
+    int16_t numChannels = *reinterpret_cast<const int16_t*>(data + fmtPos + 2);
+    int32_t sampleRate = *reinterpret_cast<const int32_t*>(data + fmtPos + 4);
+    int16_t bitsPerSample = *reinterpret_cast<const int16_t*>(data + fmtPos + 14);
+    
+    LOGI("Mission WAV: format=%d, channels=%d, sampleRate=%d, bitsPerSample=%d, dataSize=%d",
+         audioFormat, numChannels, sampleRate, bitsPerSample, dataSize);
+    
+    if (audioFormat != 1) {
+        LOGE("Mission WAV is not PCM format (format=%d)", audioFormat);
+        return false;
+    }
+    
+    if (bitsPerSample != 16) {
+        LOGE("Mission WAV is not 16-bit (bitsPerSample=%d)", bitsPerSample);
+        return false;
+    }
+    
+    // Store mission audio data
+    mMissionSampleRate = sampleRate;
+    mMissionChannels = numChannels;
+    
+    int numSamples = dataSize / 2;
+    mMissionAudioData.resize(numSamples);
+    
+    // Convert 16-bit samples to float
+    const int16_t* rawData = reinterpret_cast<const int16_t*>(data + dataPos);
+    for (int i = 0; i < numSamples; i++) {
+        int16_t sample = rawData[i];
+        mMissionAudioData[i] = sample / 32768.0f;
+    }
+    
+    LOGI("Mission track loaded: %d samples, %d Hz, %d channels", numSamples, sampleRate, numChannels);
+    return true;
+}
+
+bool OboeMusicPlayer::loadMissionTrackFromFileWithCache(const std::string& filePath, const std::string& cacheDir) {
+    LOGI("Loading mission track from file with cache: %s", filePath.c_str());
+    
+    // Extract filename from path for cache file naming
+    std::string filename = filePath;
+    size_t lastSlash = filePath.find_last_of('/');
+    if (lastSlash != std::string::npos) {
+        filename = filePath.substr(lastSlash + 1);
+    }
+    
+    // Check if cached PCM data exists
+    std::string cacheFilePath = cacheDir + "/" + filename + "_mission_cache.pcm";
+    FILE* cacheFile = fopen(cacheFilePath.c_str(), "rb");
+    if (cacheFile) {
+        LOGI("Found cached mission PCM data, loading from cache: %s", cacheFilePath.c_str());
+        
+        // Read header
+        int32_t cachedSampleRate, cachedChannels;
+        if (fread(&cachedSampleRate, sizeof(int32_t), 1, cacheFile) == 1 &&
+            fread(&cachedChannels, sizeof(int32_t), 1, cacheFile) == 1) {
+            
+            // Get file size to determine audio data size
+            fseek(cacheFile, 0, SEEK_END);
+            long fileSize = ftell(cacheFile);
+            fseek(cacheFile, 2 * sizeof(int32_t), SEEK_SET);
+            
+            size_t audioDataSize = fileSize - 2 * sizeof(int32_t);
+            
+            mMissionSampleRate = cachedSampleRate;
+            mMissionChannels = cachedChannels;
+            mMissionAudioData.resize(audioDataSize / sizeof(float));
+            
+            if (fread(mMissionAudioData.data(), sizeof(float), mMissionAudioData.size(), cacheFile) == mMissionAudioData.size()) {
+                fclose(cacheFile);
+                LOGI("Successfully loaded %zu mission samples from cache (sampleRate=%d, channels=%d)", 
+                     mMissionAudioData.size(), mMissionSampleRate, mMissionChannels);
+                return true;
+            }
+        }
+        fclose(cacheFile);
+        LOGW("Mission cache file corrupted, loading from WAV file");
+    }
+    
+    // Load from WAV file
+    if (!loadMissionTrackFromFile(filePath)) {
+        return false;
+    }
+    
+    // Save to cache for future loads
+    FILE* saveFile = fopen(cacheFilePath.c_str(), "wb");
+    if (saveFile) {
+        fwrite(&mMissionSampleRate, sizeof(int32_t), 1, saveFile);
+        fwrite(&mMissionChannels, sizeof(int32_t), 1, saveFile);
+        fwrite(mMissionAudioData.data(), sizeof(float), mMissionAudioData.size(), saveFile);
+        fclose(saveFile);
+        LOGI("Saved decoded mission PCM to cache: %s (%zu samples)", cacheFilePath.c_str(), mMissionAudioData.size());
+    } else {
+        LOGW("Failed to save mission PCM to cache: %s", cacheFilePath.c_str());
+    }
+    
     return true;
 }
 

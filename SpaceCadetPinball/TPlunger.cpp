@@ -56,8 +56,6 @@ void TPlunger::Collision(TBall* ball, vector2* nextPosition, vector2* direction,
 	// During pullback, Threshold is high (1000000000.0) - use intensity-based haptic
 	if (Threshold < 1.0f)
 	{
-		if (SpaceCadetPinballJNI::isBallInPlunger())
-			SpaceCadetPinballJNI::setBallInPlunger(false);
 		// Plunger released and hit ball - full intensity
 		SpaceCadetPinballJNI::triggerHapticFeedback(1.0f);
 	}

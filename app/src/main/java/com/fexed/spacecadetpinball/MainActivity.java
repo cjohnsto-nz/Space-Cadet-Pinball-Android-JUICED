@@ -39,11 +39,14 @@ import androidx.core.content.res.ResourcesCompat;
 
 import org.libsdl.app.SDLActivity;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import com.fexed.spacecadetpinball.databinding.ActivityMainBinding;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -115,78 +118,98 @@ public class MainActivity extends SDLActivity {
                 .create();
         loadingDialog.show();
         
-        // Load audio in background thread so dialog can display
-        new Thread(() -> {
-            // Get cache directory for temporary files
-            String cacheDir = getCacheDir().getAbsolutePath();
-            
-            // Load WAV with caching to avoid unpacking from APK every launch
-            boolean musicLoaded = false;
-            if (loadMusicFromAssetsWithCache(getAssets(), "808generative.wav", cacheDir)) {
-                Log.i(TAG, "Loaded main music as WAV");
-                musicLoaded = true;
-            }
-            
-            if (musicLoaded) {
-                setMusicVolume(PrefsHelper.getMusicVolume() / 100.0f);
-                
-                // Update loading message for mission track
+        // Get files directory for music files
+        String musicDir = getFilesDir().getAbsolutePath();
+        
+        // First ensure music files exist (download if needed), then load them
+        ensureMusicFilesExist(musicDir, () -> {
+            // Load audio in background thread so dialog can display
+            new Thread(() -> {
                 runOnUiThread(() -> {
                     try {
-                        loadingDialog.setMessage("Decoding mission audio...");
+                        loadingDialog.setMessage("Decoding main audio...");
                     } catch (Exception e) {
                         // Dialog might be dismissed, ignore
                     }
                 });
                 
-                // Load mission track WAV with caching
-                boolean missionLoaded = false;
-                if (loadMissionMusicFromAssetsWithCache(getAssets(), "808generativemission.wav", cacheDir)) {
-                    Log.i(TAG, "Loaded mission music as WAV");
-                    missionLoaded = true;
+                // Load main WAV from files directory with PCM caching
+                String cacheDir = getCacheDir().getAbsolutePath();
+                boolean musicLoaded = false;
+                if (loadMusicFromFileWithCache(musicDir + "/808generative.wav", cacheDir)) {
+                    Log.i(TAG, "Loaded main music (with PCM caching)");
+                    musicLoaded = true;
                 }
                 
-                if (missionLoaded) {
-                    // setMissionMusicVolume(0.7f);  // Reduce max volume to 70%
-                    setMissionMusicVolume(0.7f);
-                    Log.i(TAG, "Mission music track loaded");
-                } else {
-                    Log.w(TAG, "Failed to load mission music track");
-                }
-                
-                // Music will start after mode selection dialog
-                // Don't auto-start here - wait for player to select game mode
-                Log.i(TAG, "Oboe music player initialized with WAV file (waiting for mode selection)");
-                
-                // Initialize beat map player for bass-reactive HDR glow
-                beatMapPlayer = new BeatMapPlayer();
-                if (beatMapPlayer.loadFromAssets(this, "808generative_beats.json")) {
-                    // Use Oboe position instead of MediaPlayer
-                    beatMapPlayer.setPositionProvider(() -> getMusicPositionMs());
-                    beatMapPlayer.setBaseGlowModifier(PrefsHelper.getHDRGlowIntensity() / 100.0f);
-                    beatMapPlayer.setGlowRange(1.0f); // Glow can double on bass hits
-                    // No smoothing - use exact MIDI timing for instant attack
-                    beatMapPlayer.setListener(glowModifier -> {
-                        setHDRGlowModifier(glowModifier);
+                if (musicLoaded) {
+                    setMusicVolume(PrefsHelper.getMusicVolume() / 100.0f);
+                    
+                    // Update loading message for mission track
+                    runOnUiThread(() -> {
+                        try {
+                            loadingDialog.setMessage("Decoding mission audio...");
+                        } catch (Exception e) {
+                            // Dialog might be dismissed, ignore
+                        }
                     });
-                    // Beat map will start after mode selection along with music
-                    Log.i(TAG, "Beat map loaded for bass-reactive glow (waiting for mode selection)");
+                    
+                    // Load mission track WAV from files directory with PCM caching
+                    boolean missionLoaded = false;
+                    if (loadMissionMusicFromFileWithCache(musicDir + "/808generativemission.wav", cacheDir)) {
+                        Log.i(TAG, "Loaded mission music (with PCM caching)");
+                        missionLoaded = true;
+                    }
+                    
+                    if (missionLoaded) {
+                        setMissionMusicVolume(0.7f);
+                        Log.i(TAG, "Mission music track loaded");
+                    } else {
+                        Log.w(TAG, "Failed to load mission music track");
+                    }
+                    
+                    // Music will start after mode selection dialog
+                    Log.i(TAG, "Oboe music player initialized with WAV file (waiting for mode selection)");
+                    
+                    // Initialize beat map player for bass-reactive HDR glow
+                    beatMapPlayer = new BeatMapPlayer();
+                    if (beatMapPlayer.loadFromAssets(MainActivity.this, "808generative_beats.json")) {
+                        // Use Oboe position instead of MediaPlayer
+                        beatMapPlayer.setPositionProvider(() -> getMusicPositionMs());
+                        beatMapPlayer.setBaseGlowModifier(PrefsHelper.getHDRGlowIntensity() / 100.0f);
+                        beatMapPlayer.setGlowRange(1.0f); // Glow can double on bass hits
+                        // No smoothing - use exact MIDI timing for instant attack
+                        beatMapPlayer.setListener(glowModifier -> {
+                            setHDRGlowModifier(glowModifier);
+                        });
+                        Log.i(TAG, "Beat map loaded for bass-reactive glow (waiting for mode selection)");
+                    } else {
+                        Log.w(TAG, "No beat map found, HDR glow will not react to music");
+                    }
                 } else {
-                    Log.w(TAG, "No beat map found, HDR glow will not react to music");
+                    Log.e(TAG, "Failed to load music from files directory");
                 }
-            } else {
-                Log.e(TAG, "Failed to load music from assets");
+                
+                // Signal native code that audio is ready - this unblocks replay_level()
+                setAudioReadyNative(true);
+                Log.i(TAG, "Audio loading complete, native audioReady flag set");
+                
+                // Dismiss loading dialog
+                runOnUiThread(() -> {
+                    try {
+                        loadingDialog.dismiss();
+                    } catch (Exception e) {
+                        // Dialog might already be dismissed, ignore
+                    }
+                });
+            }).start();
+        }, (progressMessage) -> {
+            // Update dialog with download progress
+            try {
+                loadingDialog.setMessage(progressMessage);
+            } catch (Exception e) {
+                // Dialog might be dismissed, ignore
             }
-            
-            // Dismiss loading dialog
-            runOnUiThread(() -> {
-                try {
-                    loadingDialog.dismiss();
-                } catch (Exception e) {
-                    // Dialog might already be dismissed, ignore
-                }
-            });
-        }).start();
+        });
         
         mBinding = ActivityMainBinding.inflate(getLayoutInflater(), mLayout, false);
 
@@ -484,7 +507,7 @@ public class MainActivity extends SDLActivity {
         if (!userLightConfig.exists()) {
             File defaultLightConfig = new File(filesDir, "light_positions_default.cfg");
             AssetManager assetManager = getAssets();
-            copyAssetFile(assetManager, "light_positions_default.cfg", defaultLightConfig);
+            copyAssetFile(assetManager, "light_positions_default.cfg", userLightConfig);
         }
     }
     
@@ -1384,11 +1407,15 @@ public class MainActivity extends SDLActivity {
 
     // Enhanced audio native method
     private native void setEnhancedAudio(boolean enabled);
+    
+    // Audio ready flag - blocks game startup until audio is loaded
+    private native void setAudioReadyNative(boolean ready);
 
     // Oboe music player native methods
     private native void initOboeMusicPlayer();
     private native void destroyOboeMusicPlayer();
     private native boolean loadMusicFromFile(String path);
+    private native boolean loadMusicFromFileWithCache(String path, String cacheDir);
     private native boolean loadMusicFromAssets(android.content.res.AssetManager assetManager, String assetPath);
     private native boolean startMusic();
     private native void stopMusic();
@@ -1401,6 +1428,8 @@ public class MainActivity extends SDLActivity {
     private native boolean isMusicPlaying();
 
     // Mission track native methods
+    private native boolean loadMissionMusicFromFile(String path);
+    private native boolean loadMissionMusicFromFileWithCache(String path, String cacheDir);
     private native boolean loadMissionMusicFromAssets(android.content.res.AssetManager assetManager, String assetPath);
     private native boolean loadMissionMusicCompressed(android.content.res.AssetManager assetManager, String assetPath, String cacheDir);
     private native void setMissionMusicEnabled(boolean enabled);
@@ -1855,5 +1884,85 @@ public class MainActivity extends SDLActivity {
         builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
         builder.setCancelable(true);
         builder.show();
+    }
+    
+    // Music download URLs
+    private static final String MAIN_MUSIC_URL = "https://x3200.media/808generative.wav";
+    private static final String MISSION_MUSIC_URL = "https://x3200.media/808generativemission.wav";
+    
+    /**
+     * Ensure music files exist in the files directory, downloading if needed
+     */
+    private void ensureMusicFilesExist(String musicDir, Runnable onComplete, java.util.function.Consumer<String> onProgress) {
+        File mainMusic = new File(musicDir, "808generative.wav");
+        File missionMusic = new File(musicDir, "808generativemission.wav");
+        
+        boolean needsMainDownload = !mainMusic.exists() || mainMusic.length() < 1000000; // < 1MB means incomplete
+        boolean needsMissionDownload = !missionMusic.exists() || missionMusic.length() < 1000000;
+        
+        if (!needsMainDownload && !needsMissionDownload) {
+            Log.i(TAG, "Music files already exist, skipping download");
+            onComplete.run();
+            return;
+        }
+        
+        // Download in background thread
+        new Thread(() -> {
+            try {
+                if (needsMainDownload) {
+                    runOnUiThread(() -> onProgress.accept("Downloading main music..."));
+                    Log.i(TAG, "Downloading main music from " + MAIN_MUSIC_URL);
+                    downloadFile(MAIN_MUSIC_URL, mainMusic);
+                    Log.i(TAG, "Main music downloaded: " + mainMusic.length() + " bytes");
+                }
+                
+                if (needsMissionDownload) {
+                    runOnUiThread(() -> onProgress.accept("Downloading mission music..."));
+                    Log.i(TAG, "Downloading mission music from " + MISSION_MUSIC_URL);
+                    downloadFile(MISSION_MUSIC_URL, missionMusic);
+                    Log.i(TAG, "Mission music downloaded: " + missionMusic.length() + " bytes");
+                }
+                
+                onComplete.run();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to download music files", e);
+                // Still call onComplete so the game can proceed without music
+                onComplete.run();
+            }
+        }).start();
+    }
+    
+    /**
+     * Download a file from URL to destination
+     */
+    private void downloadFile(String urlString, File destination) throws IOException {
+        HttpURLConnection connection = null;
+        InputStream input = null;
+        OutputStream output = null;
+        
+        try {
+            URL url = new URL(urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
+            connection.connect();
+            
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                throw new IOException("HTTP error code: " + connection.getResponseCode());
+            }
+            
+            input = new BufferedInputStream(connection.getInputStream());
+            output = new FileOutputStream(destination);
+            
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = input.read(buffer)) != -1) {
+                output.write(buffer, 0, bytesRead);
+            }
+        } finally {
+            if (output != null) output.close();
+            if (input != null) input.close();
+            if (connection != null) connection.disconnect();
+        }
     }
 }

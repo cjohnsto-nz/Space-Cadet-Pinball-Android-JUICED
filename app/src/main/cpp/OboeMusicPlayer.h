@@ -112,6 +112,9 @@ public:
     // Load audio from file (WAV format for simplicity)
     bool loadFromFile(const std::string& filePath);
     
+    // Load audio from file with PCM caching (fast on subsequent loads)
+    bool loadFromFileWithCache(const std::string& filePath, const std::string& cacheDir);
+    
     // Load audio from Android assets
     bool loadFromAssets(AAssetManager* assetManager, const std::string& assetPath);
     
@@ -140,6 +143,8 @@ public:
     bool isLooping() const { return mLooping; }
 
     // Mission track support (layered on top of main track)
+    bool loadMissionTrackFromFile(const std::string& filePath);
+    bool loadMissionTrackFromFileWithCache(const std::string& filePath, const std::string& cacheDir);
     bool loadMissionTrackFromAssets(AAssetManager* assetManager, const std::string& assetPath);
     bool loadMissionTrackFromAssetsWithCache(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir);
     bool loadMissionTrackCompressed(AAssetManager* assetManager, const std::string& assetPath, const std::string& cacheDir);

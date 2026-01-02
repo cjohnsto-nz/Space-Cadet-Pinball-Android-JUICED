@@ -1901,7 +1901,7 @@ void control::make_links(TPinballTable* table)
 		// Load light positions from config file with fallback to default
 		if (!HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions.cfg")) {
 			// Try to load default config from assets if user config doesn't exist
-			HDRLightOverlay::LoadLightPositions("light_positions_default.cfg");
+			HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions_default.cfg");
 		}
 	}
 }
@@ -6509,6 +6509,11 @@ extern "C" {
         
         auto& currentLight = g_lightList[g_currentLightIndex];
         HDRLightOverlay::UpdateLightLocked(currentLight.first.c_str(), currentLight.second, locked);
+    }
+    
+    // Audio ready flag - blocks game startup until audio is loaded
+    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setAudioReadyNative(JNIEnv* env, jobject obj, jboolean ready) {
+        pb::audioReady = ready;
     }
 }
 #endif // __ANDROID__

@@ -43,6 +43,7 @@ public:
 	static float ball_speed_limit, time_now, time_next, time_ticks_remainder;
 	static GameModes game_mode;
 	static bool cheat_mode;
+	static bool audioReady;  // Blocks game startup until audio is loaded
 	static DatFile* record_table;
 	static TPinballTable* MainTable;
 	static high_score_struct highscore_table[5];

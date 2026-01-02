@@ -104,7 +104,7 @@ public class PrefsHelper {
     }
 
     public static boolean getCustomFonts() {
-        return prefs.getBoolean(KEY_CUSTOMFONTS, false);
+        return prefs.getBoolean(KEY_CUSTOMFONTS, true);
     }
 
     public static void setCustomFonts(boolean value) {
@@ -132,7 +132,7 @@ public class PrefsHelper {
     }
 
     public static boolean getMusic() {
-        return prefs.getBoolean(KEY_MUSIC, false);
+        return prefs.getBoolean(KEY_MUSIC, true);
     }
 
     public static boolean getHDREnabled() {
@@ -144,7 +144,7 @@ public class PrefsHelper {
     }
 
     public static int getHDRMaxNits() {
-        return prefs.getInt(KEY_HDR_MAX_NITS, 0); // 0 = use auto-detected value
+        return prefs.getInt(KEY_HDR_MAX_NITS, 1750); // 1750 = user's preferred value
     }
 
     public static void setHDRMaxNits(int value) {
@@ -160,25 +160,25 @@ public class PrefsHelper {
     }
 
     public static int getHDRGlowIntensity() {
-        return prefs.getInt(KEY_HDR_GLOW_INTENSITY, 100); // 100 = 1.0x (default)
+        return prefs.getInt(KEY_HDR_GLOW_INTENSITY, 25); // 25 = user's preferred value
     }
 
     public static void setHDRGlowIntensity(int value) {
         prefs.edit().putInt(KEY_HDR_GLOW_INTENSITY, value).apply();
     }
 
-    // Trail opacity (0-100, default 85)
+    // Trail opacity (0-100, default 100)
     public static int getTrailOpacity() {
-        return prefs.getInt(KEY_TRAIL_OPACITY, 85);
+        return prefs.getInt(KEY_TRAIL_OPACITY, 100);
     }
 
     public static void setTrailOpacity(int value) {
         prefs.edit().putInt(KEY_TRAIL_OPACITY, value).apply();
     }
 
-    // Trail lifetime in tenths of seconds (5-100, default 35 = 3.5 seconds)
+    // Trail lifetime in tenths of seconds (5-100, default 30 = 3.0 seconds)
     public static int getTrailLifetime() {
-        return prefs.getInt(KEY_TRAIL_LIFETIME, 35);
+        return prefs.getInt(KEY_TRAIL_LIFETIME, 30);
     }
 
     public static void setTrailLifetime(int value) {
@@ -187,16 +187,16 @@ public class PrefsHelper {
 
     // Camera tracking mode (ball-following zoom)
     public static boolean getCameraTracking() {
-        return prefs.getBoolean(KEY_CAMERA_TRACKING, false);
+        return prefs.getBoolean(KEY_CAMERA_TRACKING, true);
     }
 
     public static void setCameraTracking(boolean value) {
         prefs.edit().putBoolean(KEY_CAMERA_TRACKING, value).apply();
     }
 
-    // Camera zoom level (100-400, default 200 = 2x zoom)
+    // Camera zoom level (100-400, default 139 = 1.39x zoom)
     public static int getCameraZoom() {
-        return prefs.getInt(KEY_CAMERA_ZOOM, 200);
+        return prefs.getInt(KEY_CAMERA_ZOOM, 120);
     }
 
     public static void setCameraZoom(int value) {
@@ -205,7 +205,7 @@ public class PrefsHelper {
 
     // Enhanced audio
     public static boolean getEnhancedAudio() {
-        return prefs.getBoolean(KEY_ENHANCED_AUDIO, false);
+        return prefs.getBoolean(KEY_ENHANCED_AUDIO, true);
     }
 
     public static void setEnhancedAudio(boolean value) {
@@ -214,7 +214,7 @@ public class PrefsHelper {
 
     // Particles enabled (bumper collision particles)
     public static boolean getParticlesEnabled() {
-        return prefs.getBoolean(KEY_PARTICLES_ENABLED, true);
+        return prefs.getBoolean(KEY_PARTICLES_ENABLED, false);
     }
 
     public static void setParticlesEnabled(boolean value) {
@@ -230,9 +230,9 @@ public class PrefsHelper {
         prefs.edit().putBoolean(KEY_BEAT_REACTIVE_GLOW, value).apply();
     }
 
-    // Music volume (0-100, default 100)
+    // Music volume (0-100, default 62)
     public static int getMusicVolume() {
-        return prefs.getInt(KEY_MUSIC_VOLUME, 100);
+        return prefs.getInt(KEY_MUSIC_VOLUME, 60);
     }
 
     public static void setMusicVolume(int value) {

@@ -17,13 +17,7 @@
 #include <android/log.h>
 #endif
 
-// Debug logging disabled - too much spam
-// #ifdef __ANDROID__
-// #include <android/log.h>
-// #define HDRLIGHT_LOG(...) __android_log_print(ANDROID_LOG_INFO, "HDRLightOverlay", __VA_ARGS__)
-// #else
-// #define HDRLIGHT_LOG(...)
-// #endif
+// Debug logging - disabled (too much spam)
 #define HDRLIGHT_LOG(...)
 
 // Static member initialization
@@ -1824,18 +1818,29 @@ bool HDRLightOverlay::SaveLightPositions(const char* filepath) {
 }
 
 bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
+#ifdef __ANDROID__
+    __android_log_print(ANDROID_LOG_INFO, "LightConfig", "LoadLightPositions called: %s", filepath);
+#endif
     FILE* f = fopen(filepath, "r");
     if (!f) {
+#ifdef __ANDROID__
+        __android_log_print(ANDROID_LOG_INFO, "LightConfig", "File not found: %s", filepath);
+#endif
         HDRLIGHT_LOG("No saved light positions at %s", filepath);
         return false;
     }
+#ifdef __ANDROID__
+    __android_log_print(ANDROID_LOG_INFO, "LightConfig", "File opened successfully, configs count: %zu", s_lightConfigs.size());
+#endif
     
     char line[256];
+    int lineNum = 0;
     while (fgets(line, sizeof(line), f)) {
+        lineNum++;
         if (line[0] == '#' || line[0] == '\n') continue;
         
-        char group[64];
-        int index, locked;
+        char group[64] = "";
+        int index = -1, locked = 0;
         float x, y, w, h, r, g, b;
         float intensityOn = 600.0f, intensityFlash = 1000.0f, glowRadius = 0.5f;
         char presetName[64] = "";
@@ -1850,6 +1855,13 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
             parsed = sscanf(line, "%63[^,],%d,%f,%f,%f,%f,%f,%f,%f,%d",
                        group, &index, &x, &y, &w, &h, &r, &g, &b, &locked);
         }
+        
+#ifdef __ANDROID__
+        if (lineNum <= 5) {
+            __android_log_print(ANDROID_LOG_INFO, "LightConfig", "Line %d: parsed=%d group='%s' idx=%d pos=(%.4f,%.4f)", 
+                lineNum, parsed, group, index, x, y);
+        }
+#endif
         
         if (parsed >= 10) {
             if (strcmp(group, "test") == 0) {
@@ -1877,8 +1889,14 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
                 }
             } else {
                 // Find matching light config and update
+                bool found = false;
                 for (auto& config : s_lightConfigs) {
                     if (strcmp(config.GroupName, group) == 0 && config.LightIndex == index) {
+                        found = true;
+#ifdef __ANDROID__
+                        __android_log_print(ANDROID_LOG_INFO, "LightConfig", "MATCH: %s[%d] updating pos (%.4f,%.4f)->(%.4f,%.4f)", 
+                                     group, index, config.X, config.Y, x, y);
+#endif
                         HDRLIGHT_LOG("Loading %s[%d]: pos (%.6f, %.6f) -> (%.6f, %.6f) preset=%s", 
                                      group, index, config.X, config.Y, x, y, presetName);
                         config.X = x;
@@ -1901,6 +1919,18 @@ bool HDRLightOverlay::LoadLightPositions(const char* filepath) {
     }
     
     fclose(f);
+#ifdef __ANDROID__
+    __android_log_print(ANDROID_LOG_INFO, "LightConfig", "Loaded light positions from %s", filepath);
+    // Log first few configs to verify values
+    int logCount = 0;
+    for (const auto& config : s_lightConfigs) {
+        if (logCount < 5) {
+            __android_log_print(ANDROID_LOG_INFO, "LightConfig", "Config[%d]: %s[%d] pos=(%.4f,%.4f) preset=%s", 
+                logCount, config.GroupName, config.LightIndex, config.X, config.Y, config.PresetName.c_str());
+            logCount++;
+        }
+    }
+#endif
     HDRLIGHT_LOG("Loaded light positions from %s", filepath);
     return true;
 }
