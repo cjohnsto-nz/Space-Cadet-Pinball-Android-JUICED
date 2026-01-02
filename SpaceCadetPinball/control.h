@@ -150,14 +150,15 @@ public:
 	static void HyperspaceKickOutControl(int code, TPinballComponent* caller);
 	static void PlungerControl(int code, TPinballComponent* caller);
 	static void MedalTargetControl(int code, TPinballComponent* caller);
-	static void MultiplierTargetControl(int code, TPinballComponent* caller);
-	static void BallDrainControl(int code, TPinballComponent* caller);
-
-	static void table_control_handler(int code);
+ 	static void MultiplierTargetControl(int code, TPinballComponent* caller);
+ 	static void BallDrainControl(int code, TPinballComponent* caller);
+ 
+ 	static void table_control_handler(int code);
+	static void reset_tilt_light();
 
 	static void AlienMenaceController(int code, TPinballComponent* caller);
-	static void AlienMenacePartTwoController(int code, TPinballComponent* caller);
-	static void BlackHoleThreatController(int code, TPinballComponent* caller);
+ 	static void AlienMenacePartTwoController(int code, TPinballComponent* caller);
+ 	static void BlackHoleThreatController(int code, TPinballComponent* caller);
 	static void BugHuntController(int code, TPinballComponent* caller);
 	static void CosmicPlagueController(int code, TPinballComponent* caller);
 	static void CosmicPlaguePartTwoController(int code, TPinballComponent* caller);

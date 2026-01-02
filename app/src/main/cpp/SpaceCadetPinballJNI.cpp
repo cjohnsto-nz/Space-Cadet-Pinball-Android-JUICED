@@ -5,6 +5,7 @@
 #include "../../../../SpaceCadetPinball/control.h"
 #include "../../../../SpaceCadetPinball/HDRConfig.h"
 #include "../../../../SpaceCadetPinball/pb.h"
+#include "../../../../SpaceCadetPinball/nudge.h"
 #include "../../../../SpaceCadetPinball/options.h"
 #include "../../../../SpaceCadetPinball/TPinballTable.h"
 #include <jni.h>
@@ -159,10 +160,17 @@ Java_com_fexed_spacecadetpinball_MainActivity_putString(JNIEnv *env, jobject thi
     LPCSTR mstr = (*env).GetStringUTFChars(str, nullptr);
     pinball::set_rc_string(id, mstr);
 }
+
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_fexed_spacecadetpinball_MainActivity_checkCheatsUsed(JNIEnv *env, jobject thiz) {
     return control::check_cheats();
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_joltTable(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
+    return nudge::jolt(x, y);
 }
 
 void SpaceCadetPinballJNI::triggerHapticFeedback(float intensity) {

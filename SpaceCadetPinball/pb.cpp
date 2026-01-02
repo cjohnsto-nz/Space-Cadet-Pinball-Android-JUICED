@@ -191,6 +191,8 @@ void pb::replay_level(bool demoMode)
 	mode_change(GameModes::InGame);
 	if (options::Options.Music)
 		midi::play_pb_theme();
+	nudge::nudge_count = 0.0f;
+	nudge::reset_jolt_state();
 	MainTable->Message(1014, static_cast<float>(options::Options.Players));
 }
 
@@ -230,7 +232,7 @@ void pb::frame(float dtMilliSec)
 	}
 	else
 	{
-		auto nudgeDec = nudge::nudge_count - dtSec;
+		auto nudgeDec = nudge::nudge_count - dtSec * 0.1f;
 		if (nudgeDec <= 0.0f)
 			nudgeDec = 0.0;
 		nudge::nudge_count = nudgeDec;
@@ -240,11 +242,11 @@ void pb::frame(float dtMilliSec)
 	score::update(MainTable->CurScoreStruct);
 	if (!MainTable->TiltLockFlag)
 	{
-		if (nudge::nudge_count > 0.5f)
+		if (nudge::nudge_count >= 1.0f)
 		{
 			pinball::InfoTextBox->Display(pinball::get_rc_string(25, 0), 2.0, 2);
 		}
-		if (nudge::nudge_count > 1.0f)
+		if (nudge::nudge_count >= 2.0f)
 			MainTable->tilt(time_now);
 	}
 }
@@ -534,9 +536,25 @@ void pb::high_scores()
 void pb::tilt_no_more()
 {
 	if (MainTable->TiltLockFlag)
+	{
 		pinball::InfoTextBox->Clear(2);
+		
+		// Kill the tilt timeout timer
+		if (MainTable->TiltTimeoutTimer)
+		{
+			timer::kill(MainTable->TiltTimeoutTimer);
+			MainTable->TiltTimeoutTimer = 0;
+		}
+		
+		// Restore light group state (same as code 1012)
+		MainTable->LightGroup->Message(14, 0.0);
+		
+		// Turn off the tilt light (lite77) - use control to access it
+		control::reset_tilt_light();
+	}
 	MainTable->TiltLockFlag = 0;
-	nudge::nudge_count = -2.0;
+	nudge::nudge_count = 0.0f;
+	nudge::reset_jolt_state();
 }
 
 bool pb::chk_highscore()

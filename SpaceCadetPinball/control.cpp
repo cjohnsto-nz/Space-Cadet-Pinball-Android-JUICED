@@ -3703,13 +3703,16 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 
 	if (code == 60)
 	{
-		// Timer mode: trigger game over after ball is fully drained
 		if (TimerMode::IsWaitingForFinalSink())
 		{
 			TimerMode::OnFinalSink();
 			return;
 		}
-		
+		if (TimerMode::IsTimerMode())
+		{
+			return;
+		}
+
 		if (control_lite199_tag.Component->MessageField)
 		{
 			TableG->Message(1022, 0.0);
@@ -3728,13 +3731,11 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 	}
 	else if (code == 63)
 	{
-		// Timer mode: if waiting for final sink, just let the ball drain (don't respawn)
-		// OnFinalSink will be called from code 60 after ball is fully drained
 		if (TimerMode::IsWaitingForFinalSink())
 		{
 			return;
 		}
-		
+
 		if (table_unlimited_balls)
 		{
 			control_drain_tag.Component->Message(1024, 0.0);
@@ -3742,10 +3743,8 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 		}
 		else if (TimerMode::IsTimerMode())
 		{
-			// Check if replay ball light is lit - if so, use it instead of penalty
 			if (light_on(&control_lite199_tag))
 			{
-				// Clear the replay ball light
 				control_lite199_tag.Component->Message(20, 0.0);
 				control_lite200_tag.Component->Message(19, 0.0);
 				control_soundwave59_tag.Component->Play();
@@ -3753,50 +3752,44 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 			}
 			else if (TableG->ExtraBalls)
 			{
-				// Use extra ball to skip penalty
 				TableG->ExtraBalls--;
 				control_soundwave59_tag.Component->Play();
 				control_info_text_box_tag.Component->Display("Extra Ball - No Penalty!", 2.0, 2);
 			}
 			else if (!TableG->ReplayActiveFlag)
 			{
-				// Check if grace timer (lite200) is active - halve penalty if so
 				if (light_on(&control_lite200_tag))
 				{
-					// Grace period active - half penalty
 					TimerMode::OnBallCrash(true);
-					// Turn off grace timer
 					control_lite200_tag.Component->Message(20, 0.0);
 					control_info_text_box_tag.Component->Display("Grace Period - Half Penalty!", 2.0, 2);
 				}
 				else
 				{
-					// Full penalty
 					TimerMode::OnBallCrash(false);
 				}
 			}
-			
-			// Check if timer expired from penalty - if so, let ball drain
+
 			if (TimerMode::IsWaitingForFinalSink())
 			{
-				// Don't respawn - ball will drain and trigger OnFinalSink from code 60
 				return;
 			}
-			
-			// Reset launcher gate and skill shot for next ball
-			// Open the kicker gates (message 53 opens them)
-			control_gate1_tag.Component->Message(53, 0.0);
-			control_gate2_tag.Component->Message(53, 0.0);
-			// Reset skill shot lights and enable skill shot (lite67)
+
+			if (TableG->TiltLockFlag)
+			{
+				pb::tilt_no_more();
+				control_info_text_box_tag.Component->Display("Tilt Reset", 2.0, 2);
+				control_fuel_bargraph_tag.Component->Message(45, 23.0f);
+				control_lite198_tag.Component->MessageField = 1;
+				MissionControl(66, nullptr);
+			}
+
 			control_skill_shot_lights_tag.Component->Message(20, 0.0);
 			control_lite67_tag.Component->Message(19, 0.0);
-			control_skill_shot_lights_tag.Component->Message(26, 0.25f);
-			// Start shoot again grace timer (5 seconds)
-			control_lite200_tag.Component->Message(9, 5.0);
-			
-			// Auto-fire ball back from a random wormhole
+			control_gate1_tag.Component->Message(53, 0.0);
+			control_gate2_tag.Component->Message(53, 0.0);
+
 			control_drain_tag.Component->Message(1024, 0.0);
-			// Pick random sink (wormhole) to exit from: sink1, sink2, or sink3
 			int randomSink = rand() % 3;
 			if (randomSink == 0)
 				control_sink1_tag.Component->Message(56, 0.0);
@@ -3956,8 +3949,6 @@ void control::BallDrainControl(int code, TPinballComponent* caller)
 		}
 	}
 }
-
-
 void control::table_control_handler(int code)
 {
 	if (code == 1011)
@@ -3967,6 +3958,14 @@ void control::table_control_handler(int code)
 	}
 }
 
+void control::reset_tilt_light()
+{
+	// Turn off the tilt light (lite77)
+	if (control_lite77_tag.Component)
+	{
+		control_lite77_tag.Component->Message(20, 0.0);
+	}
+}
 
 void control::AlienMenaceController(int code, TPinballComponent* caller)
 {

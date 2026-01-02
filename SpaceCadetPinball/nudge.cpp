@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "nudge.h"
 
-
 #include "pb.h"
 #include "render.h"
 #include "TBall.h"
@@ -12,7 +11,40 @@ int nudge::nudged_left;
 int nudge::nudged_right;
 int nudge::nudged_up;
 int nudge::timer;
+int nudge::cooldown_timer;
 float nudge::nudge_count;
+bool nudge::in_cooldown = false;
+
+void nudge::end_cooldown(int timerId, void* caller)
+{
+	in_cooldown = false;
+	cooldown_timer = 0;
+}
+
+void nudge::reset_jolt_state()
+{
+	in_cooldown = false;
+	if (cooldown_timer)
+	{
+		timer::kill(cooldown_timer);
+		cooldown_timer = 0;
+	}
+}
+
+bool nudge::jolt(float xDiff, float yDiff)
+{
+	if (in_cooldown)
+		return false;
+
+	_nudge(xDiff, yDiff);
+	nudge_count += JOLT_TILT_INCREMENT;
+
+	in_cooldown = true;
+	if (cooldown_timer)
+		timer::kill(cooldown_timer);
+	cooldown_timer = timer::set(COOLDOWN_DURATION, nullptr, end_cooldown);
+	return true;
+}
 
 void nudge::un_nudge_right(int timerId, void* caller)
 {

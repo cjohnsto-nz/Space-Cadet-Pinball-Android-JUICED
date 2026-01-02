@@ -70,6 +70,12 @@ public class MainActivity extends SDLActivity {
     private SensorManager sensorManager;
     private Sensor accelerometer;
 
+    private final Handler tiltHandler = new Handler(Looper.getMainLooper());
+
+    // Accelerometer debouncing - prevent rapid-fire tilts
+    private long lastTiltTimeMs = 0;
+    private static final long TILT_DEBOUNCE_MS = 330; // ~3 jolts per second max
+
     // Light editor state
     private boolean lightEditModeEnabled = false;
     private int[] lastViewport = new int[4];  // x, y, w, h
@@ -589,35 +595,23 @@ public class MainActivity extends SDLActivity {
     }
 
     private final SensorEventListener accelerometerListener = new SensorEventListener() {
-//        @Override
-//        public void onSensorChanged(SensorEvent event) {
-//            float ax = event.values[0];
-//            float ay = event.values[1];
-//            float az = event.values[2];
-//
-//            // Calculate the magnitude of acceleration
-//            double magnitude = Math.sqrt(ax * ax + ay * ay + az * az);
-//            // Check if the magnitude exceeds a certain threshold, indicating a "jolt"
-//            if (magnitude > (2.5f * 9.8f)) {
-//                onJoltDetected();
-//            }
-//        }
-
         @Override
         public void onSensorChanged(SensorEvent event) {
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                long now = System.currentTimeMillis();
+                if (now - lastTiltTimeMs < TILT_DEBOUNCE_MS) {
+                    return;
+                }
+                
                 float x = event.values[0];
                 float y = event.values[1];
                 float z = event.values[2];
                 float JOLT_THRESHOLD = (2.5f * 9.8f);
-                // Assuming JOLT_THRESHOLD is some value you've determined to be a "jolt"
                 if (Math.abs(x) > JOLT_THRESHOLD) {
-                    if (x > 0) {
-                        // Jolt to the right
-                        triggerRightEffect();
-                    } else {
-                        // Jolt to the left
-                        triggerLeftEffect();
+                    lastTiltTimeMs = now;
+                    boolean applied = joltTable(x > 0 ? 2.0f : -2.0f, 1.0f);
+                    if (applied) {
+                        exeClickD();
                     }
                 } else if (Math.abs(y) > JOLT_THRESHOLD) {
                     if (y > 0) {
@@ -629,11 +623,11 @@ public class MainActivity extends SDLActivity {
                     }
                 } else if (Math.abs(z) > JOLT_THRESHOLD) {
                     if (z > 0) {
-                        // Jolt with the screen facing up
-                        triggerFaceUpEffect();
-                    } else {
-                        // Jolt with the screen facing down
-//                        triggerFaceDownEffect();
+                        lastTiltTimeMs = now;
+                        boolean applied = joltTable(0.0f, 1.0f);
+                        if (applied) {
+                            exeClickD();
+                        }
                     }
                 }
             }
@@ -652,7 +646,7 @@ public class MainActivity extends SDLActivity {
 
     private void triggerFaceUpEffect() {
         SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_DPAD_UP);
-        new Handler().postDelayed(this::triggerBottomTiltUp, 100);  // Delay of 100ms
+        tiltHandler.postDelayed(this::triggerBottomTiltUp, 100);  // Delay of 100ms
         exeClickD();
     }
 
@@ -662,7 +656,7 @@ public class MainActivity extends SDLActivity {
 
     private void triggerLeftEffect() {
         SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_X);
-        new Handler().postDelayed(this::triggerLeftTiltUp, 100);  // Delay of 100ms
+        tiltHandler.postDelayed(this::triggerLeftTiltUp, 100);  // Delay of 100ms
         exeClickD();
     }
 
@@ -671,8 +665,8 @@ public class MainActivity extends SDLActivity {
     }
 
     private void triggerRightEffect() {
-        SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_X);
-        new Handler().postDelayed(this::triggerRightTiltUp, 100);  // Delay of 100ms
+        SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_PERIOD);
+        tiltHandler.postDelayed(this::triggerRightTiltUp, 100);  // Delay of 100ms
         exeClickD();
     }
 
@@ -822,6 +816,17 @@ public class MainActivity extends SDLActivity {
 
         @Override
         public void onBallInPlungerChanged(boolean isBallInPlunger) {
+            if (timerModeActive && !pendingGameStart) {
+                if (plungerTimer != null) {
+                    plungerTimer.removeCallbacksAndMessages(null);
+                    plungerTimer = null;
+                }
+                if (PrefsHelper.getFullScreenPlunger()) {
+                    runOnUiThread(() -> mBinding.plunger.setVisibility(View.INVISIBLE));
+                }
+                return;
+            }
+
             // Start music and timer when ball first enters plunger after mode selection
             if (isBallInPlunger && pendingGameStart) {
                 pendingGameStart = false;
@@ -1160,6 +1165,8 @@ public class MainActivity extends SDLActivity {
     private native void putString(int id, String str);
 
     private native boolean checkCheatsUsed();
+
+    private native boolean joltTable(float x, float y);
 
     // Light editor public methods
     public void toggleLightEditMode() {
