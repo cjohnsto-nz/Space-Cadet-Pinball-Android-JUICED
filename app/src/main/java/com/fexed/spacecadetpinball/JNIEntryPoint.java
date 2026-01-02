@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 public class JNIEntryPoint {
     static void setState(int state) {

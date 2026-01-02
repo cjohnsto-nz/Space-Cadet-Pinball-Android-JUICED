@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:1234567890:android:321abc456def7890",
         "android_client_info": {
-          "package_name": "com.fexed.spacecadetpinball"
+          "package_name": "com.juiced.spacecadetpinball"
         }
       },
       "oauth_client": [
@@ -21,7 +21,7 @@
           "client_id": "",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.fexed.spacecadetpinball",
+            "package_name": "com.juiced.spacecadetpinball",
             "certificate_hash": ""
           }
         }

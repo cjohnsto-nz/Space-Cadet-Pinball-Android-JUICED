@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 import android.app.Activity;
 import android.content.Context;

@@ -24,7 +24,7 @@ void SpaceCadetPinballJNI::show_error_dialog(std::string title, std::string mess
 void SpaceCadetPinballJNI::notifyGameState(int state) {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "setState", "(I)V");
 
     env->CallStaticVoidMethod(clazz, mid, state);
@@ -35,7 +35,7 @@ void SpaceCadetPinballJNI::setBallInPlunger(bool isInPlunger) {
     
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "setBallInPlunger", "(Z)V");
 
     env->CallStaticVoidMethod(clazz, mid, isInPlunger);
@@ -48,7 +48,7 @@ bool SpaceCadetPinballJNI::isBallInPlunger() {
 void SpaceCadetPinballJNI::addHighScore(int score) {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "addHighScore", "(I)V");
 
     env->CallStaticVoidMethod(clazz, mid, score);
@@ -57,7 +57,7 @@ void SpaceCadetPinballJNI::addHighScore(int score) {
 int SpaceCadetPinballJNI::getHighScore() {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "getHighScore", "()I");
 
     return env->CallStaticIntMethod(clazz, mid);
@@ -66,7 +66,7 @@ int SpaceCadetPinballJNI::getHighScore() {
 void SpaceCadetPinballJNI::displayText(const char* text, int type) {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "printString", "(Ljava/lang/String;I)V");
 
     jstring str = env->NewStringUTF(text);
@@ -77,7 +77,7 @@ void SpaceCadetPinballJNI::displayText(const char* text, int type) {
 void SpaceCadetPinballJNI::postRemainingBalls(int balls) {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "setRemainingBalls", "(I)V");
 
     env->CallStaticVoidMethod(clazz, mid, balls);
@@ -86,7 +86,7 @@ void SpaceCadetPinballJNI::postRemainingBalls(int balls) {
 void SpaceCadetPinballJNI::clearText(int type) {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "clearText", "(I)V");
 
     env->CallStaticVoidMethod(clazz, mid, type);
@@ -95,7 +95,7 @@ void SpaceCadetPinballJNI::clearText(int type) {
 void SpaceCadetPinballJNI::postScore(int score) {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "postScore", "(I)V");
 
     env->CallStaticVoidMethod(clazz, mid, score);
@@ -104,7 +104,7 @@ void SpaceCadetPinballJNI::postScore(int score) {
 void SpaceCadetPinballJNI::postBallCount(int count) {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "postBallCount", "(I)V");
 
     env->CallStaticVoidMethod(clazz, mid, count);
@@ -113,7 +113,7 @@ void SpaceCadetPinballJNI::postBallCount(int count) {
 void SpaceCadetPinballJNI::cheatsUsed() {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "cheatsUsed", "()V");
 
     env->CallStaticVoidMethod(clazz, mid);
@@ -122,7 +122,7 @@ void SpaceCadetPinballJNI::cheatsUsed() {
 void SpaceCadetPinballJNI::gameReady() {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "gameIsReady", "()V");
 
     env->CallStaticVoidMethod(clazz, mid);
@@ -131,7 +131,7 @@ void SpaceCadetPinballJNI::gameReady() {
 void SpaceCadetPinballJNI::startupSequenceStarted() {
     if (env == nullptr) g_JavaVM->GetEnv((void **) &env, JNI_VERSION_1_6);
 
-    if (clazz == nullptr) clazz = env->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    if (clazz == nullptr) clazz = env->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     jmethodID mid = env->GetStaticMethodID(clazz, "startupSequenceStarted", "()V");
 
     env->CallStaticVoidMethod(clazz, mid);
@@ -139,7 +139,7 @@ void SpaceCadetPinballJNI::startupSequenceStarted() {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_initNative(JNIEnv *env, jobject thiz,
+Java_com_juiced_spacecadetpinball_MainActivity_initNative(JNIEnv *env, jobject thiz,
         jstring data_path, jboolean enhanced_audio) {
     winmain::BasePath = (char *) env->GetStringUTFChars(data_path, nullptr);
     env->GetJavaVM(&g_JavaVM);
@@ -150,26 +150,26 @@ Java_com_fexed_spacecadetpinball_MainActivity_initNative(JNIEnv *env, jobject th
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setVolume(JNIEnv *env, jobject thiz, jint vol) {
+Java_com_juiced_spacecadetpinball_MainActivity_setVolume(JNIEnv *env, jobject thiz, jint vol) {
     Sound::SetVolume(vol);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_putString(JNIEnv *env, jobject thiz, jint id, jstring str) {
+Java_com_juiced_spacecadetpinball_MainActivity_putString(JNIEnv *env, jobject thiz, jint id, jstring str) {
     LPCSTR mstr = (*env).GetStringUTFChars(str, nullptr);
     pinball::set_rc_string(id, mstr);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_checkCheatsUsed(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_checkCheatsUsed(JNIEnv *env, jobject thiz) {
     return control::check_cheats();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_joltTable(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
+Java_com_juiced_spacecadetpinball_MainActivity_joltTable(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
     return nudge::jolt(x, y);
 }
 
@@ -179,7 +179,7 @@ void SpaceCadetPinballJNI::triggerHapticFeedback(float intensity) {
     g_JavaVM->GetEnv((void **) &jniEnv, JNI_VERSION_1_6);
     if (jniEnv == nullptr) return;
 
-    jclass jniClass = jniEnv->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    jclass jniClass = jniEnv->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     if (jniClass == nullptr) return;
     
     jmethodID mid = jniEnv->GetStaticMethodID(jniClass, "triggerHapticFeedback", "(F)V");
@@ -196,7 +196,7 @@ void SpaceCadetPinballJNI::setBallCaptured(bool captured) {
     g_JavaVM->GetEnv((void **) &jniEnv, JNI_VERSION_1_6);
     if (jniEnv == nullptr) return;
 
-    jclass jniClass = jniEnv->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    jclass jniClass = jniEnv->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     if (jniClass == nullptr) return;
     
     jmethodID mid = jniEnv->GetStaticMethodID(jniClass, "setBallCaptured", "(Z)V");
@@ -215,7 +215,7 @@ void SpaceCadetPinballJNI::setMissionActive(bool active) {
     g_JavaVM->GetEnv((void **) &jniEnv, JNI_VERSION_1_6);
     if (jniEnv == nullptr) return;
 
-    jclass jniClass = jniEnv->FindClass("com/fexed/spacecadetpinball/JNIEntryPoint");
+    jclass jniClass = jniEnv->FindClass("com/juiced/spacecadetpinball/JNIEntryPoint");
     if (jniClass == nullptr) return;
     
     jmethodID mid = jniEnv->GetStaticMethodID(jniClass, "setMissionActive", "(Z)V");
@@ -252,7 +252,7 @@ void SpaceCadetPinballJNI::setHDRCapabilities(bool supported, bool bt2020, bool 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setHDRCapabilities(JNIEnv *env, jobject thiz,
+Java_com_juiced_spacecadetpinball_MainActivity_setHDRCapabilities(JNIEnv *env, jobject thiz,
         jboolean supported, jboolean bt2020, jboolean pq, jboolean scrgb,
         jboolean fp16, jfloat maxNits, jfloat minNits) {
     SpaceCadetPinballJNI::setHDRCapabilities(supported, bt2020, pq, scrgb, fp16, maxNits, minNits);
@@ -260,25 +260,25 @@ Java_com_fexed_spacecadetpinball_MainActivity_setHDRCapabilities(JNIEnv *env, jo
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_isHDRActive(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_isHDRActive(JNIEnv *env, jobject thiz) {
     return HDR::IsHDRActive();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setHDREnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setHDREnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     HDR::SetHDREnabled(enabled);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setParticlesEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setParticlesEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     options::Options.ParticlesEnabled = enabled;
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setMusicEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setMusicEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     options::Options.Music = enabled;
 }
 
@@ -288,19 +288,19 @@ Java_com_fexed_spacecadetpinball_MainActivity_setMusicEnabled(JNIEnv *env, jobje
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setLightEditMode(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setLightEditMode(JNIEnv *env, jobject thiz, jboolean enabled) {
     HDRLightOverlay::SetEditMode(enabled);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getLightEditMode(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getLightEditMode(JNIEnv *env, jobject thiz) {
     return HDRLightOverlay::GetEditMode();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_shouldBlockTouch(JNIEnv *env, jobject thiz, 
+Java_com_juiced_spacecadetpinball_MainActivity_shouldBlockTouch(JNIEnv *env, jobject thiz, 
         jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
     // Use viewport from HDRRenderer instead of passed values (more accurate)
     int vx = HDRRenderer::GetViewportX();
@@ -316,7 +316,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_shouldBlockTouch(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchDown(JNIEnv *env, jobject thiz, 
+Java_com_juiced_spacecadetpinball_MainActivity_onLightTouchDown(JNIEnv *env, jobject thiz, 
         jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
     // Use viewport from HDRRenderer instead of passed values (more accurate)
     int vx = HDRRenderer::GetViewportX();
@@ -332,7 +332,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchDown(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchMove(JNIEnv *env, jobject thiz,
+Java_com_juiced_spacecadetpinball_MainActivity_onLightTouchMove(JNIEnv *env, jobject thiz,
         jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
     // Use viewport from HDRRenderer instead of passed values (more accurate)
     int vx = HDRRenderer::GetViewportX();
@@ -348,31 +348,31 @@ Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchMove(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_onLightTouchUp(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_onLightTouchUp(JNIEnv *env, jobject thiz) {
     HDRLightOverlay::OnTouchUp();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_hasLightSelection(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_hasLightSelection(JNIEnv *env, jobject thiz) {
     return HDRLightOverlay::HasSelection();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setDebugBallPosition(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
+Java_com_juiced_spacecadetpinball_MainActivity_setDebugBallPosition(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
     HDRLightOverlay::SetDebugBallPosition(x, y);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_enableDebugBall(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_enableDebugBall(JNIEnv *env, jobject thiz, jboolean enabled) {
     HDRLightOverlay::EnableDebugBall(enabled);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_saveLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
+Java_com_juiced_spacecadetpinball_MainActivity_saveLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
     const char* path = env->GetStringUTFChars(filepath, nullptr);
     bool result = HDRLightOverlay::SaveLightPositions(path);
     env->ReleaseStringUTFChars(filepath, path);
@@ -381,7 +381,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_saveLightPositions(JNIEnv *env, jo
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadLightPositions(JNIEnv *env, jobject thiz, jstring filepath) {
     const char* path = env->GetStringUTFChars(filepath, nullptr);
     bool result = HDRLightOverlay::LoadLightPositions(path);
     env->ReleaseStringUTFChars(filepath, path);
@@ -390,14 +390,14 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadLightPositions(JNIEnv *env, jo
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getSelectedLightIndex(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getSelectedLightIndex(JNIEnv *env, jobject thiz) {
     return HDRLightOverlay::GetSelectedLightIndex();
 }
 
 // Settings activity save function
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_Settings_saveLightPositionsNative(JNIEnv *env, jobject thiz, jstring filepath) {
+Java_com_juiced_spacecadetpinball_Settings_saveLightPositionsNative(JNIEnv *env, jobject thiz, jstring filepath) {
     const char* path = env->GetStringUTFChars(filepath, nullptr);
     bool result = HDRLightOverlay::SaveLightPositions(path);
     env->ReleaseStringUTFChars(filepath, path);
@@ -406,7 +406,7 @@ Java_com_fexed_spacecadetpinball_Settings_saveLightPositionsNative(JNIEnv *env, 
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_Settings_resetOutOfBoundsLightsNative(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_Settings_resetOutOfBoundsLightsNative(JNIEnv *env, jobject thiz) {
     return HDRLightOverlay::ResetOutOfBoundsLights();
 }
 
@@ -423,39 +423,39 @@ bool SpaceCadetPinballJNI::shouldToggleDemo() {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_triggerDemoMode(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_triggerDemoMode(JNIEnv *env, jobject thiz) {
     // Set flag to be processed on game thread
     s_requestDemoToggle = true;
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setHDRGlowModifier(JNIEnv *env, jobject thiz, jfloat modifier) {
+Java_com_juiced_spacecadetpinball_MainActivity_setHDRGlowModifier(JNIEnv *env, jobject thiz, jfloat modifier) {
     HDRLightOverlay::SetGlowModifier(modifier);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setTrailOpacity(JNIEnv *env, jobject thiz, jfloat opacity) {
+Java_com_juiced_spacecadetpinball_MainActivity_setTrailOpacity(JNIEnv *env, jobject thiz, jfloat opacity) {
     HDRLightOverlay::SetTrailOpacity(opacity);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setTrailLifetime(JNIEnv *env, jobject thiz, jfloat seconds) {
+Java_com_juiced_spacecadetpinball_MainActivity_setTrailLifetime(JNIEnv *env, jobject thiz, jfloat seconds) {
     HDRLightOverlay::SetTrailLifetime(seconds);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setCameraTracking(JNIEnv *env, jobject thiz, jboolean enabled, jfloat zoom) {
+Java_com_juiced_spacecadetpinball_MainActivity_setCameraTracking(JNIEnv *env, jobject thiz, jboolean enabled, jfloat zoom) {
     HDRRenderer::SetCameraTracking(enabled, zoom);
 }
 
 // Plunger control JNI functions
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_updatePlungerPosition(JNIEnv *env, jobject thiz, jfloat position) {
+Java_com_juiced_spacecadetpinball_MainActivity_updatePlungerPosition(JNIEnv *env, jobject thiz, jfloat position) {
     // Plunger JNI logging disabled
     // __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinballJNI", "updatePlungerPosition called with position=%f", position);
     pinball::set_plunger_position(position);
@@ -463,7 +463,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_updatePlungerPosition(JNIEnv *env,
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setPlungerLaunchPower(JNIEnv *env, jobject thiz, jfloat power) {
+Java_com_juiced_spacecadetpinball_MainActivity_setPlungerLaunchPower(JNIEnv *env, jobject thiz, jfloat power) {
     // Plunger launch power JNI logging disabled
     // __android_log_print(ANDROID_LOG_DEBUG, "SpaceCadetPinballJNI", "setPlungerLaunchPower called with power=%f", power);
     // Set launch power based on drag percentage (0.0 to 1.0)
@@ -473,7 +473,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_setPlungerLaunchPower(JNIEnv *env,
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setEnhancedAudio(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setEnhancedAudio(JNIEnv *env, jobject thiz, jboolean enabled) {
     options::Options.EnhancedAudio = enabled;
 }
 
@@ -482,19 +482,19 @@ Java_com_fexed_spacecadetpinball_MainActivity_setEnhancedAudio(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_initOboeMusicPlayer(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_initOboeMusicPlayer(JNIEnv *env, jobject thiz) {
     initOboeMusicPlayer();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_destroyOboeMusicPlayer(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_destroyOboeMusicPlayer(JNIEnv *env, jobject thiz) {
     destroyOboeMusicPlayer();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromFile(JNIEnv *env, jobject thiz, jstring path) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMusicFromFile(JNIEnv *env, jobject thiz, jstring path) {
     if (g_musicPlayer == nullptr) return false;
     const char* pathStr = env->GetStringUTFChars(path, nullptr);
     bool result = g_musicPlayer->loadFromFile(pathStr);
@@ -504,7 +504,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromFile(JNIEnv *env, job
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath) {
     if (g_musicPlayer == nullptr) return false;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (mgr == nullptr) return false;
@@ -516,14 +516,14 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromAssets(JNIEnv *env, j
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_startMusic(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_startMusic(JNIEnv *env, jobject thiz) {
     if (g_musicPlayer == nullptr) return false;
     return g_musicPlayer->start();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_stopMusic(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_stopMusic(JNIEnv *env, jobject thiz) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->stop();
     }
@@ -531,7 +531,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_stopMusic(JNIEnv *env, jobject thi
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_pauseMusic(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_pauseMusic(JNIEnv *env, jobject thiz) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->pause();
     }
@@ -539,7 +539,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_pauseMusic(JNIEnv *env, jobject th
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_resumeMusic(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_resumeMusic(JNIEnv *env, jobject thiz) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->resume();
     }
@@ -547,7 +547,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_resumeMusic(JNIEnv *env, jobject t
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setMusicVolume(JNIEnv *env, jobject thiz, jfloat volume) {
+Java_com_juiced_spacecadetpinball_MainActivity_setMusicVolume(JNIEnv *env, jobject thiz, jfloat volume) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->setVolume(volume);
     }
@@ -555,7 +555,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_setMusicVolume(JNIEnv *env, jobjec
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setMusicLowPassEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setMusicLowPassEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->setLowPassEnabled(enabled);
     }
@@ -563,7 +563,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_setMusicLowPassEnabled(JNIEnv *env
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setMusicLowPassCutoff(JNIEnv *env, jobject thiz, jfloat freq) {
+Java_com_juiced_spacecadetpinball_MainActivity_setMusicLowPassCutoff(JNIEnv *env, jobject thiz, jfloat freq) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->setLowPassCutoff(freq);
     }
@@ -571,14 +571,14 @@ Java_com_fexed_spacecadetpinball_MainActivity_setMusicLowPassCutoff(JNIEnv *env,
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getMusicPositionMs(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getMusicPositionMs(JNIEnv *env, jobject thiz) {
     if (g_musicPlayer == nullptr) return 0;
     return g_musicPlayer->getPositionMs();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_isMusicPlaying(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_isMusicPlaying(JNIEnv *env, jobject thiz) {
     if (g_musicPlayer == nullptr) return false;
     return g_musicPlayer->isPlaying();
 }
@@ -586,7 +586,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_isMusicPlaying(JNIEnv *env, jobjec
 // Load from file with PCM caching (fast on subsequent loads)
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromFileWithCache(JNIEnv *env, jobject thiz, jstring path, jstring cacheDir) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMusicFromFileWithCache(JNIEnv *env, jobject thiz, jstring path, jstring cacheDir) {
     if (g_musicPlayer == nullptr) return false;
     const char* pathStr = env->GetStringUTFChars(path, nullptr);
     const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
@@ -599,7 +599,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromFileWithCache(JNIEnv 
 // Mission track JNI functions
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromFile(JNIEnv *env, jobject thiz, jstring path) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMissionMusicFromFile(JNIEnv *env, jobject thiz, jstring path) {
     if (g_musicPlayer == nullptr) return false;
     const char* pathStr = env->GetStringUTFChars(path, nullptr);
     bool result = g_musicPlayer->loadMissionTrackFromFile(pathStr);
@@ -609,7 +609,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromFile(JNIEnv *e
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromFileWithCache(JNIEnv *env, jobject thiz, jstring path, jstring cacheDir) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMissionMusicFromFileWithCache(JNIEnv *env, jobject thiz, jstring path, jstring cacheDir) {
     if (g_musicPlayer == nullptr) return false;
     const char* pathStr = env->GetStringUTFChars(path, nullptr);
     const char* cacheStr = env->GetStringUTFChars(cacheDir, nullptr);
@@ -621,7 +621,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromFileWithCache(
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMissionMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath) {
     if (g_musicPlayer == nullptr) return false;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (mgr == nullptr) return false;
@@ -633,7 +633,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssets(JNIEnv 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setMissionMusicEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setMissionMusicEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->setMissionTrackEnabled(enabled);
     }
@@ -641,7 +641,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_setMissionMusicEnabled(JNIEnv *env
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setMissionMusicVolume(JNIEnv *env, jobject thiz, jfloat volume) {
+Java_com_juiced_spacecadetpinball_MainActivity_setMissionMusicVolume(JNIEnv *env, jobject thiz, jfloat volume) {
     if (g_musicPlayer != nullptr) {
         g_musicPlayer->setMissionVolume(volume);
     }
@@ -649,7 +649,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_setMissionMusicVolume(JNIEnv *env,
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadCompressedMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadCompressedMusicFromAssets(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
     if (g_musicPlayer == nullptr) return false;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (mgr == nullptr) return false;
@@ -663,7 +663,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadCompressedMusicFromAssets(JNIE
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicCompressed(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMissionMusicCompressed(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
     if (g_musicPlayer == nullptr) return false;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (mgr == nullptr) return false;
@@ -677,7 +677,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicCompressed(JNIEnv 
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromAssetsWithCache(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMusicFromAssetsWithCache(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
     if (g_musicPlayer == nullptr) return false;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (mgr == nullptr) return false;
@@ -691,7 +691,7 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMusicFromAssetsWithCache(JNIEn
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssetsWithCache(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
+Java_com_juiced_spacecadetpinball_MainActivity_loadMissionMusicFromAssetsWithCache(JNIEnv *env, jobject thiz, jobject assetManager, jstring assetPath, jstring cacheDir) {
     if (g_musicPlayer == nullptr) return false;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (mgr == nullptr) return false;
@@ -708,55 +708,55 @@ Java_com_fexed_spacecadetpinball_MainActivity_loadMissionMusicFromAssetsWithCach
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_setTimerMode(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_com_juiced_spacecadetpinball_MainActivity_setTimerMode(JNIEnv *env, jobject thiz, jboolean enabled) {
     TimerMode::SetMode(enabled ? TimerMode::Mode::Timer : TimerMode::Mode::Classic);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_isTimerMode(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_isTimerMode(JNIEnv *env, jobject thiz) {
     return TimerMode::IsTimerMode();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getTimerRemainingMs(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getTimerRemainingMs(JNIEnv *env, jobject thiz) {
     return TimerMode::GetRemainingTimeMs();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_startTimerMode(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_startTimerMode(JNIEnv *env, jobject thiz) {
     TimerMode::StartTimer();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_resetTimerMode(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_resetTimerMode(JNIEnv *env, jobject thiz) {
     TimerMode::Reset();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getTimerScoreProgress(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getTimerScoreProgress(JNIEnv *env, jobject thiz) {
     return TimerMode::GetScoreProgress();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getTimerThresholdIncrement(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getTimerThresholdIncrement(JNIEnv *env, jobject thiz) {
     return TimerMode::GetCurrentThresholdIncrement();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_pauseTimerMode(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_pauseTimerMode(JNIEnv *env, jobject thiz) {
     TimerMode::PauseTimer();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_resumeTimerMode(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_resumeTimerMode(JNIEnv *env, jobject thiz) {
     TimerMode::ResumeTimer();
 }
 
@@ -811,56 +811,56 @@ void SpaceCadetPinballJNI::notifyGameOverSummary(int totalScore, int64_t playTim
 // Session timer JNI functions
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_startSessionTimer(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_startSessionTimer(JNIEnv *env, jobject thiz) {
     TimerMode::StartSessionTimer();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_stopSessionTimer(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_stopSessionTimer(JNIEnv *env, jobject thiz) {
     TimerMode::StopSessionTimer();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_pauseSessionTimer(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_pauseSessionTimer(JNIEnv *env, jobject thiz) {
     TimerMode::PauseSessionTimer();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_resumeSessionTimer(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_resumeSessionTimer(JNIEnv *env, jobject thiz) {
     TimerMode::ResumeSessionTimer();
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getSessionTimeMs(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getSessionTimeMs(JNIEnv *env, jobject thiz) {
     return TimerMode::GetSessionTimeMs();
 }
 
 // Game stats JNI functions
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getPlayerRank(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getPlayerRank(JNIEnv *env, jobject thiz) {
     return control::GetPlayerRank();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getOuterCircleProgress(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getOuterCircleProgress(JNIEnv *env, jobject thiz) {
     return control::GetOuterCircleProgress();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getOuterCircleTotal(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getOuterCircleTotal(JNIEnv *env, jobject thiz) {
     return control::GetOuterCircleTotal();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_fexed_spacecadetpinball_MainActivity_getTotalScore(JNIEnv *env, jobject thiz) {
+Java_com_juiced_spacecadetpinball_MainActivity_getTotalScore(JNIEnv *env, jobject thiz) {
     // For timer mode, use TimerMode's tracked score
     if (TimerMode::IsTimerMode()) {
         return TimerMode::GetTotalScore();

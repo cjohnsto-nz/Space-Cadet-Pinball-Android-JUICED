@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 public class GameState {
     public static final int RUNNING = 1;

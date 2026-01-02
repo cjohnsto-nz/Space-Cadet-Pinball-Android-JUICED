@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.VibrationEffect.EFFECT_DOUBLE_CLICK;
@@ -48,7 +48,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import com.fexed.spacecadetpinball.databinding.ActivityMainBinding;
+import com.juiced.spacecadetpinball.databinding.ActivityMainBinding;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
@@ -96,7 +96,7 @@ public class MainActivity extends SDLActivity {
         super.onCreate(savedInstanceState);
         File filesDir = getFilesDir();
         copyAssets(filesDir);
-        PrefsHelper.setPrefs(getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE));
+        PrefsHelper.setPrefs(getSharedPreferences("com.juiced.spacecadetpinball", Context.MODE_PRIVATE));
 
         // Initialize HDR capabilities BEFORE initNative so SDL can use HDR colorspace
         initializeHDR();

@@ -13,14 +13,14 @@
     <string name="remainingballssettings">Индикатор количества оставшихся шаров</string>
     <string name="tiltbuttons">Кнопки для толкания стола</string>
     <string name="username">Игрок</string>
-    <string name="credits">Оригинальная версия игры была разработана MAXIS по заказу Microsoft.\n© 1995 Maxis.\n\nРеверс-инжиниринг: k4zmu2a\nОригинальный порт на Android: Iscle\nДанный порт на Android: fexed, th3vanger\nПеревод на русский язык: HarGabt</string>
+    <string name="credits">Оригинальная версия игры была разработана MAXIS по заказу Microsoft.\n© 1995 Maxis.\n\nРеверс-инжиниринг: k4zmu2a\nОригинальный порт на Android: Iscle\nДанный порт на Android: juiced, th3vanger\nПеревод на русский язык: HarGabt</string>
     <string name="restartprompt">Нажмите и удерживайте кнопку, чтобы запустить новую игру.</string>
     <string name="volume">Громкость</string>
     <string name="customfonts">Внутриигровой шрифт</string>
     <string name="plungerpopup">Всплывающее уведомление о рычаге запуска</string>
     <string name="plungerhint">Нажмите и удерживайте на экран для запуска шара.</string>
     <string name="goto_googleplay"><u><a hred="https://play.google.com/store/apps/dev?id=6687966458279653723">У меня есть ещё и другие программы, рекомендую глянуть!</a></u></string>
-    <string name="goto_github"><u><a hred="https://github.com/fexed/Pinball-on-Android/releases">Последняя версия на GitHub</a></u></string>
+    <string name="goto_github"><u><a hred="https://github.com/cjohnsto-nz/Pinball-on-Android/releases">Последняя версия на GitHub</a></u></string>
     <string name="cheat_title">Читы</string>
     <string name="cheat_disclaimer">Активируйте их перед запуском первого шара (внимание: некоторые из них ещё не работают)</string>
     <string name="cheat_gmax">gmax - Активируется гравитационный портал</string>

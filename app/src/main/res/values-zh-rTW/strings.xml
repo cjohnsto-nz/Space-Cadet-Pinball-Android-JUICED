@@ -12,14 +12,14 @@
     <string name="remainingballssettings">改為剩餘球數指示</string>
     <string name="tiltbuttons">Tilt(搖晃檯面)按鈕</string>
     <string name="username">玩家名稱</string>
-    <string name="credits">立體彈珠台桌是 Maxis 為 Microsoft 建立的。\nCopyright © 1995 Maxis。\n\n逆向工程作者：k4zmu2a\n原始Android移植作者：Iscle\n目前版本移植作者：fexed, th3vanger</string>
+    <string name="credits">立體彈珠台桌是 Maxis 為 Microsoft 建立的。\nCopyright © 1995 Maxis。\n\n逆向工程作者：k4zmu2a\n原始Android移植作者：Iscle\n目前版本移植作者：juiced, th3vanger</string>
     <string name="restartprompt">長按以重新開始</string>
     <string name="volume">音量</string>
     <string name="customfonts">自定義(英文)字體</string>
     <string name="plungerpopup">發球方式提示</string>
     <string name="plungerhint">按住螢幕來發球</string>
     <string name="goto_googleplay"><u><a hred="https://play.google.com/store/apps/dev?id=6687966458279653723">看看我其他的APP</a></u></string>
-    <string name="goto_github"><u><a hred="https://github.com/fexed/Pinball-on-Android/releases">檢查有沒有最新版本</a></u></string>
+    <string name="goto_github"><u><a hred="https://github.com/cjohnsto-nz/Pinball-on-Android/releases">檢查有沒有最新版本</a></u></string>
     <string name="cheat_title">作弊</string>
     <string name="cheat_disclaimer">在發射第一顆球前可以使用 (注意：有一些作弊選項還沒有功能)</string>
     <string name="cheat_gmax">gmax - 啟用重力井</string>
