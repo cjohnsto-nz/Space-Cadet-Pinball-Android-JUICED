@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 import android.content.Context;
 import android.media.MediaPlayer;

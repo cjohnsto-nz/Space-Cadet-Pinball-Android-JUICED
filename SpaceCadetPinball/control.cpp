@@ -1899,9 +1899,9 @@ void control::make_links(TPinballTable* table)
 		}
 		
 		// Load light positions from config file with fallback to default
-		if (!HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions.cfg")) {
+		if (!HDRLightOverlay::LoadLightPositions("/data/data/com.juiced.spacecadetpinball/files/light_positions.cfg")) {
 			// Try to load default config from assets if user config doesn't exist
-			HDRLightOverlay::LoadLightPositions("/data/data/com.fexed.spacecadetpinball/files/light_positions_default.cfg");
+			HDRLightOverlay::LoadLightPositions("/data/data/com.juiced.spacecadetpinball/files/light_positions_default.cfg");
 		}
 	}
 }
@@ -5941,7 +5941,7 @@ void control_GetSelectedLightInfo(std::string& outGroupName, int& outLightIndex)
 
 #ifdef __ANDROID__
 extern "C" {
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_setLightDebugModeNative(JNIEnv* env, jobject obj, jboolean enabled) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_Settings_setLightDebugModeNative(JNIEnv* env, jobject obj, jboolean enabled) {
         g_lightDebugMode = enabled;
         if (enabled) {
             InitializeLightDebugList();
@@ -5949,17 +5949,17 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_nextLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_Settings_nextLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         g_currentLightIndex = (g_currentLightIndex + 1) % g_lightList.size();
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_previousLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_Settings_previousLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         g_currentLightIndex = (g_currentLightIndex - 1 + g_lightList.size()) % g_lightList.size();
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_toggleTableLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_Settings_toggleTableLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
@@ -5998,7 +5998,7 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_toggleHDRLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_Settings_toggleHDRLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
@@ -6009,7 +6009,7 @@ extern "C" {
         HDRLightOverlay::ToggleDebugLight(groupName.c_str(), lightIndex);
     }
     
-    JNIEXPORT jstring JNICALL Java_com_fexed_spacecadetpinball_Settings_getCurrentLightInfoNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT jstring JNICALL Java_com_juiced_spacecadetpinball_Settings_getCurrentLightInfoNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) {
             return env->NewStringUTF("");
         }
@@ -6019,12 +6019,12 @@ extern "C" {
         return env->NewStringUTF(info.c_str());
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_Settings_setParticlesEnabledNative(JNIEnv* env, jobject obj, jboolean enabled) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_Settings_setParticlesEnabledNative(JNIEnv* env, jobject obj, jboolean enabled) {
         options::Options.ParticlesEnabled = enabled;
     }
 
     // MainActivity versions of the same functions
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setLightDebugModeNative(JNIEnv* env, jobject obj, jboolean enabled) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_setLightDebugModeNative(JNIEnv* env, jobject obj, jboolean enabled) {
         g_lightDebugMode = enabled;
         if (enabled) {
             InitializeLightDebugList();
@@ -6067,13 +6067,13 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_nextLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_nextLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         g_currentLightIndex = (g_currentLightIndex + 1) % g_lightList.size();
         TurnOnCurrentLight();
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_previousLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_previousLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         g_currentLightIndex = (g_currentLightIndex - 1 + g_lightList.size()) % g_lightList.size();
         TurnOnCurrentLight();
@@ -6202,7 +6202,7 @@ extern "C" {
         return nullptr;
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_toggleTableLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_toggleTableLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
@@ -6233,7 +6233,7 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_toggleHDRLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_toggleHDRLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
@@ -6243,7 +6243,7 @@ extern "C" {
         HDRLightOverlay::ToggleDebugLight(groupName.c_str(), lightIndex);
     }
     
-    JNIEXPORT jstring JNICALL Java_com_fexed_spacecadetpinball_MainActivity_getCurrentLightInfoNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT jstring JNICALL Java_com_juiced_spacecadetpinball_MainActivity_getCurrentLightInfoNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) {
             return env->NewStringUTF("");
         }
@@ -6253,7 +6253,7 @@ extern "C" {
         return env->NewStringUTF(info.c_str());
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_turnOffAllLightsNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_turnOffAllLightsNative(JNIEnv* env, jobject obj) {
         // Turn off all light groups using Message(0, 0.0) which turns lights off
         // Message code 0 sets BmpIndex1 = 0 on each light in the group
         if (control_lchute_tgt_lights_tag.Component) control_lchute_tgt_lights_tag.Component->Message(0, 0.0);
@@ -6274,7 +6274,7 @@ extern "C" {
     }
     
     // Debug light repositioning - moves the currently selected HDR light to touch position
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_onDebugLightTouchDown(JNIEnv* env, jobject obj, jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_onDebugLightTouchDown(JNIEnv* env, jobject obj, jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         // Convert screen coordinates to normalized (0-1) coordinates
@@ -6296,7 +6296,7 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_onDebugLightTouchMove(JNIEnv* env, jobject obj, jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_onDebugLightTouchMove(JNIEnv* env, jobject obj, jfloat screenX, jfloat screenY, jint viewportX, jint viewportY, jint viewportW, jint viewportH) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         // Convert screen coordinates to normalized (0-1) coordinates
@@ -6318,17 +6318,17 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_onDebugLightTouchUp(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_onDebugLightTouchUp(JNIEnv* env, jobject obj) {
         // Nothing special needed on touch up - position is already updated
     }
     
     // ============== Preset Management JNI Functions ==============
     
-    JNIEXPORT jint JNICALL Java_com_fexed_spacecadetpinball_MainActivity_getPresetCountNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT jint JNICALL Java_com_juiced_spacecadetpinball_MainActivity_getPresetCountNative(JNIEnv* env, jobject obj) {
         return HDRLightOverlay::GetPresetCount();
     }
     
-    JNIEXPORT jstring JNICALL Java_com_fexed_spacecadetpinball_MainActivity_getPresetNameNative(JNIEnv* env, jobject obj, jint index) {
+    JNIEXPORT jstring JNICALL Java_com_juiced_spacecadetpinball_MainActivity_getPresetNameNative(JNIEnv* env, jobject obj, jint index) {
         const char* name = HDRLightOverlay::GetPresetNameByIndex(index);
         if (name) {
             return env->NewStringUTF(name);
@@ -6336,7 +6336,7 @@ extern "C" {
         return env->NewStringUTF("");
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_createPresetFromCurrentLightNative(JNIEnv* env, jobject obj, jstring presetName) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_createPresetFromCurrentLightNative(JNIEnv* env, jobject obj, jstring presetName) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         const char* name = env->GetStringUTFChars(presetName, nullptr);
@@ -6361,7 +6361,7 @@ extern "C" {
         env->ReleaseStringUTFChars(presetName, name);
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_applyPresetToCurrentLightNative(JNIEnv* env, jobject obj, jstring presetName) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_applyPresetToCurrentLightNative(JNIEnv* env, jobject obj, jstring presetName) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         const char* name = env->GetStringUTFChars(presetName, nullptr);
@@ -6385,7 +6385,7 @@ extern "C" {
         env->ReleaseStringUTFChars(presetName, name);
     }
     
-    JNIEXPORT jstring JNICALL Java_com_fexed_spacecadetpinball_MainActivity_getCurrentLightPresetNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT jstring JNICALL Java_com_juiced_spacecadetpinball_MainActivity_getCurrentLightPresetNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) {
             return env->NewStringUTF("");
         }
@@ -6400,7 +6400,7 @@ extern "C" {
         return env->NewStringUTF("");
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_clearPresetFromCurrentLightNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_clearPresetFromCurrentLightNative(JNIEnv* env, jobject obj) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
@@ -6413,7 +6413,7 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_savePresetsNative(JNIEnv* env, jobject obj, jstring filepath) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_savePresetsNative(JNIEnv* env, jobject obj, jstring filepath) {
         const char* path = env->GetStringUTFChars(filepath, nullptr);
         if (path) {
             HDRLightOverlay::SavePresets(path);
@@ -6421,7 +6421,7 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_loadPresetsNative(JNIEnv* env, jobject obj, jstring filepath) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_loadPresetsNative(JNIEnv* env, jobject obj, jstring filepath) {
         const char* path = env->GetStringUTFChars(filepath, nullptr);
         if (path) {
             HDRLightOverlay::LoadPresets(path);
@@ -6431,7 +6431,7 @@ extern "C" {
     
     // ============== Live Property Editing JNI Functions ==============
     
-    JNIEXPORT jfloatArray JNICALL Java_com_fexed_spacecadetpinball_MainActivity_getCurrentLightPropertiesNative(JNIEnv* env, jobject obj) {
+    JNIEXPORT jfloatArray JNICALL Java_com_juiced_spacecadetpinball_MainActivity_getCurrentLightPropertiesNative(JNIEnv* env, jobject obj) {
         // Returns: [r, g, b, width, height, intensityOn, intensityFlash, glowRadius, aboveBall, x, y, locked]
         jfloatArray result = env->NewFloatArray(12);
         if (!g_lightDebugMode || g_lightList.empty()) {
@@ -6463,14 +6463,14 @@ extern "C" {
         return result;
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setCurrentLightColorNative(JNIEnv* env, jobject obj, jfloat r, jfloat g, jfloat b) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_setCurrentLightColorNative(JNIEnv* env, jobject obj, jfloat r, jfloat g, jfloat b) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
         HDRLightOverlay::UpdateLightColor(currentLight.first.c_str(), currentLight.second, r, g, b);
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setCurrentLightSizeNative(JNIEnv* env, jobject obj, jfloat width, jfloat height) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_setCurrentLightSizeNative(JNIEnv* env, jobject obj, jfloat width, jfloat height) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
@@ -6483,28 +6483,28 @@ extern "C" {
         }
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setCurrentLightIntensityNative(JNIEnv* env, jobject obj, jfloat intensityOn, jfloat intensityFlash) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_setCurrentLightIntensityNative(JNIEnv* env, jobject obj, jfloat intensityOn, jfloat intensityFlash) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
         HDRLightOverlay::UpdateLightIntensity(currentLight.first.c_str(), currentLight.second, intensityOn, intensityFlash);
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setCurrentLightGlowNative(JNIEnv* env, jobject obj, jfloat glowRadius) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_setCurrentLightGlowNative(JNIEnv* env, jobject obj, jfloat glowRadius) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
         HDRLightOverlay::UpdateLightGlow(currentLight.first.c_str(), currentLight.second, glowRadius);
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_nudgeCurrentLightNative(JNIEnv* env, jobject obj, jfloat dx, jfloat dy) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_nudgeCurrentLightNative(JNIEnv* env, jobject obj, jfloat dx, jfloat dy) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
         HDRLightOverlay::NudgeLight(currentLight.first.c_str(), currentLight.second, dx, dy);
     }
     
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setCurrentLightLockedNative(JNIEnv* env, jobject obj, jboolean locked) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_setCurrentLightLockedNative(JNIEnv* env, jobject obj, jboolean locked) {
         if (!g_lightDebugMode || g_lightList.empty()) return;
         
         auto& currentLight = g_lightList[g_currentLightIndex];
@@ -6512,7 +6512,7 @@ extern "C" {
     }
     
     // Audio ready flag - blocks game startup until audio is loaded
-    JNIEXPORT void JNICALL Java_com_fexed_spacecadetpinball_MainActivity_setAudioReadyNative(JNIEnv* env, jobject obj, jboolean ready) {
+    JNIEXPORT void JNICALL Java_com_juiced_spacecadetpinball_MainActivity_setAudioReadyNative(JNIEnv* env, jobject obj, jboolean ready) {
         pb::audioReady = ready;
     }
 }

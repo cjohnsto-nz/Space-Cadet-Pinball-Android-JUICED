@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -27,8 +27,8 @@ import com.android.volley.Response;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.fexed.spacecadetpinball.databinding.ActivityMainBinding;
-import com.fexed.spacecadetpinball.databinding.ActivitySettingsBinding;
+import com.juiced.spacecadetpinball.databinding.ActivityMainBinding;
+import com.juiced.spacecadetpinball.databinding.ActivitySettingsBinding;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -352,7 +352,7 @@ public class Settings extends AppCompatActivity {
             startActivity(browserIntent);
         });
         mBinding.githubtxtv.setOnClickListener(v -> {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/fexed/Pinball-on-Android/releases/latest"));
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/cjohnsto-nz/Pinball-on-Android/releases/latest"));
             startActivity(browserIntent);
         });
 
@@ -505,7 +505,7 @@ public class Settings extends AppCompatActivity {
     }
 
     public void checkLatestRelease() {
-        String URL = "https://api.github.com/repos/fexed/Pinball-on-Android/releases/latest";
+        String URL = "https://api.github.com/repos/juiced/Pinball-on-Android/releases/latest";
         Response.Listener<String> listener = response -> {};
         Response.ErrorListener errorListener = response -> {};
         StringRequest GETReleaseRequest = new StringRequest(Request.Method.GET, URL, listener, errorListener) {

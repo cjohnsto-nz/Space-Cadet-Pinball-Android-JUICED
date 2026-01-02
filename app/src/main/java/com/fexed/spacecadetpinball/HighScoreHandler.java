@@ -1,6 +1,6 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
-import static com.fexed.spacecadetpinball.PrefsHelper.*;
+import static com.juiced.spacecadetpinball.PrefsHelper.*;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Looper;

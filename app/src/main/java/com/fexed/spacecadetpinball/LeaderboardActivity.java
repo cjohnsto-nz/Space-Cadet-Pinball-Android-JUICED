@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,8 +12,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 
-import com.fexed.spacecadetpinball.databinding.ActivityLeaderboardBinding;
-import com.fexed.spacecadetpinball.databinding.ActivitySettingsBinding;
+import com.juiced.spacecadetpinball.databinding.ActivityLeaderboardBinding;
+import com.juiced.spacecadetpinball.databinding.ActivitySettingsBinding;
 
 import java.util.ArrayList;
 import java.util.Collections;

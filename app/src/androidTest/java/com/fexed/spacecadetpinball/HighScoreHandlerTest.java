@@ -1,4 +1,4 @@
-package com.fexed.spacecadetpinball;
+package com.juiced.spacecadetpinball;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +22,7 @@ public class HighScoreHandlerTest {
     @Before
     public void setUp() {
         context = ApplicationProvider.getApplicationContext();
-        PrefsHelper.setPrefs(context.getSharedPreferences("com.fexed.spacecadetpinball", Context.MODE_PRIVATE));
+        PrefsHelper.setPrefs(context.getSharedPreferences("com.juiced.spacecadetpinball", Context.MODE_PRIVATE));
         PrefsHelper.setUsername("unittest_user");
         PrefsHelper.setHighScore(1);
         PrefsHelper.setCheatsUsed(false);
