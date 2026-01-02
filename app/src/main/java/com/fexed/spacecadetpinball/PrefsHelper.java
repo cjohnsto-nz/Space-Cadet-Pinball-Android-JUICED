@@ -203,7 +203,7 @@ public class PrefsHelper {
         prefs.edit().putInt(KEY_CAMERA_ZOOM, value).apply();
     }
 
-    // Enhanced audio (AI upscaled sounds)
+    // Enhanced audio
     public static boolean getEnhancedAudio() {
         return prefs.getBoolean(KEY_ENHANCED_AUDIO, false);
     }
