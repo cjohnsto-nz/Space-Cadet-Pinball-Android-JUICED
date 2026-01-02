@@ -21,6 +21,8 @@ Full disclaimer - I made this with my own device in mind, and didn't make many c
 
 - HD Haptics - Energy based haptics on ball collision. No vibration - haptic events, for supported devices
 
+- Reworked UI - Tweaks to text positions and rendering, new font.
+
 - Ball Trail - Smoothed trail using Catmull-Rom spline interpolation
 
 - New Timer Game Mode - Earn time by scoring points, lose time by sinking the ball. 
