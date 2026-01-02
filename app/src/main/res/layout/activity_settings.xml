@@ -125,7 +125,7 @@
             android:id="@+id/textViewEnhancedAudio"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Enhanced Audio (AI Upscaled)"
+            android:text="Enhanced Audio"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="@+id/enhancedAudioSwitch"

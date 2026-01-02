@@ -2121,6 +2121,20 @@ int control::GetPlayerRank()
 	return 0;
 }
 
+int control::GetOuterCircleProgress()
+{
+	if (control_outer_circle_tag.Component)
+		return control_outer_circle_tag.Component->Message(37, 0.0);
+	return 0;
+}
+
+int control::GetOuterCircleTotal()
+{
+	if (control_outer_circle_tag.Component)
+		return control_outer_circle_tag.Component->Message(38, 0.0);
+	return 0;
+}
+
 int control::AddRankProgress(int rank)
 {
 	char Buffer[64];

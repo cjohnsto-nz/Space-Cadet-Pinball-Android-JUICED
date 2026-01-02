@@ -58,6 +58,10 @@ public:
     
     // Timer mode bonus notification
     static void notifyTimerBonus(int secondsChange);
+    
+    // Game over summary - notify Java with all game stats
+    static void notifyGameOverSummary(int totalScore, int64_t playTimeMs, int rank, 
+                                       int outerCircleProgress, int outerCircleTotal);
 };
 
 #endif // SPACECADETPINBALLJNI_H

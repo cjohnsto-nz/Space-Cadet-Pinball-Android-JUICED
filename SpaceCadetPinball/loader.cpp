@@ -7,6 +7,70 @@
 #include "zdrv.h"
 #include "options.h"
 
+// Original sound durations (in seconds) for game timing when using enhanced audio
+// Enhanced audio files may be longer (due to reverb, etc.) but game logic should use original timing
+static const std::map<std::string, float> originalSoundDurations = {
+	{"SOUND1.WAV", 5.020408f},
+	{"SOUND3.WAV", 2.060590f},
+	{"SOUND4.WAV", 1.484807f},
+	{"SOUND5.WAV", 0.265215f},
+	{"SOUND6.WAV", 0.380136f},
+	{"SOUND7.WAV", 2.385669f},
+	{"SOUND8.WAV", 0.177868f},
+	{"SOUND9.WAV", 1.810249f},
+	{"SOUND12.WAV", 0.376961f},
+	{"SOUND13.WAV", 0.712018f},
+	{"SOUND14.WAV", 0.259592f},
+	{"SOUND16.WAV", 0.082177f},
+	{"SOUND17.WAV", 0.176871f},
+	{"SOUND18.WAV", 0.348753f},
+	{"SOUND19.WAV", 0.461587f},
+	{"SOUND20.WAV", 0.771791f},
+	{"SOUND21.WAV", 0.821224f},
+	{"SOUND22.WAV", 0.656236f},
+	{"SOUND24.WAV", 1.085351f},
+	{"SOUND25.WAV", 2.318730f},
+	{"SOUND26.WAV", 0.649977f},
+	{"SOUND27.WAV", 1.823311f},
+	{"SOUND28.WAV", 0.771882f},
+	{"SOUND29.WAV", 0.927347f},
+	{"SOUND30.WAV", 2.034467f},
+	{"SOUND34.WAV", 0.125170f},
+	{"SOUND35.WAV", 1.755828f},
+	{"SOUND36.WAV", 3.057324f},
+	{"SOUND38.WAV", 1.168617f},
+	{"SOUND39.WAV", 2.552472f},
+	{"SOUND42.WAV", 2.630295f},
+	{"SOUND43.WAV", 2.054966f},
+	{"SOUND45.WAV", 0.873469f},
+	{"SOUND49.WAV", 0.157460f},
+	{"SOUND49D.WAV", 0.289252f},
+	{"SOUND50.WAV", 1.082449f},
+	{"SOUND53.WAV", 0.801633f},
+	{"SOUND54.WAV", 1.642630f},
+	{"SOUND55.WAV", 1.972698f},
+	{"SOUND57.WAV", 2.753832f},
+	{"SOUND58.WAV", 0.289705f},
+	{"SOUND65.WAV", 1.586485f},
+	{"SOUND68.WAV", 2.924082f},
+	{"SOUND104.WAV", 0.098503f},
+	{"SOUND105.WAV", 0.165805f},
+	{"SOUND108.WAV", 0.680091f},
+	{"SOUND111.WAV", 0.063946f},
+	{"SOUND112.WAV", 0.058050f},
+	{"SOUND131.WAV", 0.104308f},
+	{"SOUND136.WAV", 1.732245f},
+	{"SOUND181.WAV", 2.472744f},
+	{"SOUND240.WAV", 1.307483f},
+	{"SOUND243.WAV", 1.861950f},
+	{"SOUND528.WAV", 0.793469f},
+	{"SOUND560.WAV", 2.612789f},
+	{"SOUND563.WAV", 2.176236f},
+	{"SOUND713.WAV", 1.305578f},
+	{"SOUND735.WAV", 2.455692f},
+	{"SOUND827.WAV", 4.267211f},
+	{"SOUND999.WAV", 0.603447f},
+};
 
 errorMsg loader::loader_errors[] =
 {
@@ -252,6 +316,18 @@ int loader::get_sound_id(int groupIndex)
 					fclose(file);
 				}
 
+				// When using enhanced audio, use original duration for game timing
+				// This ensures game events happen at the right time even if enhanced audio is longer
+				if (options::Options.EnhancedAudio)
+				{
+					auto it = originalSoundDurations.find(fileName);
+					if (it != originalSoundDurations.end())
+					{
+						duration = it->second;
+						SDL_Log("Using original duration %.3fs for %s (enhanced audio)", duration, fileName.c_str());
+					}
+				}
+				
 				sound_list[soundIndex].Duration = duration;
 				sound_list[soundIndex].WavePtr = Sound::LoadWaveFile(filePath);
 			}

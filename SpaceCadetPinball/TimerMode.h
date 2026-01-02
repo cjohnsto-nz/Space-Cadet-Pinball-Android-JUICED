@@ -66,6 +66,13 @@ public:
     static bool IsModeSelectionPending() { return s_modeSelectionPending; }
     static void SetModeSelectionPending(bool pending) { s_modeSelectionPending = pending; }
 
+    // Session time tracking (works for both Classic and Timer modes)
+    static void StartSessionTimer();
+    static void StopSessionTimer();
+    static void PauseSessionTimer();
+    static void ResumeSessionTimer();
+    static int64_t GetSessionTimeMs();  // Total elapsed play time
+
 private:
     static Mode s_currentMode;
     static bool s_timerActive;
@@ -80,6 +87,12 @@ private:
     static int64_t s_bonusTimeMs;        // Accumulated bonus time in ms
     static int64_t s_pauseTimeMs;        // When timer was paused (0 if not paused)
     static int64_t GetCurrentTimeMs();   // Get current wall clock time
+
+    // Session timing (for both modes)
+    static int64_t s_sessionStartTimeMs; // When session started
+    static int64_t s_sessionPauseTimeMs; // When session was paused (0 if not paused)
+    static int64_t s_sessionAccumulatedMs; // Accumulated time before pauses
+    static bool s_sessionActive;         // Is session timer running
 
     static constexpr int64_t kStartingTimeMs = 180000;    // 3 minutes in ms
     static constexpr int64_t kTimePerThresholdMs = 15000; // 15 seconds in ms

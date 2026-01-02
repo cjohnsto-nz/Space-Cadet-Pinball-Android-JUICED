@@ -388,6 +388,7 @@ public class MainActivity extends SDLActivity {
                 pauseMusic(); // Oboe
                 if (beatMapPlayer != null) beatMapPlayer.pause();
                 if (timerModeActive) pauseTimerMode();
+                pauseSessionTimer(); // Pause session time tracking
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.play));
             } else {
                 isPlaying = true;
@@ -395,6 +396,7 @@ public class MainActivity extends SDLActivity {
                 resumeMusic(); // Oboe
                 if (beatMapPlayer != null) beatMapPlayer.resume();
                 if (timerModeActive) resumeTimerMode();
+                resumeSessionTimer(); // Resume session time tracking
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
             }
         });
@@ -797,12 +799,23 @@ public class MainActivity extends SDLActivity {
             }
 
             if (state == GameState.FINISHED) {
+                // Stop session timer and capture final stats before UI updates
+                stopSessionTimer();
+                final int finalScore = getTotalScore();
+                final long finalPlayTimeMs = getSessionTimeMs();
+                final int finalRank = getPlayerRank();
+                final int finalOuterProgress = getOuterCircleProgress();
+                final int finalOuterTotal = getOuterCircleTotal();
+                
                 runOnUiThread(() -> {
                     firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LEVEL_END, null);
                     // Clean up timer mode if active
                     if (timerModeActive) {
                         onTimerModeGameOver();
                     }
+                    // Show game over summary dialog
+                    showGameOverSummary(finalScore, finalPlayTimeMs, finalRank, 
+                                       finalOuterProgress, finalOuterTotal);
                 });
             }
         }
@@ -1397,6 +1410,19 @@ public class MainActivity extends SDLActivity {
     private native void pauseTimerMode();
     private native void resumeTimerMode();
 
+    // Session timer native methods (works for both modes)
+    private native void startSessionTimer();
+    private native void stopSessionTimer();
+    private native void pauseSessionTimer();
+    private native void resumeSessionTimer();
+    private native long getSessionTimeMs();
+
+    // Game stats native methods
+    private native int getPlayerRank();
+    private native int getOuterCircleProgress();
+    private native int getOuterCircleTotal();
+    private native int getTotalScore();
+
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;
 
@@ -1646,10 +1672,14 @@ public class MainActivity extends SDLActivity {
         builder.setTitle("Select Game Mode");
         builder.setCancelable(false);
         
-        String[] modes = {"Classic Mode", "Timer Mode (3 min)"};
+        String[] modes = {"Classic Mode", "Timer Mode"};
         builder.setItems(modes, (dialog, which) -> {
             waitingForModeSelection = false;
             pendingGameStart = true;  // Wait for ball to enter plunger before starting music/timer
+            
+            // Start session timer for both modes
+            startSessionTimer();
+            
             if (which == 0) {
                 // Classic mode - will show ball count and score when game starts
                 setTimerMode(false);
@@ -1755,5 +1785,55 @@ public class MainActivity extends SDLActivity {
             mBinding.txtTimer.setVisibility(View.GONE);
             mBinding.txtTimerBonus.setVisibility(View.GONE);
         });
+    }
+
+    // Rank names for display
+    private static final String[] RANK_NAMES = {
+        "Cadet", "Ensign", "Lieutenant", "Captain", "Lt. Commander",
+        "Commander", "Commodore", "Admiral", "Fleet Admiral"
+    };
+
+    private String getRankName(int rank) {
+        if (rank < 1) return "Cadet";
+        if (rank > RANK_NAMES.length) return "Fleet Admiral";
+        return RANK_NAMES[rank - 1];
+    }
+
+    public void showGameOverSummary(int totalScore, long playTimeMs, int rank, 
+                                     int outerCircleProgress, int outerCircleTotal) {
+        // Format play time as MM:SS
+        int totalSeconds = (int)(playTimeMs / 1000);
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        String timeStr = String.format("%d:%02d", minutes, seconds);
+
+        // Format score with commas
+        String scoreStr = String.format("%,d", totalScore);
+
+        // Get rank name
+        String rankName = getRankName(rank);
+
+        // Build mission points display (outer circle progress)
+        String missionPointsStr;
+        if (outerCircleTotal > 0) {
+            missionPointsStr = String.format("%d / %d", outerCircleProgress, outerCircleTotal);
+        } else {
+            missionPointsStr = String.valueOf(outerCircleProgress);
+        }
+
+        // Build the summary message
+        StringBuilder message = new StringBuilder();
+        message.append("Score: ").append(scoreStr).append("\n\n");
+        message.append("Time Played: ").append(timeStr).append("\n\n");
+        message.append("Rank: ").append(rankName).append("\n\n");
+        message.append("Mission Points: ").append(missionPointsStr);
+
+        // Show dialog
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Game Over");
+        builder.setMessage(message.toString());
+        builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+        builder.setCancelable(true);
+        builder.show();
     }
 }

@@ -90,6 +90,8 @@ public:
 	static int SpecialAddScore(int score);
 	static int AddRankProgress(int rank);
 	static int GetPlayerRank();
+	static int GetOuterCircleProgress();
+	static int GetOuterCircleTotal();
 	static void AdvanceWormHoleDestination(int flag);
 
 	static void FlipperRebounderControl1(int code, TPinballComponent* caller);

@@ -6,6 +6,7 @@
 #include "../../../../SpaceCadetPinball/HDRConfig.h"
 #include "../../../../SpaceCadetPinball/pb.h"
 #include "../../../../SpaceCadetPinball/options.h"
+#include "../../../../SpaceCadetPinball/TPinballTable.h"
 #include <jni.h>
 #include <android/log.h>
 
@@ -737,4 +738,93 @@ void SpaceCadetPinballJNI::notifyTimerBonus(int secondsChange) {
     
     env->DeleteLocalRef(clazz);
     env->DeleteLocalRef(activity);
+}
+
+// Game over summary notification
+void SpaceCadetPinballJNI::notifyGameOverSummary(int totalScore, int64_t playTimeMs, int rank,
+                                                  int outerCircleProgress, int outerCircleTotal) {
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (env == nullptr) return;
+    
+    jobject activity = (jobject)SDL_AndroidGetActivity();
+    if (activity == nullptr) return;
+    
+    jclass clazz = env->GetObjectClass(activity);
+    if (clazz == nullptr) {
+        env->DeleteLocalRef(activity);
+        return;
+    }
+    
+    jmethodID method = env->GetMethodID(clazz, "showGameOverSummary", "(IJIII)V");
+    if (method != nullptr) {
+        env->CallVoidMethod(activity, method, totalScore, (jlong)playTimeMs, rank, 
+                           outerCircleProgress, outerCircleTotal);
+    }
+    
+    env->DeleteLocalRef(clazz);
+    env->DeleteLocalRef(activity);
+}
+
+// Session timer JNI functions
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_startSessionTimer(JNIEnv *env, jobject thiz) {
+    TimerMode::StartSessionTimer();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_stopSessionTimer(JNIEnv *env, jobject thiz) {
+    TimerMode::StopSessionTimer();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_pauseSessionTimer(JNIEnv *env, jobject thiz) {
+    TimerMode::PauseSessionTimer();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_resumeSessionTimer(JNIEnv *env, jobject thiz) {
+    TimerMode::ResumeSessionTimer();
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getSessionTimeMs(JNIEnv *env, jobject thiz) {
+    return TimerMode::GetSessionTimeMs();
+}
+
+// Game stats JNI functions
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getPlayerRank(JNIEnv *env, jobject thiz) {
+    return control::GetPlayerRank();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getOuterCircleProgress(JNIEnv *env, jobject thiz) {
+    return control::GetOuterCircleProgress();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getOuterCircleTotal(JNIEnv *env, jobject thiz) {
+    return control::GetOuterCircleTotal();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_fexed_spacecadetpinball_MainActivity_getTotalScore(JNIEnv *env, jobject thiz) {
+    // For timer mode, use TimerMode's tracked score
+    if (TimerMode::IsTimerMode()) {
+        return TimerMode::GetTotalScore();
+    }
+    // For classic mode, get from table
+    if (pb::MainTable) {
+        return pb::MainTable->CurScore;
+    }
+    return 0;
 }

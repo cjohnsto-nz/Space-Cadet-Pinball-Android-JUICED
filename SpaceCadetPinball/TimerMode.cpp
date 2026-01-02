@@ -21,6 +21,12 @@ int64_t TimerMode::s_endTimeMs = 0;
 int64_t TimerMode::s_bonusTimeMs = 0;
 int64_t TimerMode::s_pauseTimeMs = 0;
 
+// Session timing statics
+int64_t TimerMode::s_sessionStartTimeMs = 0;
+int64_t TimerMode::s_sessionPauseTimeMs = 0;
+int64_t TimerMode::s_sessionAccumulatedMs = 0;
+bool TimerMode::s_sessionActive = false;
+
 int64_t TimerMode::GetCurrentTimeMs()
 {
     auto now = std::chrono::steady_clock::now();
@@ -225,4 +231,69 @@ void TimerMode::Reset()
     s_waitingForFinalSink = false;
     s_scoreThreshold = kScorePerThreshold;
     s_totalScore = 0;
+    
+    // Also reset session timer
+    s_sessionStartTimeMs = 0;
+    s_sessionPauseTimeMs = 0;
+    s_sessionAccumulatedMs = 0;
+    s_sessionActive = false;
+}
+
+// Session time tracking (works for both Classic and Timer modes)
+void TimerMode::StartSessionTimer()
+{
+    s_sessionStartTimeMs = GetCurrentTimeMs();
+    s_sessionPauseTimeMs = 0;
+    s_sessionAccumulatedMs = 0;
+    s_sessionActive = true;
+}
+
+void TimerMode::StopSessionTimer()
+{
+    if (s_sessionActive)
+    {
+        // Capture final time before stopping
+        if (s_sessionPauseTimeMs == 0)
+        {
+            s_sessionAccumulatedMs += GetCurrentTimeMs() - s_sessionStartTimeMs;
+        }
+        s_sessionActive = false;
+    }
+}
+
+void TimerMode::PauseSessionTimer()
+{
+    if (s_sessionActive && s_sessionPauseTimeMs == 0)
+    {
+        // Accumulate time up to now
+        s_sessionAccumulatedMs += GetCurrentTimeMs() - s_sessionStartTimeMs;
+        s_sessionPauseTimeMs = GetCurrentTimeMs();
+    }
+}
+
+void TimerMode::ResumeSessionTimer()
+{
+    if (s_sessionActive && s_sessionPauseTimeMs > 0)
+    {
+        // Reset start time to now (accumulated time already saved)
+        s_sessionStartTimeMs = GetCurrentTimeMs();
+        s_sessionPauseTimeMs = 0;
+    }
+}
+
+int64_t TimerMode::GetSessionTimeMs()
+{
+    if (!s_sessionActive)
+    {
+        return s_sessionAccumulatedMs;
+    }
+    
+    if (s_sessionPauseTimeMs > 0)
+    {
+        // Paused - return accumulated time only
+        return s_sessionAccumulatedMs;
+    }
+    
+    // Running - return accumulated + current segment
+    return s_sessionAccumulatedMs + (GetCurrentTimeMs() - s_sessionStartTimeMs);
 }
