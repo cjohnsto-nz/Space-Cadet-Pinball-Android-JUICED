@@ -46,5 +46,5 @@ Full disclaimer - I made this with my own device in mind, and didn't make many c
 
 ## How to play
 
-Download the latest available [APK](https://github.com/cjohnsto-nz/Pinball-on-Android/releases)
+Download the latest available [APK](https://github.com/cjohnsto-nz/Space-Cadet-Pinball-Android-JUICED/releases)
 
