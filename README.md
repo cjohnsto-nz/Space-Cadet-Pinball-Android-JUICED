@@ -17,6 +17,10 @@ Full disclaimer - I made this with my own device in mind, and didn't make many c
 
 - HDR Rendering - Full rendering pipeline rewrite and over 170 manually placed game synced HDR lights
 
+  Left is SDR, overbright, low highlights. Right is HDR, dynamic, bright saturated highlights, looks even better on device.
+
+  ![UltraHDRSample](./UltraHDRSample.jpg)
+
 - HD Graphics - Full Tilt Edition, with Nearest Neighbor Upscaling
 
 - HD Haptics - Energy based haptics on ball collision. No vibration - haptic events, for supported devices
