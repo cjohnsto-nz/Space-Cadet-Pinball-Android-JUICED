@@ -526,11 +526,12 @@ void render::PresentVScreen()
 		if (presentMs > maxPresentMs) maxPresentMs = presentMs;
 		
 		if (++profileCounter >= 120) {
-#ifdef __ANDROID__
-			__android_log_print(ANDROID_LOG_WARN, "RenderProfile", 
-				"Upload: %.1fms, Present: %.1fms", 
-				maxUploadMs, maxPresentMs);
-#endif
+			// Profiling log - uncomment when needed
+			// #ifdef __ANDROID__
+			// 	__android_log_print(ANDROID_LOG_WARN, "RenderProfile", 
+			// 		"Upload: %.1fms, Present: %.1fms", 
+			// 		maxUploadMs, maxPresentMs);
+			// #endif
 			profileCounter = 0;
 			maxUploadMs = maxPresentMs = 0;
 		}

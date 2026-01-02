@@ -134,8 +134,6 @@ int loader::get_sound_id(int groupIndex)
 
 	if (!sound_list[soundIndex].Loaded && !sound_list[soundIndex].WavePtr)
 	{
-		WaveHeader wavHeader{};
-
 		int soundGroupId = sound_list[soundIndex].GroupIndex;
 		sound_list[soundIndex].Duration = 0.0;
 		if (soundGroupId > 0 && !pinball::quickFlag)
@@ -190,16 +188,71 @@ int loader::get_sound_id(int groupIndex)
 				auto file = fopen(filePath.c_str(), "rb");
 				if (file)
 				{
-					fread(&wavHeader, 1, sizeof wavHeader, file);
+					// Robust WAV parsing: find fmt and data chunks dynamically
+					// This handles WAV files with extra chunks (JUNK, LIST, etc.) before fmt/data
+					unsigned char header[12];
+					if (fread(header, 1, 12, file) == 12 &&
+					    memcmp(header, "RIFF", 4) == 0 &&
+					    memcmp(header + 8, "WAVE", 4) == 0)
+					{
+						unsigned short channels = 0;
+						unsigned int sample_rate = 0;
+						unsigned short bits_per_sample = 0;
+						unsigned int data_size = 0;
+						bool found_fmt = false;
+						bool found_data = false;
+						
+						// Parse chunks until we find both fmt and data
+						while (!found_fmt || !found_data)
+						{
+							unsigned char chunkHeader[8];
+							if (fread(chunkHeader, 1, 8, file) != 8)
+								break;
+							
+							unsigned int chunkSize = chunkHeader[4] | (chunkHeader[5] << 8) | 
+							                         (chunkHeader[6] << 16) | (chunkHeader[7] << 24);
+							
+							if (memcmp(chunkHeader, "fmt ", 4) == 0)
+							{
+								// Read fmt chunk data
+								unsigned char fmtData[16];
+								if (fread(fmtData, 1, 16, file) == 16)
+								{
+									channels = fmtData[2] | (fmtData[3] << 8);
+									sample_rate = fmtData[4] | (fmtData[5] << 8) | 
+									             (fmtData[6] << 16) | (fmtData[7] << 24);
+									bits_per_sample = fmtData[14] | (fmtData[15] << 8);
+									found_fmt = true;
+								}
+								// Skip remaining fmt chunk data if any
+								if (chunkSize > 16)
+									fseek(file, chunkSize - 16, SEEK_CUR);
+							}
+							else if (memcmp(chunkHeader, "data", 4) == 0)
+							{
+								data_size = chunkSize;
+								found_data = true;
+								// Don't need to read actual audio data
+								break;
+							}
+							else
+							{
+								// Skip unknown chunk (JUNK, LIST, etc.)
+								// Chunks are word-aligned, so round up to even size
+								fseek(file, (chunkSize + 1) & ~1, SEEK_CUR);
+							}
+						}
+						
+						if (found_fmt && found_data && channels > 0 && sample_rate > 0 && bits_per_sample > 0)
+						{
+							auto sampleCount = data_size / (channels * (bits_per_sample / 8.0));
+							duration = static_cast<float>(sampleCount / sample_rate);
+						}
+					}
 					fclose(file);
-					auto sampleCount = wavHeader.data_size / (wavHeader.channels * (wavHeader.bits_per_sample / 8.0));
-					duration = static_cast<float>(sampleCount / wavHeader.sample_rate);
 				}
 
 				sound_list[soundIndex].Duration = duration;
-
-				auto sampleCount = wavHeader.data_size / (wavHeader.channels * (wavHeader.bits_per_sample / 8.0));
-				sound_list[soundIndex].Duration = static_cast<float>(sampleCount / wavHeader.sample_rate);
 				sound_list[soundIndex].WavePtr = Sound::LoadWaveFile(filePath);
 			}
 		}

@@ -1100,11 +1100,12 @@ void HDRLightOverlay::RenderOverlaysPQ(int viewportX, int viewportY, int viewpor
     if (trailMs > maxTrailMs) maxTrailMs = trailMs;
     
     if (++overlayProfileCounter >= 120) {
-#ifdef __ANDROID__
-        __android_log_print(ANDROID_LOG_INFO, "OverlayProfile", 
-                     "Batch: %.1fms (%zu lights), Trail: %.1fms", 
-                     maxBatchMs, s_instanceBuffer.size(), maxTrailMs);
-#endif
+        // Profiling log - uncomment when needed
+        // #ifdef __ANDROID__
+        //     __android_log_print(ANDROID_LOG_INFO, "OverlayProfile", 
+        //                  "Batch: %.1fms (%zu lights), Trail: %.1fms", 
+        //                  maxBatchMs, s_instanceBuffer.size(), maxTrailMs);
+        // #endif
         overlayProfileCounter = 0;
         maxBatchMs = maxTrailMs = 0;
     }

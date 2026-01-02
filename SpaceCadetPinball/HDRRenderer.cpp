@@ -709,7 +709,8 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     if (overlayMs > maxOverlayMs) maxOverlayMs = overlayMs;
     
     if (++presentProfileCounter >= 120) {
-        HDR_LOG("Present breakdown - Quad: %.1fms, Overlays: %.1fms", maxQuadMs, maxOverlayMs);
+        // Profiling log - uncomment when needed
+        // HDR_LOG("Present breakdown - Quad: %.1fms, Overlays: %.1fms", maxQuadMs, maxOverlayMs);
         presentProfileCounter = 0;
         maxQuadMs = maxOverlayMs = 0;
     }

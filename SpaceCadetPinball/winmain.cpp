@@ -273,15 +273,13 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 					}
 					avgDt /= 240.0f;
 					
-					// Always log for now to get detailed data
-					__android_log_print(ANDROID_LOG_WARN, "FrameTiming", 
-						"Frame timing - Avg: %.1fms, Min: %.1fms, Max: %.1fms (target: %.1fms)", 
-						avgDt, minDt, maxDt, targetMs);
-					
-					// Log distribution using target-relative thresholds
-					__android_log_print(ANDROID_LOG_WARN, "FrameDist", 
-						"Frame distribution - <=%.1fms: %d, <=%.1fms: %d, <=%.1fms: %d, >%.1fms: %d", 
-						targetMs, fastFrames, slowThreshold, okFrames, verySlowThreshold, slowFrames, verySlowThreshold, verySlowFrames);
+					// Profiling logs - uncomment when needed
+					// __android_log_print(ANDROID_LOG_WARN, "FrameTiming", 
+					// 	"Frame timing - Avg: %.1fms, Min: %.1fms, Max: %.1fms (target: %.1fms)", 
+					// 	avgDt, minDt, maxDt, targetMs);
+					// __android_log_print(ANDROID_LOG_WARN, "FrameDist", 
+					// 	"Frame distribution - <=%.1fms: %d, <=%.1fms: %d, <=%.1fms: %d, >%.1fms: %d", 
+					// 	targetMs, fastFrames, slowThreshold, okFrames, verySlowThreshold, slowFrames, verySlowThreshold, verySlowFrames);
 					
 					frameLogCounter = 0;
 					maxDt = 0;
@@ -311,10 +309,11 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				static int physicsLogCounter = 0;
 				if (physicsSteps > 1) multiStepFrames++;
 				if (++physicsLogCounter >= 120) {
-					if (multiStepFrames > 0) {
-						__android_log_print(ANDROID_LOG_INFO, "PhysicsTiming", 
-							"Multi-step frames: %d/120 (%.1f%%)", multiStepFrames, multiStepFrames * 100.0f / 120.0f);
-					}
+					// Profiling log - uncomment when needed
+					// if (multiStepFrames > 0) {
+					// 	__android_log_print(ANDROID_LOG_INFO, "PhysicsTiming", 
+					// 		"Multi-step frames: %d/120 (%.1f%%)", multiStepFrames, multiStepFrames * 100.0f / 120.0f);
+					// }
 					physicsLogCounter = 0;
 					multiStepFrames = 0;
 				}
@@ -369,9 +368,10 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				if (ballTrackMs > maxBallTrackMs) maxBallTrackMs = ballTrackMs;
 				static int ballTrackLogCounter = 0;
 				if (++ballTrackLogCounter >= 240) {
-					if (maxBallTrackMs > 0.5f) {
-						__android_log_print(ANDROID_LOG_WARN, "BallTrack", "Max ball tracking time: %.2fms", maxBallTrackMs);
-					}
+					// Profiling log - uncomment when needed
+					// if (maxBallTrackMs > 0.5f) {
+					// 	__android_log_print(ANDROID_LOG_WARN, "BallTrack", "Max ball tracking time: %.2fms", maxBallTrackMs);
+					// }
 					ballTrackLogCounter = 0;
 					maxBallTrackMs = 0;
 				}
@@ -424,8 +424,9 @@ int winmain::WinMain(LPCSTR lpCmdLine)
 				if (swapMs > maxSwapMs) maxSwapMs = swapMs;
 				static int renderLogCounter = 0;
 				if (++renderLogCounter >= 120) {
-					__android_log_print(ANDROID_LOG_WARN, "RenderTiming", 
-						"Render: %.1fms max, Swap: %.1fms max", maxRenderMs, maxSwapMs);
+					// Profiling log - uncomment when needed
+					// __android_log_print(ANDROID_LOG_WARN, "RenderTiming", 
+					// 	"Render: %.1fms max, Swap: %.1fms max", maxRenderMs, maxSwapMs);
 					renderLogCounter = 0;
 					maxRenderMs = 0;
 					maxSwapMs = 0;
