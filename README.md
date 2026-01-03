@@ -33,6 +33,8 @@ Full disclaimer - I made this with my own device in mind, and didn't make many c
 
 - Pullback Plunger - Activate the plunger by pulling back, not just by holding.
 
+- Accelerometer Jolt Controls - You want to jolt the table? Jolt your device! Hit the sides to jolt (pretty hard)
+
 - Ball Tracking Camera - Zoomed camera tracks the ball smoothly
 
 - New Audio Pipeline - Added Oboe, allowing for perfectly synced audio tracks and realtime effects, like filters when in wormholes.
