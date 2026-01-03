@@ -2,7 +2,13 @@
 
 # Space Cadet Pinball - JUICED Edition
 
+  ![Juiced](./juiced.jpg)
+
 This is my personal upgrade of the wonderful work done by [fexed](https://github.com/fexed/Pinball-on-Android)
+
+Above: JUICED. Below: Fexed.
+  
+  ![Fexed](./fexed.png)
 
 Thanks to [k4zmu2a](https://github.com/k4zmu2a) for the original source code and to [iscle](https://github.com/Iscle) for the original Android porting
 
