@@ -47,6 +47,7 @@ GLint HDRRenderer::s_loc_uMaxNits = -1;
 GLint HDRRenderer::s_loc_uSDRWhiteNits = -1;
 GLint HDRRenderer::s_loc_uCameraZoom = -1;
 GLint HDRRenderer::s_loc_uCameraCenter = -1;
+GLint HDRRenderer::s_loc_uTableMaxX = -1;
 GLint HDRRenderer::s_loc_uViewportSize = -1;
 GLint HDRRenderer::s_loc_uViewportOffset = -1;
 GLint HDRRenderer::s_loc_uRawBallPos = -1;
@@ -118,6 +119,7 @@ uniform float uMaxNits;
 uniform float uSDRWhiteNits;
 uniform float uCameraZoom;
 uniform vec2 uCameraCenter;
+uniform float uTableMaxX;
 uniform vec2 uViewportSize;    // actual viewport width, height in pixels
 uniform vec2 uViewportOffset;  // viewport X, Y offset from window origin
 uniform vec2 uLastBallPos;     // last known valid ball position
@@ -202,71 +204,70 @@ void main() {
     texCoord.x -= (center.x - 0.5);
     texCoord.y -= (center.y - 0.5);
     
-    // Show black for out-of-bounds and scoreboard area (past 0.61)
+    // Show black for out-of-bounds and scoreboard area
     vec4 hdrColor;
-    if (texCoord.x < 0.0 || texCoord.x > 0.61 || texCoord.y < 0.0 || texCoord.y > 1.0) {
+    if (texCoord.x < 0.0 || texCoord.x > uTableMaxX || texCoord.y < 0.0 || texCoord.y > 1.0) {
         hdrColor = vec4(0.0, 0.0, 0.0, 1.0);
     } else {
         hdrColor = texture(uHDRTexture, texCoord);
     }
     
-    /* DEBUG: Draw vertical lines - using corrected transform
+    // DEBUG: Draw vertical lines - using corrected transform
     // Main texture: texCoord = (screenPos - 0.5) / zoom + 1.0 - center
     // Inverse: screenPos = (texPos - 1.0 + center) * zoom + 0.5
     
     // Red - TABLE center (texture coord 0.3035)
     float tableCenterTexX = 0.3035;
-    float redScreenX = ((tableCenterTexX - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
+    float redScreenX = uViewportOffset.x + ((tableCenterTexX - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
     if (abs(gl_FragCoord.x - redScreenX) < 3.0) {
         hdrColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
     
-    // Magenta - table center in texture coords (0.5 * 0.607 = 0.3035)
-    float magentaTexX = 0.5 * 0.607;
-    float magentaScreenX = ((magentaTexX - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
+    // Magenta - table center in texture coords (0.5 * uTableMaxX)
+    float magentaTexX = 0.5 * uTableMaxX;
+    float magentaScreenX = uViewportOffset.x + ((magentaTexX - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
     if (abs(gl_FragCoord.x - magentaScreenX) < 3.0) {
         hdrColor = vec4(1.0, 0.0, 1.0, 1.0);
     }
     
     // Green - raw ball position (transformed)
-    float greenScreenX = ((uRawBallPos.x - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
+    float greenScreenX = uViewportOffset.x + ((uRawBallPos.x - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
     if (abs(gl_FragCoord.x - greenScreenX) < 3.0) {
         hdrColor = vec4(0.0, 1.0, 0.0, 1.0);
     }
     
     // Yellow - last valid ball position (only when invalid, transformed)
     if (uBallValid < 0.5) {
-        float yellowScreenX = ((uLastBallPos.x - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
+        float yellowScreenX = uViewportOffset.x + ((uLastBallPos.x - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
         if (abs(gl_FragCoord.x - yellowScreenX) < 3.0) {
             hdrColor = vec4(1.0, 1.0, 0.0, 1.0);
         }
     }
     
     // Cyan - smoothed camera position (transformed)
-    float cyanScreenX = ((uSmoothedCameraPos.x - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
+    float cyanScreenX = uViewportOffset.x + ((uSmoothedCameraPos.x - 1.0 + center.x) * zoom + 0.5) * uViewportSize.x;
     if (abs(gl_FragCoord.x - cyanScreenX) < 3.0) {
         hdrColor = vec4(0.0, 1.0, 1.0, 1.0);
     }
     
     // DEBUG: Draw horizontal lines - using corrected transform
     // Magenta horizontal - viewport center Y
-    float viewportCenterY = uViewportSize.y * 0.5;
+    float viewportCenterY = uViewportOffset.y + uViewportSize.y * 0.5;
     if (abs(gl_FragCoord.y - viewportCenterY) < 2.0) {
         hdrColor = vec4(1.0, 0.0, 1.0, 1.0);
     }
     
     // Green horizontal - ball Y (transformed)
-    float greenScreenY = ((uRawBallPos.y - 1.0 + center.y) * zoom + 0.5) * uViewportSize.y;
+    float greenScreenY = uViewportOffset.y + ((uRawBallPos.y - 1.0 + center.y) * zoom + 0.5) * uViewportSize.y;
     if (abs(gl_FragCoord.y - greenScreenY) < 2.0) {
         hdrColor = vec4(0.0, 1.0, 0.0, 1.0);
     }
     
     // Cyan horizontal - smoothed camera Y (transformed)
-    float cyanScreenY = ((uSmoothedCameraPos.y - 1.0 + center.y) * zoom + 0.5) * uViewportSize.y;
+    float cyanScreenY = uViewportOffset.y + ((uSmoothedCameraPos.y - 1.0 + center.y) * zoom + 0.5) * uViewportSize.y;
     if (abs(gl_FragCoord.y - cyanScreenY) < 2.0) {
         hdrColor = vec4(0.0, 1.0, 1.0, 1.0);
     }
-    */
     
     // Gentle gamma lift to darken midtones slightly
     vec3 darkenedColor = pow(hdrColor.rgb, vec3(1.15));
@@ -391,6 +392,7 @@ void HDRRenderer::CacheUniformLocations() {
     s_loc_uSDRWhiteNits = glGetUniformLocation(s_outputProgram, "uSDRWhiteNits");
     s_loc_uCameraZoom = glGetUniformLocation(s_outputProgram, "uCameraZoom");
     s_loc_uCameraCenter = glGetUniformLocation(s_outputProgram, "uCameraCenter");
+    s_loc_uTableMaxX = glGetUniformLocation(s_outputProgram, "uTableMaxX");
     s_loc_uViewportSize = glGetUniformLocation(s_outputProgram, "uViewportSize");
     s_loc_uViewportOffset = glGetUniformLocation(s_outputProgram, "uViewportOffset");
     s_loc_uRawBallPos = glGetUniformLocation(s_outputProgram, "uRawBallPos");
@@ -512,8 +514,6 @@ void HDRRenderer::UploadTexture(const ColorRgba* pixels, int width, int height) 
         HDR_ERR("GL error after FBO render: 0x%x", err);
     }
     
-    // Light overlays are now rendered in Present() after PQ encoding
-    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -542,8 +542,24 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     float screenAspect = (float)screenWidth / (float)screenHeight;
     
     int viewportX, viewportY, viewportW, viewportH;
+    const bool isPortrait = screenHeight > screenWidth;
+    const bool useCoverViewport = isPortrait && s_cameraTrackingEnabled && s_cameraZoom > 1.01f;
     
-    if (texAspect > screenAspect) {
+    if (useCoverViewport) {
+        if (texAspect > screenAspect) {
+            // Texture is wider - fit to height, crop left/right
+            viewportH = screenHeight;
+            viewportW = (int)(screenHeight * texAspect);
+            viewportX = (screenWidth - viewportW) / 2;
+            viewportY = 0;
+        } else {
+            // Texture is taller - fit to width, crop top/bottom
+            viewportW = screenWidth;
+            viewportH = (int)(screenWidth / texAspect);
+            viewportX = 0;
+            viewportY = (screenHeight - viewportH) / 2;
+        }
+    } else if (texAspect > screenAspect) {
         // Texture is wider - fit to width, letterbox top/bottom
         viewportW = screenWidth;
         viewportH = (int)(screenWidth / texAspect);
@@ -583,6 +599,11 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
     glUniform1i(s_loc_uHDRTexture, 0);
     glUniform1f(s_loc_uMaxNits, HDR::GetMaxDisplayNits());
     glUniform1f(s_loc_uSDRWhiteNits, HDR::Luminance::SDR_WHITE_NITS);
+    
+    float tableMaxX = render::GetTableWidthCoef();
+    if (tableMaxX >= 0.99f)
+        tableMaxX = 0.61f;
+    glUniform1f(s_loc_uTableMaxX, tableMaxX);
     
     // Set viewport size and offset for screen-space calculations
     glUniform2f(s_loc_uViewportSize, (float)viewportW, (float)viewportH);
@@ -629,7 +650,7 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
         
         // Table center in texture coordinates (center of table, not including scoreboard)
         // Table is ~60.7% of texture width, so center is at 0.607/2 = 0.3035
-        float tableCenterX = 0.3035f;
+        float tableCenterX = tableMaxX * 0.5f;
         float tableCenterY = 0.5f;
         
         // Bias target 25% toward table center
@@ -649,6 +670,12 @@ void HDRRenderer::Present(int screenWidth, int screenHeight) {
         cameraCenterX = 1.0f - smoothedCameraX -0.2f / s_cameraZoom;  // Invert X and add offset
         cameraCenterY = 1.0f - smoothedCameraY;  // Invert Y
         currentZoom = s_cameraZoom;
+        
+        if (currentZoom > 1.0f) {
+            const float halfWindow = 0.5f / currentZoom;
+            cameraCenterX = std::max(halfWindow, std::min(cameraCenterX, 1.0f - halfWindow));
+            cameraCenterY = std::max(halfWindow, std::min(cameraCenterY, 1.0f - halfWindow));
+        }
         
         // Also pass raw ball position for green debug line
         glUniform2f(s_loc_uRawBallPos, ballX, ballY);

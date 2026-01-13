@@ -87,6 +87,7 @@ private:
     static GLint s_loc_uSDRWhiteNits;
     static GLint s_loc_uCameraZoom;
     static GLint s_loc_uCameraCenter;
+    static GLint s_loc_uTableMaxX;
     static GLint s_loc_uViewportSize;
     static GLint s_loc_uViewportOffset;
     static GLint s_loc_uRawBallPos;
