@@ -871,3 +871,28 @@ Java_com_juiced_spacecadetpinball_MainActivity_getTotalScore(JNIEnv *env, jobjec
     }
     return 0;
 }
+
+// Debug camera offset calibration JNI functions
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_juiced_spacecadetpinball_MainActivity_setDebugCameraOffsetX(JNIEnv *env, jobject thiz, jfloat offset) {
+    HDRRenderer::SetDebugCameraOffsetX(offset);
+}
+
+extern "C"
+JNIEXPORT jfloat JNICALL
+Java_com_juiced_spacecadetpinball_MainActivity_getDebugCameraOffsetX(JNIEnv *env, jobject thiz) {
+    return HDRRenderer::GetDebugCameraOffsetX();
+}
+
+extern "C"
+JNIEXPORT jfloat JNICALL
+Java_com_juiced_spacecadetpinball_MainActivity_getCurrentCameraZoom(JNIEnv *env, jobject thiz) {
+    return HDRRenderer::GetCameraZoom();
+}
+
+extern "C"
+JNIEXPORT jfloat JNICALL
+Java_com_juiced_spacecadetpinball_MainActivity_getScreenAspectRatio(JNIEnv *env, jobject thiz) {
+    return HDRRenderer::GetScreenAspectRatio();
+}

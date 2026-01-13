@@ -26,6 +26,7 @@ public class PrefsHelper {
     private static final String KEY_TRAIL_LIFETIME = "trail_lifetime";
     private static final String KEY_CAMERA_TRACKING = "camera_tracking";
     private static final String KEY_CAMERA_ZOOM = "camera_zoom";
+    private static final String KEY_PINCH_TO_ZOOM_ENABLED = "pinch_to_zoom_enabled";
     private static final String KEY_ENHANCED_AUDIO = "enhanced_audio";
     private static final String KEY_PARTICLES_ENABLED = "particles_enabled";
     private static final String KEY_BEAT_REACTIVE_GLOW = "beat_reactive_glow";
@@ -194,9 +195,9 @@ public class PrefsHelper {
         prefs.edit().putBoolean(KEY_CAMERA_TRACKING, value).apply();
     }
 
-    // Camera zoom level (100-400, default 139 = 1.39x zoom)
+    // Camera zoom level (100-400, default 150 = 1.5x zoom)
     public static int getCameraZoom() {
-        return prefs.getInt(KEY_CAMERA_ZOOM, 120);
+        return prefs.getInt(KEY_CAMERA_ZOOM, 150);
     }
 
     public static void setCameraZoom(int value) {
@@ -237,5 +238,14 @@ public class PrefsHelper {
 
     public static void setMusicVolume(int value) {
         prefs.edit().putInt(KEY_MUSIC_VOLUME, value).apply();
+    }
+
+    // Pinch-to-zoom enabled during gameplay
+    public static boolean getPinchToZoomEnabled() {
+        return prefs.getBoolean(KEY_PINCH_TO_ZOOM_ENABLED, false);
+    }
+
+    public static void setPinchToZoomEnabled(boolean value) {
+        prefs.edit().putBoolean(KEY_PINCH_TO_ZOOM_ENABLED, value).apply();
     }
 }

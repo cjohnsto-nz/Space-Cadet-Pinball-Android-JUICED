@@ -90,6 +90,9 @@ public class MainActivity extends SDLActivity {
     private boolean waitingForModeSelection = false;
     private boolean pendingGameStart = false;  // Wait for ball to enter plunger before starting music/timer
 
+    // Hamburger menu state
+    private boolean hamburgerMenuExpanded = false;
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,11 +114,12 @@ public class MainActivity extends SDLActivity {
         initOboeMusicPlayer();
         
         // Show loading dialog for audio decoding
-        android.app.AlertDialog loadingDialog = new android.app.AlertDialog.Builder(this)
+        android.app.AlertDialog loadingDialog = new android.app.AlertDialog.Builder(this, R.style.CustomDialogTheme)
                 .setTitle("Loading Audio")
                 .setMessage("Decoding compressed audio files...")
                 .setCancelable(false)
                 .create();
+        styleDialog(loadingDialog);
         loadingDialog.show();
         
         // Get files directory for music files
@@ -401,6 +405,11 @@ public class MainActivity extends SDLActivity {
             }
             resetTimerMode();
             
+            // Close hamburger menu and unpause the game
+            if (hamburgerMenuExpanded) {
+                collapseHamburgerMenu();
+            }
+            
             // Trigger native restart
             SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_F2);
             SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_F2);
@@ -409,6 +418,24 @@ public class MainActivity extends SDLActivity {
             return true;
         });
 
+        // Hamburger menu button - click to toggle menu (pauses game when expanding)
+        mBinding.hamburgerBtn.setOnClickListener(view -> {
+            exeHaptic();
+            toggleHamburgerMenu();
+        });
+        
+        // Long-press hamburger to toggle camera calibration panel
+        mBinding.hamburgerBtn.setOnLongClickListener(view -> {
+            exeHaptic();
+            if (cameraCalibrationVisible) {
+                hideCameraCalibrationPanel();
+            } else {
+                showCameraCalibrationPanel();
+            }
+            return true;
+        });
+        
+        // Keep playpause handlers for compatibility (hidden button)
         mBinding.playpause.setOnClickListener(view -> {
             exeHaptic();
             if (isPlaying) {
@@ -428,6 +455,17 @@ public class MainActivity extends SDLActivity {
                 resumeSessionTimer(); // Resume session time tracking
                 mBinding.playpause.setImageDrawable(getContext().getResources().getDrawable(R.drawable.pause));
             }
+        });
+        
+        // Long-press playpause to toggle camera calibration panel
+        mBinding.playpause.setOnLongClickListener(view -> {
+            exeHaptic();
+            if (cameraCalibrationVisible) {
+                hideCameraCalibrationPanel();
+            } else {
+                showCameraCalibrationPanel();
+            }
+            return true;
         });
 
         mBinding.tiltLeft.setOnTouchListener((v1, event) -> {
@@ -700,69 +738,90 @@ public class MainActivity extends SDLActivity {
         exeClickD();
     }
 
+    // Check if device supports specific haptic effect (API 30+)
+    private boolean supportsHapticEffect(int effectId) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator == null || !vibrator.hasVibrator()) return false;
+            int[] results = vibrator.areEffectsSupported(effectId);
+            return results != null && results.length > 0 && results[0] == Vibrator.VIBRATION_EFFECT_SUPPORT_YES;
+        }
+        // For API 29, assume all effects are supported (will use platform fallback if not)
+        return true;
+    }
 
     private void exeHaptic() {
-        // Get the vibrator service
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         if (Build.VERSION.SDK_INT >= 29) {
-            // Create a VibrationEffect with your desired pattern and amplitude
-
-            VibrationEffect vibrationEffect = VibrationEffect.createPredefined(EFFECT_TICK);
-
-            // Vibrate with the given VibrationEffect
+            VibrationEffect vibrationEffect;
+            if (supportsHapticEffect(EFFECT_TICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_TICK);
+            } else if (supportsHapticEffect(EFFECT_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_CLICK);
+            } else {
+                vibrationEffect = VibrationEffect.createOneShot(10, VibrationEffect.DEFAULT_AMPLITUDE);
+            }
             vibrator.vibrate(vibrationEffect);
-        } else {
-            // For older devices, use a simple pattern
-//            vibrator.vibrate(20);
         }
     }
 
     private void exeClick() {
-        // Get the vibrator service
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         if (Build.VERSION.SDK_INT >= 29) {
-            // Create a VibrationEffect with your desired pattern and amplitude
-
-            VibrationEffect vibrationEffect = VibrationEffect.createPredefined(EFFECT_CLICK);
-
-            // Vibrate with the given VibrationEffect
+            VibrationEffect vibrationEffect;
+            if (supportsHapticEffect(EFFECT_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_CLICK);
+            } else if (supportsHapticEffect(EFFECT_TICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_TICK);
+            } else if (supportsHapticEffect(EFFECT_HEAVY_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+            } else if (supportsHapticEffect(EFFECT_DOUBLE_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_DOUBLE_CLICK);
+            } else {
+                // Only fall back to simple vibration if no effects are supported
+                vibrationEffect = VibrationEffect.createOneShot(15, VibrationEffect.DEFAULT_AMPLITUDE);
+            }
             vibrator.vibrate(vibrationEffect);
-        } else {
-            // For older devices, use a simple pattern
-//            vibrator.vibrate(20);
         }
     }
 
     private void exeClickH() {
-        // Get the vibrator service
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         if (Build.VERSION.SDK_INT >= 29) {
-            // Create a VibrationEffect with your desired pattern and amplitude
-
-            VibrationEffect vibrationEffect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
-
-            // Vibrate with the given VibrationEffect
+            VibrationEffect vibrationEffect;
+            if (supportsHapticEffect(EFFECT_HEAVY_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+            } else if (supportsHapticEffect(EFFECT_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_CLICK);
+            } else if (supportsHapticEffect(EFFECT_DOUBLE_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_DOUBLE_CLICK);
+            } else if (supportsHapticEffect(EFFECT_TICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_TICK);
+            } else {
+                // Only fall back to simple vibration if no effects are supported
+                vibrationEffect = VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE);
+            }
             vibrator.vibrate(vibrationEffect);
-        } else {
-            // For older devices, use a simple pattern
-//            vibrator.vibrate(20);
         }
     }
 
-
     private void exeClickD() {
-        // Get the vibrator service
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         if (Build.VERSION.SDK_INT >= 29) {
-            // Create a VibrationEffect with your desired pattern and amplitude
-
-            VibrationEffect vibrationEffect = VibrationEffect.createPredefined(EFFECT_DOUBLE_CLICK);
-
-            // Vibrate with the given VibrationEffect
+            VibrationEffect vibrationEffect;
+            if (supportsHapticEffect(EFFECT_DOUBLE_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_DOUBLE_CLICK);
+            } else if (supportsHapticEffect(EFFECT_HEAVY_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+            } else if (supportsHapticEffect(EFFECT_CLICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_CLICK);
+            } else if (supportsHapticEffect(EFFECT_TICK)) {
+                vibrationEffect = VibrationEffect.createPredefined(EFFECT_TICK);
+            } else {
+                // Only fall back to simple vibration if no effects are supported
+                vibrationEffect = VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE);
+            }
             vibrator.vibrate(vibrationEffect);
-        } else {
-            // For older devices, use a simple pattern
-//            vibrator.vibrate(20);
         }
     }
 
@@ -771,17 +830,40 @@ public class MainActivity extends SDLActivity {
         if (vibrator == null || !vibrator.hasVibrator()) return;
 
         if (Build.VERSION.SDK_INT >= 29) {
-            // Use predefined haptic effects for better HD haptics feel
             VibrationEffect effect;
             if (intensity >= 0.7f) {
-                // Heavy collision - use heavy click
-                effect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+                // Heavy collision - try heavy click, fallback to click, then tick
+                if (supportsHapticEffect(EFFECT_HEAVY_CLICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+                } else if (supportsHapticEffect(EFFECT_CLICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_CLICK);
+                } else if (supportsHapticEffect(EFFECT_TICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_TICK);
+                } else {
+                    effect = VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE);
+                }
             } else if (intensity >= 0.3f) {
-                // Medium collision - use click
-                effect = VibrationEffect.createPredefined(EFFECT_CLICK);
+                // Medium collision - try click, fallback to tick or heavy click
+                if (supportsHapticEffect(EFFECT_CLICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_CLICK);
+                } else if (supportsHapticEffect(EFFECT_TICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_TICK);
+                } else if (supportsHapticEffect(EFFECT_HEAVY_CLICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+                } else {
+                    effect = VibrationEffect.createOneShot(15, VibrationEffect.DEFAULT_AMPLITUDE);
+                }
             } else {
-                // Light collision - use tick
-                effect = VibrationEffect.createPredefined(EFFECT_TICK);
+                // Light collision - try tick, fallback to click
+                if (supportsHapticEffect(EFFECT_TICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_TICK);
+                } else if (supportsHapticEffect(EFFECT_CLICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_CLICK);
+                } else if (supportsHapticEffect(EFFECT_HEAVY_CLICK)) {
+                    effect = VibrationEffect.createPredefined(EFFECT_HEAVY_CLICK);
+                } else {
+                    effect = VibrationEffect.createOneShot(10, VibrationEffect.DEFAULT_AMPLITUDE);
+                }
             }
             vibrator.vibrate(effect);
         } else if (Build.VERSION.SDK_INT >= 26) {
@@ -837,6 +919,8 @@ public class MainActivity extends SDLActivity {
                     if (timerModeActive) {
                         onTimerModeGameOver();
                     }
+                    // Expand hamburger menu on game over
+                    expandHamburgerMenuForGameOver();
                     // Show game over summary dialog
                     showGameOverSummary(finalScore, finalPlayTimeMs, finalRank, 
                                        finalOuterProgress, finalOuterTotal);
@@ -1248,6 +1332,16 @@ public class MainActivity extends SDLActivity {
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (event == null) return false;
         
+        // Handle pinch-to-zoom (always active)
+        if (handlePinchZoom(event)) {
+            return true;
+        }
+        
+        // Handle horizontal drag for offset adjustment (only in calibration mode)
+        if (handleOffsetDrag(event)) {
+            return true;
+        }
+        
         // When light debug panel is visible, check if touch is on the panel or on the game area
         if (isLightDebugPanelVisible()) {
             float x = event.getX();
@@ -1466,13 +1560,18 @@ public class MainActivity extends SDLActivity {
     private native int getOuterCircleTotal();
     private native int getTotalScore();
 
+    // Debug camera offset calibration native methods
+    private native void setDebugCameraOffsetX(float offset);
+    private native float getDebugCameraOffsetX();
+    private native float getCurrentCameraZoom();
+    private native float getScreenAspectRatio();
+
     // Flag to prevent slider feedback loops
     private boolean isUpdatingSliders = false;
 
     // Nudge amount (in normalized coordinates)
     private static final float NUDGE_AMOUNT = 0.0005f;
 
-    // ... (rest of the code remains the same)
     private void updateLightDebugInfo() {
         String lightInfo = getCurrentLightInfoNative();
         if (lightInfo != null && !lightInfo.isEmpty()) {
@@ -1713,8 +1812,7 @@ public class MainActivity extends SDLActivity {
         mBinding.txtTimerBonus.setVisibility(View.GONE);
         mBinding.missiontxt.setVisibility(View.GONE);
         mBinding.infotxt.setVisibility(View.GONE);
-        
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this, R.style.CustomDialogTheme);
         builder.setTitle("Select Game Mode");
         builder.setCancelable(false);
         
@@ -1741,7 +1839,9 @@ public class MainActivity extends SDLActivity {
             }
             // UI elements will be shown when ball first enters plunger
         });
-        builder.show();
+        android.app.AlertDialog dialog = builder.create();
+        styleDialog(dialog);
+        dialog.show();
     }
 
     private void startTimerUpdateLoop() {
@@ -1878,14 +1978,108 @@ public class MainActivity extends SDLActivity {
         message.append("Mission Points: ").append(missionPointsStr);
 
         // Show dialog
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this, R.style.CustomDialogTheme);
         builder.setTitle("Game Over");
         builder.setMessage(message.toString());
         builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
         builder.setCancelable(true);
-        builder.show();
+        android.app.AlertDialog dialog = builder.create();
+        styleDialog(dialog);
+        dialog.show();
     }
-    
+
+    /**
+     * Apply custom styling to AlertDialog to match game aesthetic
+     */
+    private void styleDialog(android.app.AlertDialog dialog) {
+        // Apply background styling immediately
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        
+        dialog.setOnShowListener(dialogInterface -> {
+            // Get the dialog window
+            if (dialog.getWindow() != null) {
+                View decorView = dialog.getWindow().getDecorView();
+                
+                // Hide content temporarily to prevent flicker
+                decorView.setAlpha(0f);
+                
+                decorView.setBackgroundColor(0xAA000000); // Semi-transparent black
+                
+                // Style title with NES font - search in the decor view
+                int titleId = getResources().getIdentifier("alertTitle", "id", "android");
+                if (titleId == 0) {
+                    titleId = android.R.id.title;
+                }
+                TextView titleView = decorView.findViewById(titleId);
+                if (titleView != null) {
+                    titleView.setTypeface(ResourcesCompat.getFont(this, R.font.nes_arcade));
+                    titleView.setTextColor(Color.WHITE);
+                    titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+                    titleView.setGravity(android.view.Gravity.CENTER);
+                }
+            
+                // Style message text with NES font
+                TextView messageView = dialog.findViewById(android.R.id.message);
+                if (messageView != null) {
+                    messageView.setTypeface(ResourcesCompat.getFont(this, R.font.nes_arcade));
+                    messageView.setTextColor(Color.WHITE);
+                    messageView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
+                    messageView.setGravity(android.view.Gravity.CENTER);
+                }
+                
+                // Style buttons with NES font
+                android.widget.Button positiveButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+                if (positiveButton != null) {
+                    positiveButton.setTypeface(ResourcesCompat.getFont(this, R.font.nes_arcade));
+                    positiveButton.setTextColor(Color.WHITE);
+                    positiveButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
+                }
+                android.widget.Button negativeButton = dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE);
+                if (negativeButton != null) {
+                    negativeButton.setTypeface(ResourcesCompat.getFont(this, R.font.nes_arcade));
+                    negativeButton.setTextColor(Color.WHITE);
+                    negativeButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
+                }
+                
+                // Style list items if present (for mode selection)
+                android.widget.ListView listView = dialog.getListView();
+                if (listView != null) {
+                    listView.setBackgroundColor(0x00000000); // Transparent
+                    listView.setDivider(null);
+                    
+                    // Apply custom styling to each list item
+                    android.widget.ListAdapter adapter = listView.getAdapter();
+                    if (adapter != null) {
+                        // Wrap the adapter to customize item views
+                        listView.post(() -> {
+                            for (int i = 0; i < listView.getChildCount(); i++) {
+                                View itemView = listView.getChildAt(i);
+                                if (itemView instanceof TextView) {
+                                    TextView textView = (TextView) itemView;
+                                    textView.setTypeface(ResourcesCompat.getFont(this, R.font.nes_arcade));
+                                    textView.setTextColor(Color.WHITE);
+                                    textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9);
+                                    textView.setGravity(android.view.Gravity.CENTER);
+                                    textView.setPadding(16, 24, 16, 24);
+                                }
+                            }
+                            // Show dialog after list items are styled
+                            decorView.setAlpha(1f);
+                        });
+                    } else {
+                        // No list view, show immediately
+                        decorView.setAlpha(1f);
+                    }
+                } else {
+                    // No list view, show immediately
+                    decorView.setAlpha(1f);
+                }
+            }
+        });
+    }
+
     // Music download URLs
     private static final String MAIN_MUSIC_URL = "https://x3200.media/808generative.wav";
     private static final String MISSION_MUSIC_URL = "https://x3200.media/808generativemission.wav";
@@ -1964,5 +2158,320 @@ public class MainActivity extends SDLActivity {
             if (input != null) input.close();
             if (connection != null) connection.disconnect();
         }
+    }
+
+    // ============== Camera Calibration Debug Panel ==============
+    
+    private boolean cameraCalibrationVisible = false;
+    private android.widget.TextView cameraOffsetLabel;
+    private View centerLineOverlay;
+    
+    // Pinch-to-zoom state (always active, not just in calibration mode)
+    private float initialPinchDistance = 0f;
+    private float initialZoom = 1.0f;
+    private boolean isPinchZooming = false;
+    
+    // Horizontal drag state for offset adjustment (only in calibration mode)
+    private boolean isDraggingOffset = false;
+    private float dragStartX = 0f;
+    private float dragStartOffset = 0f;
+    
+    public void showCameraCalibrationPanel() {
+        if (cameraCalibrationVisible) return;
+        cameraCalibrationVisible = true;
+        
+        // Create overlay container
+        android.widget.LinearLayout panel = new android.widget.LinearLayout(this);
+        panel.setOrientation(android.widget.LinearLayout.VERTICAL);
+        panel.setBackgroundColor(0xAA000000);
+        panel.setPadding(16, 16, 16, 16);
+        panel.setTag("cameraCalibrationPanel");
+        
+        // Title
+        TextView title = new TextView(this);
+        title.setText("Camera Calibration - Drag to adjust");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(14);
+        panel.addView(title);
+        
+        // Offset label
+        cameraOffsetLabel = new TextView(this);
+        cameraOffsetLabel.setTextColor(Color.WHITE);
+        cameraOffsetLabel.setTextSize(12);
+        updateCameraOffsetLabel();
+        panel.addView(cameraOffsetLabel);
+        
+        // Nudge buttons row
+        android.widget.LinearLayout nudgeRow = new android.widget.LinearLayout(this);
+        nudgeRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        
+        android.widget.Button nudgeLeftBtn = new android.widget.Button(this);
+        nudgeLeftBtn.setText("◀ -0.001");
+        nudgeLeftBtn.setOnClickListener(v -> {
+            float offset = getDebugCameraOffsetX() - 0.001f;
+            setDebugCameraOffsetX(offset);
+            updateCameraOffsetLabel();
+        });
+        nudgeRow.addView(nudgeLeftBtn);
+        
+        android.widget.Button nudgeRightBtn = new android.widget.Button(this);
+        nudgeRightBtn.setText("+0.001 ▶");
+        nudgeRightBtn.setOnClickListener(v -> {
+            float offset = getDebugCameraOffsetX() + 0.001f;
+            setDebugCameraOffsetX(offset);
+            updateCameraOffsetLabel();
+        });
+        nudgeRow.addView(nudgeRightBtn);
+        
+        panel.addView(nudgeRow);
+        
+        // Log button
+        android.widget.Button logBtn = new android.widget.Button(this);
+        logBtn.setText("Log Calibration");
+        logBtn.setOnClickListener(v -> logCalibrationData());
+        panel.addView(logBtn);
+        
+        // Close button
+        android.widget.Button closeBtn = new android.widget.Button(this);
+        closeBtn.setText("Close");
+        closeBtn.setOnClickListener(v -> hideCameraCalibrationPanel());
+        panel.addView(closeBtn);
+        
+        // Add panel to layout at top-left
+        RelativeLayout.LayoutParams panelParams = new RelativeLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        panelParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        panelParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+        panelParams.topMargin = 100;
+        panelParams.leftMargin = 16;
+        mLayout.addView(panel, panelParams);
+        
+        // Add vertical center line overlay
+        centerLineOverlay = new View(this) {
+            @Override
+            protected void onDraw(android.graphics.Canvas canvas) {
+                super.onDraw(canvas);
+                android.graphics.Paint paint = new android.graphics.Paint();
+                paint.setColor(Color.YELLOW);
+                paint.setStrokeWidth(4);
+                int centerX = getWidth() / 2;
+                canvas.drawLine(centerX, 0, centerX, getHeight(), paint);
+            }
+        };
+        centerLineOverlay.setTag("centerLineOverlay");
+        RelativeLayout.LayoutParams lineParams = new RelativeLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        mLayout.addView(centerLineOverlay, lineParams);
+        centerLineOverlay.bringToFront();
+        panel.bringToFront();
+        
+        Toast.makeText(this, "Drag horizontally to adjust offset", Toast.LENGTH_SHORT).show();
+    }
+    
+    public void hideCameraCalibrationPanel() {
+        if (!cameraCalibrationVisible) return;
+        cameraCalibrationVisible = false;
+        
+        View panel = mLayout.findViewWithTag("cameraCalibrationPanel");
+        if (panel != null) mLayout.removeView(panel);
+        View overlay = mLayout.findViewWithTag("centerLineOverlay");
+        if (overlay != null) mLayout.removeView(overlay);
+        
+        Toast.makeText(this, "Camera Calibration OFF", Toast.LENGTH_SHORT).show();
+    }
+    
+    // ============== Hamburger Menu ==============
+    
+    private void toggleHamburgerMenu() {
+        if (hamburgerMenuExpanded) {
+            collapseHamburgerMenu();
+        } else {
+            expandHamburgerMenu();
+        }
+    }
+    
+    private void expandHamburgerMenu() {
+        hamburgerMenuExpanded = true;
+        
+        // Pause the game when expanding menu
+        if (isPlaying) {
+            isPlaying = false;
+            pauseNativeThread();
+            pauseMusic();
+            if (beatMapPlayer != null) beatMapPlayer.pause();
+            if (timerModeActive) pauseTimerMode();
+            pauseSessionTimer();
+        }
+        
+        // Update hamburger button icon to show it's expanded (play icon)
+        mBinding.hamburgerBtn.setImageDrawable(getResources().getDrawable(R.drawable.play));
+        
+        // Show settings and replay buttons
+        mBinding.settingsbtn.setVisibility(View.VISIBLE);
+        mBinding.replay.setVisibility(View.VISIBLE);
+        
+        // Hide mission and info text when menu is open
+        mBinding.missiontxt.setVisibility(View.GONE);
+        mBinding.infotxt.setVisibility(View.GONE);
+    }
+    
+    private void collapseHamburgerMenu() {
+        hamburgerMenuExpanded = false;
+        
+        // Resume the game when collapsing menu
+        if (!isPlaying) {
+            isPlaying = true;
+            resumeNativeThread();
+            resumeMusic();
+            if (beatMapPlayer != null) beatMapPlayer.resume();
+            if (timerModeActive) resumeTimerMode();
+            resumeSessionTimer();
+        }
+        
+        // Update hamburger button icon to show it's collapsed (pause icon)
+        mBinding.hamburgerBtn.setImageDrawable(getResources().getDrawable(R.drawable.pause));
+        
+        // Hide settings and replay buttons
+        mBinding.settingsbtn.setVisibility(View.GONE);
+        mBinding.replay.setVisibility(View.GONE);
+        
+        // Show mission and info text when menu is closed
+        mBinding.missiontxt.setVisibility(View.VISIBLE);
+        mBinding.infotxt.setVisibility(View.VISIBLE);
+    }
+    
+    public void expandHamburgerMenuForGameOver() {
+        runOnUiThread(() -> {
+            if (!hamburgerMenuExpanded) {
+                hamburgerMenuExpanded = true;
+                mBinding.hamburgerBtn.setImageDrawable(getResources().getDrawable(R.drawable.play));
+                mBinding.settingsbtn.setVisibility(View.VISIBLE);
+                mBinding.replay.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+    
+    private void updateCameraOffsetLabel() {
+        if (cameraOffsetLabel == null) return;
+        float offset = getDebugCameraOffsetX();
+        float zoom = getCurrentCameraZoom();
+        float aspect = getScreenAspectRatio();
+        cameraOffsetLabel.setText(String.format("Offset: %.3f | Zoom: %.2f | Aspect: %.3f", offset, zoom, aspect));
+    }
+    
+    private void logCalibrationData() {
+        float offset = getDebugCameraOffsetX();
+        float zoom = getCurrentCameraZoom();
+        float aspect = getScreenAspectRatio();
+        
+        String logLine = String.format("offset=%.4f, zoom=%.2f, aspect=%.4f, device=%s\n", 
+            offset, zoom, aspect, android.os.Build.MODEL);
+        
+        try {
+            File logFile = new File(getFilesDir(), "camera_calibration.log");
+            java.io.FileWriter writer = new java.io.FileWriter(logFile, true);
+            writer.write(logLine);
+            writer.close();
+            Toast.makeText(this, "Logged: " + logLine.trim(), Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Camera calibration logged: " + logLine.trim());
+        } catch (IOException e) {
+            Toast.makeText(this, "Failed to log: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Failed to log calibration", e);
+        }
+    }
+    
+    // Handle pinch-to-zoom - active when enabled in preferences or in calibration mode
+    private boolean handlePinchZoom(MotionEvent event) {
+        // Only allow pinch-to-zoom if enabled in preferences or in calibration mode
+        if (!PrefsHelper.getPinchToZoomEnabled() && !cameraCalibrationVisible) {
+            return false;
+        }
+        
+        if (event.getPointerCount() == 2) {
+            float x1 = event.getX(0);
+            float y1 = event.getY(0);
+            float x2 = event.getX(1);
+            float y2 = event.getY(1);
+            float distance = (float) Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    initialPinchDistance = distance;
+                    initialZoom = getCurrentCameraZoom();
+                    isPinchZooming = true;
+                    return true;
+
+                case MotionEvent.ACTION_MOVE:
+                    if (isPinchZooming && initialPinchDistance > 0) {
+                        float scale = distance / initialPinchDistance;
+                        float newZoom = Math.max(1.0f, Math.min(4.0f, initialZoom * scale));
+                        setCameraTracking(true, newZoom);
+                        // Save to preferences
+                        int zoomPercent = (int)(newZoom * 100);
+                        PrefsHelper.setCameraZoom(zoomPercent);
+                        PrefsHelper.setCameraTracking(true);
+                        if (cameraCalibrationVisible) updateCameraOffsetLabel();
+                        return true;
+                    }
+                    break;
+            }
+        }
+
+        if (event.getActionMasked() == MotionEvent.ACTION_POINTER_UP || 
+            event.getActionMasked() == MotionEvent.ACTION_UP) {
+            isPinchZooming = false;
+            initialPinchDistance = 0;
+        }
+
+        return false;
+    }
+    
+    // Handle horizontal drag for offset adjustment (only in calibration mode)
+    private boolean handleOffsetDrag(MotionEvent event) {
+        if (!cameraCalibrationVisible) return false;
+        
+        // Only handle single-finger drags
+        if (event.getPointerCount() != 1) return false;
+        
+        // Check if touch is on the calibration panel - if so, don't handle drag
+        View panel = mLayout.findViewWithTag("cameraCalibrationPanel");
+        if (panel != null) {
+            int[] panelLocation = new int[2];
+            panel.getLocationOnScreen(panelLocation);
+            float x = event.getX();
+            float y = event.getY();
+            if (x >= panelLocation[0] && x <= panelLocation[0] + panel.getWidth() &&
+                y >= panelLocation[1] && y <= panelLocation[1] + panel.getHeight()) {
+                return false; // Let panel handle the touch
+            }
+        }
+        
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                dragStartX = event.getX();
+                dragStartOffset = getDebugCameraOffsetX();
+                isDraggingOffset = true;
+                return true;
+                
+            case MotionEvent.ACTION_MOVE:
+                if (isDraggingOffset) {
+                    float deltaX = event.getX() - dragStartX;
+                    // Convert pixels to offset units (screen width = ~1.0 offset range)
+                    float screenWidth = getWindow().getDecorView().getWidth();
+                    float offsetDelta = deltaX / screenWidth;
+                    float newOffset = dragStartOffset + offsetDelta;
+                    setDebugCameraOffsetX(newOffset);
+                    updateCameraOffsetLabel();
+                    return true;
+                }
+                break;
+                
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                isDraggingOffset = false;
+                break;
+        }
+        
+        return false;
     }
 }

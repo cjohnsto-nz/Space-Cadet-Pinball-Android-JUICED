@@ -45,6 +45,11 @@ public:
     static float GetCurrentCameraCenterX() { return s_currentCameraCenterX; }
     static float GetCurrentCameraCenterY() { return s_currentCameraCenterY; }
     
+    // Debug camera offset (for calibration)
+    static void SetDebugCameraOffsetX(float offset);
+    static float GetDebugCameraOffsetX() { return s_debugCameraOffsetX; }
+    static float GetScreenAspectRatio() { return s_screenAspectRatio; }
+    
     // Get current viewport (for touch coordinate conversion)
     static int GetViewportX() { return s_viewportX; }
     static int GetViewportY() { return s_viewportY; }
@@ -79,6 +84,8 @@ private:
     static float s_currentCameraZoom;      // Current frame's zoom (for overlay rendering)
     static float s_currentCameraCenterX;   // Current frame's camera center X
     static float s_currentCameraCenterY;   // Current frame's camera center Y
+    static float s_debugCameraOffsetX;      // Debug offset for calibration
+    static float s_screenAspectRatio;       // Current screen aspect ratio (width/height)
     
     // Cached uniform locations (avoid glGetUniformLocation every frame)
     // Output program uniforms
@@ -94,6 +101,7 @@ private:
     static GLint s_loc_uLastBallPos;
     static GLint s_loc_uBallValid;
     static GLint s_loc_uSmoothedCameraPos;
+    static GLint s_loc_uCameraDebugMode;
     // Upload program uniforms
     static GLint s_loc_upload_uTexture;
     static GLint s_loc_upload_uIntensityMultiplier;
