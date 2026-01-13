@@ -12,9 +12,9 @@ Above: JUICED. Below: Fexed.
 
 Thanks to [k4zmu2a](https://github.com/k4zmu2a) for the original source code and to [iscle](https://github.com/Iscle) for the original Android porting
 
-Full disclaimer - I made this with my own device in mind, and didn't make many concessions for compatibility or lower performance devices.
+Full disclaimer - I made this with my own device (Z Fold 5) in mind, and didn't make many concessions for compatibility or lower performance devices.
 
-(It works really well on foldables!)
+As of 3.1.1 I have added improved support for standard aspect ratio devices. Landscape mode is allowed, but doesn't work. Will address in a future version.
 
 
 ## Upgrades
