@@ -41,7 +41,7 @@ float HDRLightOverlay::s_trailTime = 0.0f;
 bool HDRLightOverlay::s_ballTeleported = false;
 float HDRLightOverlay::s_glowModifier = 1.0f;
 float HDRLightOverlay::s_trailOpacity = 0.85f;
-float HDRLightOverlay::s_trailLifetimeSetting = 3.5f;
+float HDRLightOverlay::s_trailLifetimeSetting = 1.2f;
 // Warm-up effect for startup animation
 static bool s_wasInStartupAnimation = false;
 static float s_warmupProgress = 0.0f;  // 0.0 to 1.0

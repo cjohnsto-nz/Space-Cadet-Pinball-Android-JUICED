@@ -392,6 +392,26 @@
             app:layout_constraintBottom_toBottomOf="@+id/textViewCameraTracking" />
 
         <TextView
+            android:id="@+id/textViewPinchToZoom"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Pinch to Zoom (Gameplay)"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/pinchToZoomSwitch"
+            app:layout_constraintStart_toStartOf="@+id/textViewCameraTracking"
+            app:layout_constraintTop_toBottomOf="@+id/textViewCameraTracking" />
+
+        <Switch
+            android:id="@+id/pinchToZoomSwitch"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:layout_constraintEnd_toEndOf="@+id/cameraTrackingSwitch"
+            app:layout_constraintTop_toTopOf="@+id/textViewPinchToZoom"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewPinchToZoom" />
+
+        <TextView
             android:id="@+id/textViewCameraZoom"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -399,8 +419,8 @@
             android:text="Zoom Level"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="@+id/textViewCameraTracking"
-            app:layout_constraintTop_toBottomOf="@+id/textViewCameraTracking" />
+            app:layout_constraintStart_toStartOf="@+id/textViewPinchToZoom"
+            app:layout_constraintTop_toBottomOf="@+id/textViewPinchToZoom" />
 
         <TextView
             android:id="@+id/cameraZoomValue"

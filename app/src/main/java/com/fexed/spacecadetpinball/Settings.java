@@ -261,6 +261,13 @@ public class Settings extends AppCompatActivity {
             PrefsHelper.setCameraTracking(b);
         });
 
+        // Pinch-to-Zoom toggle
+        boolean pinchToZoomEnabled = PrefsHelper.getPinchToZoomEnabled();
+        mBinding.pinchToZoomSwitch.setChecked(pinchToZoomEnabled);
+        mBinding.pinchToZoomSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
+            PrefsHelper.setPinchToZoomEnabled(b);
+        });
+
         // Camera Zoom SeekBar (100-400, default 200 = 2x)
         int savedZoom = PrefsHelper.getCameraZoom();
         mBinding.cameraZoomBar.setProgress(savedZoom - 100); // SeekBar is 0-300, representing 100-400

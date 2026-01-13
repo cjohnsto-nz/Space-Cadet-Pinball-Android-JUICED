@@ -218,7 +218,7 @@ private:
     
     // Trail settings (user-configurable)
     static float s_trailOpacity;        // 0.0 to 1.0, default 0.85
-    static float s_trailLifetimeSetting; // in seconds, default 3.5
+    static float s_trailLifetimeSetting; // in seconds, default 1.2
     
     // Ball trail effect - continuous adaptive trail
     struct TrailPoint {
@@ -228,7 +228,7 @@ private:
     };
     static std::vector<TrailPoint> s_ballTrail;
     static constexpr int MAX_TRAIL_POINTS = 600;  // Allow many more points for long trails
-    static constexpr float TRAIL_LIFETIME = 3.5f;  // seconds before trail fades completely
+    static constexpr float TRAIL_LIFETIME = 1.2f;  // seconds before trail fades completely
     static float s_lastBallX, s_lastBallY;
     static float s_trailTime;  // accumulated time for trail aging
     static bool s_ballTeleported;  // flag set when ball teleports, cleared on next position update
