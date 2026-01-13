@@ -177,9 +177,9 @@ public class PrefsHelper {
         prefs.edit().putInt(KEY_TRAIL_OPACITY, value).apply();
     }
 
-    // Trail lifetime in tenths of seconds (5-100, default 30 = 3.0 seconds)
+    // Trail lifetime in tenths of seconds (5-100, default 12 = 1.2 seconds)
     public static int getTrailLifetime() {
-        return prefs.getInt(KEY_TRAIL_LIFETIME, 30);
+        return prefs.getInt(KEY_TRAIL_LIFETIME, 12);
     }
 
     public static void setTrailLifetime(int value) {
